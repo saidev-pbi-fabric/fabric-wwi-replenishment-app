@@ -5,4 +5,4 @@ row here. One row = one work thread (strand). Newest at the top.
 
 | Tag | What it is | Opened | Status | Resume from |
 |-----|------------|--------|--------|-------------|
-| #wwi-hackathon-build | Continue the Fabric WWI Replenishment App build — push to GitHub, wireframe pass, /spec, /plan | 2026-08-16 | active | CLAUDE.md status block |
+| #wwi-hackathon-build | Continue the Fabric WWI Replenishment App build — push to GitHub, wireframe pass, /spec, /plan | 2026-08-16 | paused | Restart session, then run /spec (see CLAUDE.md status block) |

@@ -52,22 +52,37 @@ Microsoft Fabric Hackathon 2026 entry (Hyderabad Data & AI Community + India Fab
 ## Status (as of 2026-08-16)
 - [DONE] Repo scaffolded from official Rayfin template (`fabric-apps-analytic-templates`, Data App).
 - [DONE] `docs/wwi-schema-reference.md` - verified real WWI DW columns from Microsoft's own DDL.
-- [DONE] Local git init + 2 commits. **Not yet pushed to GitHub** - run `docs/push-to-github.ps1`.
+- [DONE] Local git init + pushed to GitHub: `github.com/saidev-pbi-fabric/fabric-wwi-replenishment-app` (public).
+- [DONE] Thread registered: `#wwi-hackathon-build` in `THREADS.md`.
+- [DONE] Lightweight wireframe/layout pass - `docs/wireframe-design-brief.md` (tone: industrial
+  control-room, severity-rail signature detail, IBM Plex Sans Condensed/Sans/Mono typography,
+  page-by-page layout for both pages).
+- [DONE, gap fixed] `addyosmani/agent-skills` plugin properly installed (`claude plugin
+  marketplace add addyosmani/agent-skills` + `claude plugin install
+  agent-skills@addy-agent-skills`) - the CLAUDE.md-locked tooling stack was NOT actually present
+  before this session (checked filesystem, confirmed absent from both marketplaces and loose
+  skills). An earlier `npx skills add addyosmani/agent-skills` attempt in this same session only
+  installed the 24 underlying skills (no slash commands) - superseded by the proper plugin
+  install, which also carries the `commands/*.toml` -> `/spec /plan /build /test /review /ship
+  /code-simplify /webperf` command definitions. **Needs a session restart to activate** - plugin
+  slash commands load at Claude Code process startup, not mid-session (confirmed: `Skill(spec)`
+  still returned "Unknown skill" right after install). Minor cleanup owed later: the loose
+  `~/.agents/skills/*` copies from the npx attempt are now duplicated by the plugin install; not
+  blocking, no rush.
 - [NOT STARTED] Team hackathon registration (Google Form) - teammate handling, incl. an organizer
   conversation about track/details.
 - [NOT STARTED] Fabric workspace credentials - Saidev getting these from teammate, who has an
   existing working Fabric Trial capacity (no new trial needed).
-- [NOT STARTED] Lightweight wireframe/layout pass for the 2 pages (`app-design` skill).
-- [NOT STARTED] `/spec` - produces `SPEC-[name].md` (Objective, Commands, Structure, Code Style,
-  Testing, Boundaries).
+- [BLOCKED ON RESTART] `/spec` - produces `SPEC-[name].md` (Objective, Commands, Structure, Code
+  Style, Testing, Boundaries). Ready to run as soon as a new session picks up the plugin.
 - [NOT STARTED] `/plan` - produces `tasks/plan.md` + `tasks/todo.md`.
 - [NOT STARTED] Semantic model build (blocked on Fabric credentials).
 - [NOT STARTED] App build (blocked on SM + spec/plan).
 
 ## Next actions, in order
-1. Push to GitHub (`docs/push-to-github.ps1`).
-2. Lightweight wireframe/layout pass via `.agents/skills/app-design`.
-3. Run `/spec`.
-4. Run `/plan`.
-5. Once Fabric credentials arrive: load WWI data, build the semantic model (Import mode).
-6. Build the app in this same repo, against the semantic model from step 5.
+1. **Restart the Claude Code session** (new window/session in this folder) so the
+   `addyosmani/agent-skills` plugin's slash commands load.
+2. Run `/spec`.
+3. Run `/plan`.
+4. Once Fabric credentials arrive: load WWI data, build the semantic model (Import mode).
+5. Build the app in this same repo, against the semantic model from step 4.
