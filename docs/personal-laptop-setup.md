@@ -6,15 +6,30 @@ this repo's workflow depends on. Written so a teammate can follow the same steps
 
 ## Quick start — hand this to a fresh Claude Code session
 
-Open VS Code on an **empty folder**, open Claude Code in it, and paste this as your first message
-(fill in the repo URL if it's changed):
+### 0. Create the project folder first, then open VS Code on *that exact folder*
 
-> Clone `https://github.com/saidev-pbi-fabric/fabric-wwi-replenishment-app.git` into this folder.
-> Then read `docs/personal-laptop-setup.md` in the cloned repo and execute steps 1–3 (`npm install`,
-> `az login`, the two Claude Code plugin marketplace/install commands) yourself. Stop and tell me
-> to restart the session once the plugins are installed — don't try to continue past that point in
-> the same session. Ask me to run any interactive browser sign-in yourself; don't attempt to script
-> around it.
+```powershell
+New-Item -ItemType Directory -Force "C:\RayfinApps\fabric-wwi-replenishment-app"
+code "C:\RayfinApps\fabric-wwi-replenishment-app"
+```
+
+`C:\RayfinApps\` is the same root the work laptop uses — short path, outside OneDrive/any
+cloud-sync folder (avoids sync churn fighting `node_modules` and Windows path-length limits).
+**Open VS Code on the folder itself, not its parent** — Claude Code loads a project's `CLAUDE.md`/
+`AGENTS.md` based on the working directory it's launched in. If you open VS Code one level up and
+clone a subfolder into it, the project instructions won't auto-load and you'd have to reopen VS
+Code inside the subfolder anyway. Creating the exact target folder first and cloning into it with
+`.` (below) avoids that extra hop.
+
+### 1. Open Claude Code in that folder's terminal and paste this as your first message
+
+> Run `git clone https://github.com/saidev-pbi-fabric/fabric-wwi-replenishment-app.git .` (the
+> trailing `.` matters — this folder is already the intended project root, don't create a nested
+> subfolder). Then read `docs/personal-laptop-setup.md` in the cloned repo and execute steps 1–3
+> (`npm install`, `az login`, the two Claude Code plugin marketplace/install commands) yourself.
+> Stop and tell me to restart the session once the plugins are installed — don't try to continue
+> past that point in the same session. Ask me to run any interactive browser sign-in yourself;
+> don't attempt to script around it.
 
 That gets you through the parts that don't need a restart. **Two things it genuinely can't do in
 one shot** — a Claude Code session can't restart itself, and `az login`/`rayfin login` need a human
@@ -24,6 +39,10 @@ in front of the browser popup — so the realistic flow is exactly two messages,
    — it verifies the MCP servers, runs `rayfin login` and confirms Fabric workspace access
    (prompting you for the interactive logins), runs the verification checks in step 6, then picks
    up at the first unchecked item in `tasks/todo.md`.
+
+The restart also matters for a second reason beyond plugin loading: the project's `CLAUDE.md` and
+`AGENTS.md` only just appeared on disk mid-session (they didn't exist when the session started in
+the empty folder) — restarting is what guarantees they're picked up as project instructions.
 
 **Do this at Phase 0 of `tasks/plan.md` (T0.1)** — before Monday's semantic model build starts, not
 during it. See "When to switch" below for why.
