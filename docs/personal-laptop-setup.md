@@ -86,9 +86,10 @@ az login
 ```
 
 Then confirm you can see the shared Fabric trial-capacity workspace: open the Fabric portal and
-check the workspace shows up in your list. If it doesn't, ask the teammate who owns the trial
-capacity to add your account as a member/contributor on that workspace — this is a portal action
-on their side, not something scriptable here.
+check the workspace shows up in your list. If it doesn't, this is on the capacity owner to grant —
+**see `docs/fabric-capacity-access-setup.md`** for exactly how (short version: they create you a
+native account in their tenant, not a guest invite and not their own shared login — both of those
+have real problems, explained in that doc).
 
 ## 3. Install the Claude Code plugins this project's workflow depends on
 
