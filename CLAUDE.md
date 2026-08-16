@@ -69,20 +69,34 @@ Microsoft Fabric Hackathon 2026 entry (Hyderabad Data & AI Community + India Fab
   still returned "Unknown skill" right after install). The duplicate loose `~/.agents/skills/*`
   copies from the npx attempt were removed the same session (`npx skills remove -g`, 24 skills) -
   clean, no leftover duplication going into the restart.
+- [DONE] `/spec` -> `SPEC.md` (objective, stack, commands, structure, code style, testing,
+  boundaries). Both open questions resolved and locked in: `ReorderAction` uses `@authenticated()`
+  with no row-level policy (small internal tool, audit fields still captured as data); no
+  hard-delete (`Dismissed` status is the soft-delete).
+- [DONE] `/plan` -> `tasks/plan.md` (dependency graph, checkpoints, risks) + `tasks/todo.md`
+  (task-by-task checklist). Independently reviewed by a fresh subagent against `CLAUDE.md`'s locked
+  scope - no contradictions found; 5 gap/risk findings applied (build-check added to T6.1, two risk
+  lines added, T5.1's real dependency clarified as narrower than its scheduled checkpoint, locked
+  frontend skills wired into T3.3/T5.1 acceptance criteria).
+- [DONE] `docs/personal-laptop-setup.md` - environment parity doc for the personal laptop (Fabric/
+  Azure/Rayfin login, the `addyosmani/agent-skills` + `microsoft/skills-for-fabric` plugin installs,
+  MCP server registration - verified `powerbi-modeling-mcp` is bundled in the `powerbi-authoring`
+  plugin's own `.mcp.json`, no manual install needed). Includes a copy-paste "quick start" prompt
+  for bootstrapping a fresh Claude Code session from just the repo URL.
 - [NOT STARTED] Team hackathon registration (Google Form) - teammate handling, incl. an organizer
   conversation about track/details.
 - [NOT STARTED] Fabric workspace credentials - Saidev getting these from teammate, who has an
-  existing working Fabric Trial capacity (no new trial needed).
-- [BLOCKED ON RESTART] `/spec` - produces `SPEC-[name].md` (Objective, Commands, Structure, Code
-  Style, Testing, Boundaries). Ready to run as soon as a new session picks up the plugin.
-- [NOT STARTED] `/plan` - produces `tasks/plan.md` + `tasks/todo.md`.
+  existing working Fabric Trial capacity (no new trial needed). **Flagged as a named risk in
+  `tasks/plan.md`** - this is still open the same day the no-slack SM build (T1.1/T1.2, Mon 8/17)
+  is due to start.
+- [NOT STARTED] Personal laptop setup (`tasks/todo.md` T0.1) - doc is ready, execution pending.
 - [NOT STARTED] Semantic model build (blocked on Fabric credentials).
-- [NOT STARTED] App build (blocked on SM + spec/plan).
+- [NOT STARTED] App build (blocked on SM + Fabric credentials).
 
 ## Next actions, in order
-1. **Restart the Claude Code session** (new window/session in this folder) so the
-   `addyosmani/agent-skills` plugin's slash commands load.
-2. Run `/spec`.
-3. Run `/plan`.
-4. Once Fabric credentials arrive: load WWI data, build the semantic model (Import mode).
-5. Build the app in this same repo, against the semantic model from step 4.
+1. Run `docs/personal-laptop-setup.md` on the personal laptop (T0.1) - do this before Monday's SM
+   build starts, not during it.
+2. Confirm Fabric workspace access for both team members (T0.2).
+3. Once Fabric credentials arrive: load WWI data via Copy Job, build the semantic model (Import
+   mode) - `tasks/todo.md` Phase 1.
+4. Continue through `tasks/todo.md` in order from there.
