@@ -66,9 +66,9 @@ Microsoft Fabric Hackathon 2026 entry (Hyderabad Data & AI Community + India Fab
   install, which also carries the `commands/*.toml` -> `/spec /plan /build /test /review /ship
   /code-simplify /webperf` command definitions. **Needs a session restart to activate** - plugin
   slash commands load at Claude Code process startup, not mid-session (confirmed: `Skill(spec)`
-  still returned "Unknown skill" right after install). Minor cleanup owed later: the loose
-  `~/.agents/skills/*` copies from the npx attempt are now duplicated by the plugin install; not
-  blocking, no rush.
+  still returned "Unknown skill" right after install). The duplicate loose `~/.agents/skills/*`
+  copies from the npx attempt were removed the same session (`npx skills remove -g`, 24 skills) -
+  clean, no leftover duplication going into the restart.
 - [NOT STARTED] Team hackathon registration (Google Form) - teammate handling, incl. an organizer
   conversation about track/details.
 - [NOT STARTED] Fabric workspace credentials - Saidev getting these from teammate, who has an
