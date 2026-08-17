@@ -1,0 +1,14 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "description": "Daily total units sold, trailing over the dataset's covered date range. Y-axis fixed at zero and no interpolation smoothing, per docs/design-and-dax-references.md line-chart guidance.",
+  "mark": { "type": "line", "point": false, "interpolate": "linear" },
+  "encoding": {
+    "x": { "field": "Date", "type": "temporal", "title": "Date" },
+    "y": {
+      "field": "TotalQuantity",
+      "type": "quantitative",
+      "title": "Units Sold",
+      "scale": { "zero": true }
+    }
+  }
+}

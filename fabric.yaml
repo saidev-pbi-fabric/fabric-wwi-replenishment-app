@@ -1,3 +1,7 @@
 activeProfile: default
 profiles:
-  default: {}
+  default:
+    semanticModels:
+      wwiRetail:
+        workspaceId: f9f81ba4-029f-457f-8bd9-ec273060a362
+        itemId: 8023010f-ba5e-42ed-93c9-b505b6d560d8

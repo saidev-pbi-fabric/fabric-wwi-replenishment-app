@@ -87,6 +87,7 @@ Microsoft Fabric Hackathon 2026 entry (Hyderabad Data & AI Community + India Fab
   multi-year history, so a "recent date range" filter doesn't apply. Instead: aggregate at Import
   load time to (StockItemKey, InvoiceDateKey) grain — folds server-side to 73,365 rows. See
   `docs/wwi-schema-reference.md` for the full finding and the M query pattern.
+- [DONE] Page 1 DAX query factory (T2.2) fully complete — see `tasks/todo.md` T2.2.
 - [DONE] Risk DAX measures (T2.1) fully complete — see `tasks/todo.md` T2.1.
 - [DONE] Semantic model core (T1.2) fully complete — built, deployed, refreshed (Workspace
   Identity cloud connection bound in portal), 3 base measures verified via live DAX query. See
@@ -160,8 +161,8 @@ Microsoft Fabric Hackathon 2026 entry (Hyderabad Data & AI Community + India Fab
    3 base measures verified live. T1.2 fully complete.
 4. [DONE 8/17] T2.1 risk DAX measures built + verified — see `tasks/todo.md` T2.1 for the
    RANKX(ALL(column)) vs RANKX(ALL(table)) bug caught during verification.
-5. Next: T2.2/T2.3 (DAX query factory) — cross-check against the "visualization as code" pattern
-   in `docs/design-and-dax-references.md` before finalizing `src/queries/` structure.
-6. Then T3.x (Page 1 UI) — apply the KPI-tile and chart-craft rules from
+5. [DONE 8/17] T2.2 Page 1 query factory built + verified — see `tasks/todo.md` T2.2.
+6. Next: T2.3 (Page 2 Action Center queries — ranked list, item detail).
+7. Then T3.x (Page 1 UI) — apply the KPI-tile and chart-craft rules from
    `docs/design-and-dax-references.md`.
-7. Continue through `tasks/todo.md` in order from there.
+8. Continue through `tasks/todo.md` in order from there.

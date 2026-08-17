@@ -1,0 +1,15 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "description": "Top 10 stock items ranked by Suggested Reorder Qty (a sales-velocity-vs-lead-time proxy, not a real inventory level — see docs/wwi-schema-reference.md). Colored by Lead Time Priority Tier.",
+  "mark": "bar",
+  "encoding": {
+    "y": { "field": "StockItem", "type": "nominal", "sort": "-x", "title": "Item" },
+    "x": {
+      "field": "SuggestedReorderQty",
+      "type": "quantitative",
+      "title": "Suggested Reorder Qty",
+      "scale": { "zero": true }
+    },
+    "color": { "field": "LeadTimePriorityTier", "type": "nominal", "title": "Lead Time" }
+  }
+}

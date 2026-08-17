@@ -67,11 +67,18 @@ See `tasks/plan.md` for the dependency graph and checkpoints. Check off as compl
     distributor dataset).
   - Files: none (SM-side measures).
 
-- [ ] **T2.2** — Register app connection + author Page 1 DAX queries (KPI strip, trend chart,
-      top-at-risk list)
-  - Acceptance: `npx fabric-app-data query` returns the expected columns for each query; files
-    follow the `.dax`/`.json`/`.ts` factory convention in `AGENTS.md`.
-  - Verify: `npx fabric-app-data query wwiRetail --file <path>.dax` per query.
+- [x] **T2.2** — Register app connection + author Page 1 DAX queries (done 8/17)
+  - `fabric.yaml`/`src/fabric.generated.ts` registered (`wwiRetail` → `WWI Replenishment` in
+    `Fabric-App-Hackathon`). 3 query sets in `src/queries/overview/`: `kpi-strip` (Items Tracked,
+    Avg Lead Time Days, Top At Risk Items [rank<=20], Accelerating Demand Items), `sales-trend`
+    (daily units sold, zero-based unsmoothed line per dataviz guidance), `top-at-risk-items`
+    (top 10 by At Risk Rank, bar chart colored by Lead Time Priority Tier).
+  - Note: KPI/chart content deviates from the original wireframe-design-brief.md labels
+    ("Open Backorders" etc — stale, no such data exists). Real KPIs chosen from what's actually
+    computable; brief still needs a text-only pass to match (tracked, not yet done).
+  - Verify: all 3 `.dax` files validated live via `dax_query_operations` (exact result-column
+    headers captured for `columnMetadata`, not guessed). `npm test` 23/23 passing (incl. 3 new
+    spec files), `npm run lint` clean (0 errors).
   - Files: `fabric.yaml`, `src/fabric.generated.ts`, `src/queries/overview/*`.
 
 - [ ] **T2.3** — Author Page 2 DAX queries (ranked at-risk list w/ severity/supplier filters, item

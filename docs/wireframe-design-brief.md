@@ -58,6 +58,15 @@ Master-detail split, not stacked cards:
 - Vary card spans (KPI tiles are narrow/equal; the trend chart is wide; the ranked list is tall) —
   no uniform spreadsheet-of-cards look.
 
+## Interaction polish (stretch, Friday buffer day only)
+Reference: Kurt Buhler's Fabric Data App examples (custom web dashboards) — clean sparkline-in-KPI-card
+and a hover-reveal prior-period comparison line (dashed) on trend charts. Decision 2026-08-17:
+**borrow these two interaction patterns, don't adopt his premium-fintech palette/tone** — the
+severity-rail motif stays the signature detail. Implement in `--font-numeric`/severity-scale
+tokens already locked above, not Kurt's neutral off-white/serif look. Scope to Fri 8/21 polish —
+not blocking Page 1 core build (KPI strip, trend chart, ranked list must work on real DAX data
+first; animation on top of fake data is a worse demo than a plain chart on real write-back).
+
 ## States
 Every async-data component (KPI tiles, trend chart, ranked lists, detail panel) needs loading
 (skeleton), empty (centered muted message), and error (destructive banner) states per the

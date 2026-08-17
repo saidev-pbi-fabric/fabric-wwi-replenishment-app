@@ -1,0 +1,6 @@
+EVALUATE
+SUMMARIZECOLUMNS(
+    'Date'[Date],
+    "Total Quantity", CALCULATE(SUM(Sale[Total Quantity]))
+)
+ORDER BY 'Date'[Date] ASC

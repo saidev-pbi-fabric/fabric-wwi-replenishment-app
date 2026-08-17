@@ -1,0 +1,7 @@
+EVALUATE
+ROW(
+    "Items Tracked", DISTINCTCOUNT('Stock Item'[Stock Item Key]),
+    "Avg Lead Time Days", ROUND(AVERAGE('Stock Item'[Lead Time Days]), 1),
+    "Top At Risk Items", COUNTROWS(FILTER(ALL('Stock Item'), [At Risk Rank] <= 20)),
+    "Accelerating Demand Items", COUNTROWS(FILTER(ALL('Stock Item'), [Demand Trend %] > 0))
+)
