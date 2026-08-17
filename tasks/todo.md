@@ -12,32 +12,50 @@ See `tasks/plan.md` for the dependency graph and checkpoints. Check off as compl
     resolve after a session restart.
   - Files: none (environment only) — see `docs/personal-laptop-setup.md`.
 
-- [ ] **T0.2** — Fabric workspace access confirmed for both team members
+- [x] **T0.2** — Fabric workspace access confirmed for both team members (Saidev confirmed 8/17,
+      native account in teammate's `r4k5` tenant, workspace `Fabric-App-Hackathon` visible)
   - Acceptance: both team members can open the shared trial-capacity workspace in the Fabric portal.
   - Verify: each person opens the workspace URL and sees it listed.
   - Files: none (portal action).
 
 ## Phase 1 — Data Foundation
 
-- [ ] **T1.1** — Load WWI DW via Warehouse Copy Job
-  - Acceptance: Warehouse contains `Fact.Order`, `Fact.Stock Holding`, `Fact.Purchase`,
-    `Dimension.Stock Item`, `Dimension.Supplier` matching `docs/wwi-schema-reference.md`.
-  - Verify: row counts > 0 on each table (`sqldw-consumption-cli` or portal).
+- [x] **T1.1** — Load WWI DW via Warehouse Copy Job (done 8/17)
+  - Acceptance: Warehouse contains the real 6 tables (`dimension_city`, `dimension_customer`,
+    `dimension_date`, `dimension_employee`, `dimension_stock_item`, `fact_sale`) matching
+    `docs/wwi-schema-reference.md`. (Superseded: no `Fact.Order`/`Fact.Stock Holding`/
+    `Fact.Purchase`/`Dimension.Supplier` — those never existed in this sample.)
+  - Verify: row counts > 0 on each table — confirmed via `onelake_get_table` (fact_sale ~50.15M,
+    dimension_stock_item 672, dimension_city 116,295, dimension_customer 403, dimension_date
+    6,210, dimension_employee 213).
   - Files: none (portal action: New Item → Copy job → Sample data → "Retail Data Model from Wide
     World Importers" → Full copy).
 
-- [ ] **T1.2** — Build semantic model core (Import mode, relationships)
-  - Acceptance: SM exists, storage mode Import, relationships wired between the 3 facts and
-    Stock Item / Supplier / Date dimensions.
-  - Verify: `semantic-model-authoring` skill lists tables/relationships matching the schema doc.
-  - Files: none (Fabric-side semantic model).
+- [x] **T1.2** — Build semantic model core (Import mode, relationships) (done 8/17, refresh
+      pending — see note)
+  - Built + deployed via `powerbi-modeling-mcp` as `WWI Replenishment` in workspace
+    `Fabric-App-Hackathon` (item id `8023010f-ba5e-42ed-93c9-b505b6d560d8`). 3 tables: `Sale`
+    (fact_sale aggregated to Stock Item x Date grain, 73,365 rows, query-folded GROUP BY —
+    see `docs/wwi-schema-reference.md`), `Stock Item`, `Date` (marked as the model date table).
+    2 relationships: `Sale`->`Stock Item`, `Sale`->`Date`, both many-to-one, single-direction.
+    3 base measures: Total Quantity Sold, Total Sales Excluding Tax, Total Profit.
+    Dropped `dimension_city`/`dimension_customer`/`dimension_employee` — not needed for any
+    SPEC.md Page 1/2 success criterion (lean model per modeling guidelines); can add back if a
+    later page needs them.
+  - [DONE 8/17] Credential fix: bound a Workspace Identity cloud connection to the model's data
+    source in the Fabric portal, refresh succeeded.
+  - [DONE 8/17] Measures verified via `dax_query_operations`: Total Quantity Sold ≈1.9B,
+    Total Sales Excluding Tax ≈$36.2B, Total Profit ≈$18.0B — internally consistent with the
+    50.15M-row source. **T1.2 fully complete.**
 
 ## Phase 2 — Query Authoring
 
-- [ ] **T2.1** — Author + validate risk DAX measures (At Risk flag, Suggested Reorder Qty, Lead
-      Time priority, Has Open Backorder, Has Non-Finalized Purchase)
-  - Acceptance: measures return correct values on 3 spot-checked stock items (at-risk, on-track,
-    backorder).
+- [ ] **T2.1** — Author + validate risk DAX measures (Recent Daily Sales Rate, Prior Daily Sales
+      Rate, Demand Trend, Suggested Reorder Qty proxy, At-Risk rank, Lead Time priority tier —
+      see `docs/wwi-schema-reference.md` "Replenishment risk rule" section; no real backorder/
+      stock-on-hand data exists, so this is a disclosed sales-velocity-vs-lead-time proxy)
+  - Acceptance: measures return correct values on 3 spot-checked stock items (high-risk,
+    on-track, low-velocity).
   - Verify: DAX query via `semantic-model-authoring` / `dax_query_operations`.
   - Files: none (SM-side measures).
 
@@ -129,3 +147,20 @@ dependency; a second team member can start T5.1 in parallel with T3.2/T3.3 if Pa
     demo moment.
   - Verify: dry-run the talk track against the running app.
   - Files: `docs/talk-track.md` (optional, not blocking).
+
+- [ ] **T6.3 (stretch, optional)** — Tabular Editor 2 (free CLI) Best Practice Analyzer sanity pass
+      on the semantic model (Fri 8/21, only if T6.1/T6.2 leave slack)
+  - Why TE2 not TE3: TE3's AI Assistant/CLI enhancements are paid; TE2's CLI (`TabularEditor.exe`)
+    is free and sufficient for a one-shot BPA check — see decision note in project memory.
+  - Command: `TabularEditor.exe "powerbi://api.powerbi.com/v1.0/myorg/<workspace>" "<model name>"
+    -A "<rules.json>" -V` (connects live via XMLA to the Fabric semantic model, runs BPA headless,
+    `-V` for readable log output). Requires the workspace's XMLA endpoint set to Read-Write in
+    Fabric capacity admin settings — verify this once during SM build (T1.x), not on Friday.
+  - Rules file: Microsoft's public Analysis Services / Power BI Best Practice Rules JSON (free,
+    community-maintained) — not yet fetched/vetted, do this before Friday if pursuing T6.3.
+  - Not in scope: VertiPaq Analyzer — TE2 CLI does not appear to expose this headlessly (only
+    confirmed as a GUI feature); skip rather than research further under time pressure. If desired,
+    a one-time manual look in the TE2 GUI (also free) is fine, not scripted.
+  - Acceptance: BPA violations list reviewed; only trivial/high-value fixes applied if time allows.
+    This is a sanity check, not a gate — do not let it block the demo.
+  - Files: none required in-repo; optionally `tools/BPARules.json` if the rules file is saved.
