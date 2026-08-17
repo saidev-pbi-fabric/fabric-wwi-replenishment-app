@@ -146,9 +146,10 @@ export class ReorderAction {
   (`npm run test:fabric`), never plain localhost; keep DAX signals grounded in
   `docs/wwi-schema-reference.md` (no invented columns); keep write-back scoped to the single
   `ReorderAction` entity in `CLAUDE.md`'s locked scope.
-- **Ask first:** adding a 3rd page or any entity beyond `ReorderAction` (stretch-goal-only per
-  project `CLAUDE.md`); adding a new npm dependency; changing the semantic model storage mode from
-  Import; changing `rayfin.yml` services beyond flipping `data.enabled: true`; any RLS/policy
+- **Ask first:** adding a 4th page or any entity beyond `ReorderAction` (the landing page is now
+  committed 3rd-page scope, decided 2026-08-17 — see `CLAUDE.md`); adding a new npm dependency;
+  changing the semantic model storage mode from Import; changing `rayfin.yml` services beyond
+  flipping `data.enabled: true`; any RLS/policy
   design beyond the "any authenticated user, full access" default assumed above.
 - **Never do:** use mock/hardcoded/fake data for any read or write path; store fetched data in
   memory/localStorage instead of fetching on demand; use raw `fetch()`/hand-built GraphQL instead

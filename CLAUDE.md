@@ -23,9 +23,17 @@ Microsoft Fabric Hackathon 2026 entry (Hyderabad Data & AI Community + India Fab
   not a live tens-of-millions-row dataset) both modes use the identical setup flow, and Import
   additionally supports calculated columns/hybrid tables/aggregations and skips Direct Lake's
   SKU-guardrail fallback behavior - a real risk to debug under hackathon time pressure.
-- **Pages: 2.** Page 1 - Replenishment Overview (sales/stock trends, at-risk items ranked, KPIs).
-  Page 2 - Action Center (ranked at-risk list, record detail, the `ReorderAction` write-back panel).
-  A 3rd page is a stretch goal only, not committed scope.
+- **Pages: 3** (raised from 2, decided 2026-08-17). **Landing** — new, unnumbered relative to the
+  existing task IDs below to avoid renumbering already-completed work (problem framing, one-liner
+  pitch, entry point into the dashboard — rich, not a minimal placeholder; scope/design not yet
+  locked, decide at build time). **Page 1 - Replenishment Overview** (sales/stock trends, at-risk
+  items ranked, KPIs) and **Page 2 - Action Center** (ranked at-risk list, record detail, the
+  `ReorderAction` write-back panel) keep their existing numbering — `T2.2`/`T2.3`/Phase 3/Phase 5
+  task IDs and `docs/wireframe-design-brief.md` already reference them as Page 1/Page 2. The
+  landing page is genuinely low-cost (no DAX wiring) and helps judges who open the app cold before
+  the KPI strip means anything — scope it as a Friday 8/21 polish-day build, same slot as the
+  interaction-polish animation work in `docs/wireframe-design-brief.md`, not before Phase 3-5's
+  real data/write-back work is done.
 - **Tooling stack: standardized on `addyosmani/agent-skills` end-to-end** (8 slash commands:
   `/spec /plan /build /test /review /webperf /code-simplify /ship`), plus `batch-grill-me` and
   `ponytail`. Deliberately not mixing in other spec/design frameworks - one coherent system.

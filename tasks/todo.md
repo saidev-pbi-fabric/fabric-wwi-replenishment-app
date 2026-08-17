@@ -168,6 +168,16 @@ dependency; a second team member can start T5.1 in parallel with T3.2/T3.3 if Pa
   - Verify: dry-run the talk track against the running app.
   - Files: `docs/talk-track.md` (optional, not blocking).
 
+- [ ] **T6.4** — Landing page (Fri 8/21; decided 2026-08-17, see `CLAUDE.md` locked scope)
+  - Problem framing + one-liner pitch + entry point into the Overview page. Rich is fine, not
+    required to be minimal — no DAX wiring needed so it's genuinely cheap relative to Phase 3-5.
+    Scope/visual design not locked yet; decide at build time, same design language as
+    `docs/wireframe-design-brief.md` (severity-rail motif, IBM Plex fonts).
+  - Acceptance: renders with real app framing (not a stock template splash), links into the
+    Overview page, matches the locked visual direction.
+  - Verify: `npm run test:fabric`, visual check against the wireframe brief's tone.
+  - Files: new landing component + route in `App.tsx`.
+
 - [ ] **T6.3 (stretch, optional)** — Tabular Editor 2 (free CLI) Best Practice Analyzer sanity pass
       on the semantic model (Fri 8/21, only if T6.1/T6.2 leave slack)
   - Why TE2 not TE3: TE3's AI Assistant/CLI enhancements are paid; TE2's CLI (`TabularEditor.exe`)
