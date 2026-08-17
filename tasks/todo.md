@@ -50,13 +50,21 @@ See `tasks/plan.md` for the dependency graph and checkpoints. Check off as compl
 
 ## Phase 2 — Query Authoring
 
-- [ ] **T2.1** — Author + validate risk DAX measures (Recent Daily Sales Rate, Prior Daily Sales
-      Rate, Demand Trend, Suggested Reorder Qty proxy, At-Risk rank, Lead Time priority tier —
-      see `docs/wwi-schema-reference.md` "Replenishment risk rule" section; no real backorder/
-      stock-on-hand data exists, so this is a disclosed sales-velocity-vs-lead-time proxy)
-  - Acceptance: measures return correct values on 3 spot-checked stock items (high-risk,
-    on-track, low-velocity).
-  - Verify: DAX query via `semantic-model-authoring` / `dax_query_operations`.
+- [x] **T2.1** — Author + validate risk DAX measures (done 8/17)
+  - Built on `Sale`: `Max Sale Date` (hidden, reference = 11/30/2000 since data is historical, not
+    `TODAY()`), `Recent Daily Sales Rate`, `Prior Daily Sales Rate` (both 30-day trailing windows
+    via `DATESINPERIOD`), `Demand Trend %`, `Suggested Reorder Qty` (proxy: rate x Lead Time Days
+    x 1.2), `At Risk Rank` (`RANKX(ALL('Stock Item'), ...)`). Calculated column on `Stock Item`:
+    `Lead Time Priority Tier` (Short <=7 / Medium 8-14 / Long >14 days, from observed range 0-20,
+    avg 12.3). All have descriptions per `docs/design-and-dax-references.md` guidance.
+  - **Bug caught + fixed during verification**: `At Risk Rank` initially used
+    `RANKX(ALL('Stock Item'[Stock Item Key]), ...)` — only clears filters on that one column, so
+    the outer `SUMMARIZECOLUMNS` grouping filters (on `Stock Item`/`Lead Time Priority Tier`, a
+    different column) stayed active inside the RANKX iteration, collapsing every item to rank 1.
+    Fixed to `RANKX(ALL('Stock Item'), ...)` (whole table). Worth remembering as a RANKX gotcha.
+  - Verify: confirmed via live `dax_query_operations` — top 5 by rank are distinct, sensible
+    (shipping/packaging items ranking highest on demand x lead time, as expected for a wholesale
+    distributor dataset).
   - Files: none (SM-side measures).
 
 - [ ] **T2.2** — Register app connection + author Page 1 DAX queries (KPI strip, trend chart,
