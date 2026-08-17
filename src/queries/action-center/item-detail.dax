@@ -1,0 +1,18 @@
+EVALUATE
+FILTER(
+    SUMMARIZECOLUMNS(
+        'Stock Item'[Stock Item Key],
+        'Stock Item'[Stock Item],
+        'Stock Item'[Brand],
+        'Stock Item'[Color],
+        'Stock Item'[Lead Time Days],
+        'Stock Item'[Lead Time Priority Tier],
+        'Stock Item'[Unit Price],
+        'Stock Item'[Recommended Retail Price],
+        "Recent Daily Sales Rate", [Recent Daily Sales Rate],
+        "Demand Trend", [Demand Trend %],
+        "Suggested Reorder Qty", [Suggested Reorder Qty],
+        "At Risk Rank", [At Risk Rank]
+    ),
+    'Stock Item'[Stock Item Key] = {{STOCK_ITEM_KEY}}
+)

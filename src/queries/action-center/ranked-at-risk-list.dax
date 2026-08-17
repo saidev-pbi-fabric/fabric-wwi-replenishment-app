@@ -1,0 +1,10 @@
+EVALUATE
+SUMMARIZECOLUMNS(
+    'Stock Item'[Stock Item Key],
+    'Stock Item'[Stock Item],
+    'Stock Item'[Lead Time Priority Tier],
+    "Suggested Reorder Qty", [Suggested Reorder Qty],
+    "Demand Trend", [Demand Trend %],
+    "At Risk Rank", [At Risk Rank]
+)
+ORDER BY [At Risk Rank] ASC

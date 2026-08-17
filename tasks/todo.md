@@ -81,10 +81,15 @@ See `tasks/plan.md` for the dependency graph and checkpoints. Check off as compl
     spec files), `npm run lint` clean (0 errors).
   - Files: `fabric.yaml`, `src/fabric.generated.ts`, `src/queries/overview/*`.
 
-- [ ] **T2.3** — Author Page 2 DAX queries (ranked at-risk list w/ severity/supplier filters, item
-      detail)
-  - Acceptance: same as T2.2, for Action Center queries.
-  - Verify: same CLI check.
+- [x] **T2.3** — Author Page 2 DAX queries (done 8/17)
+  - `src/queries/action-center/`: `ranked-at-risk-list` (all 672 items, ordered by At Risk Rank,
+    unfiltered — filtering by Lead Time Priority Tier happens client-side; no supplier dimension
+    exists in this dataset, so that's the filter axis instead of the original "severity/supplier"
+    wording), `item-detail` (parameterized — `{{STOCK_ITEM_KEY}}` placeholder in the `.dax` file
+    substituted by the factory function, integer-validated before interpolation).
+  - Verify: both `.dax` files validated live via `dax_query_operations` (item-detail tested with
+    a real key, 43 → "Shipping carton (Brown) 413x285x187mm", rank 1). `npm test` 30/30 passing
+    (7 new specs), `npm run lint` clean.
   - Files: `src/queries/action-center/*`.
 
 ## Phase 3 — Page 1: Replenishment Overview
