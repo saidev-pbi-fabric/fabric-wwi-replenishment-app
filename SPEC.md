@@ -176,6 +176,22 @@ export class ReorderAction {
    here, mention it if judges ask.
 2. **No hard-delete.** `Dismissed` status is the soft-delete; no delete UI or Rayfin delete
    mutation. Confirmed.
+3. **Fabric item naming convention (confirmed 2026-08-17).** Microsoft doesn't mandate a specific
+   item-naming scheme beyond "clear, descriptive, not generic" (per Fabric's own Item Publishing
+   Requirements: no bare generic names without a prefix/suffix indicating purpose) — there's no
+   official "wh_"/"lh_" prefix standard. We're using our own consistent scheme so both team members
+   name things the same way:
+   - **Warehouse:** `WWIWarehouse` (PascalCase, no spaces).
+   - **Copy job:** `LoadWWIRetailData` (verb + subject — describes the action, not the default
+     `CopyJob_1`, which is exactly the kind of generic name Fabric's own guidance flags).
+   - **Semantic model:** `WWI Replenishment` (Title Case with spaces — this one is business/report
+     -facing, shown to end users in the model picker, so it reads like a product name).
+   - **Data App item:** `WWI Replenishment` (same name as the semantic model is fine here — it's
+     the one thing an end user actually opens).
+   - General rule: workspace-config/backend items (Warehouse, Copy job, pipelines) get
+     PascalCase-no-spaces names; user-facing items (semantic model, the app itself, reports) get
+     Title Case with spaces. Never leave a Fabric-assigned default name (`CopyJob_1`, `Warehouse_1`)
+     in place.
 
 ## Pending (external, not a decision)
 - **Fabric workspace/credentials** — per project `CLAUDE.md`, teammate is providing trial-capacity

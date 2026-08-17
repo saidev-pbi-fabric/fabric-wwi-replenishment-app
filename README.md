@@ -3,6 +3,12 @@
 
 > **⚠️ This repository is under active development.** Features and instructions may change.
 
+> **This project uses Claude Code, not GitHub Copilot CLI.** See [`CLAUDE.md`](./CLAUDE.md) for
+> project conventions and current status, and [`AGENTS.md`](./AGENTS.md) for the tool-agnostic
+> build guide. The Copilot CLI steps below are this template's original generic instructions —
+> Copilot/Codex CLI/Antigravity are only fallback tooling here (see `CLAUDE.md`), substitute
+> `claude` wherever `copilot` is mentioned.
+
 This is a starter template for building Fabric Apps - Analytics web apps. Clone this repo locally and follow the steps below to get started.
 
 
