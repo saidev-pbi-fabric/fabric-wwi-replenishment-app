@@ -20,8 +20,15 @@ vi.mock("@/lib/fabric-client", () => ({
 
 vi.mock("@/lib/rayfin-client", () => ({
     getRayfinClient: () => ({
-        data: { ReorderAction: { create: vi.fn() } },
+        data: {
+            ReorderAction: {
+                create: vi.fn(),
+                findMany: vi.fn().mockResolvedValue([]),
+                update: vi.fn(),
+            },
+        },
     }),
+    REORDER_ACTION_STATUSES: ["Pending Review", "Approved", "Ordered", "Received", "Dismissed"],
 }));
 
 vi.mock("@/hooks/auth.context", () => ({

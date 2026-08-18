@@ -32,6 +32,14 @@ export interface AppDataSchema {
     ReorderAction: ReorderActionRecord;
 }
 
+export const REORDER_ACTION_STATUSES: ReorderActionRecord["status"][] = [
+    "Pending Review",
+    "Approved",
+    "Ordered",
+    "Received",
+    "Dismissed",
+];
+
 let _client: RayfinClient<AppDataSchema> | undefined;
 
 /**

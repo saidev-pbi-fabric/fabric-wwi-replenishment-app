@@ -9,6 +9,7 @@ import { useState } from "react";
 import { RankedListPanel } from "@/components/action-center/ranked-list-panel";
 import { ItemDetailPanel } from "@/components/action-center/item-detail-panel";
 import { ReorderActionForm } from "@/components/action-center/reorder-action-form";
+import { ReorderActionHistory } from "@/components/action-center/reorder-action-history";
 
 interface SelectedItem {
     key: number;
@@ -23,6 +24,7 @@ interface ActionCenterProps {
 
 export function ActionCenter({ initialSelectedItemName }: ActionCenterProps) {
     const [selected, setSelected] = useState<SelectedItem | null>(null);
+    const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
 
     return (
         <div className="grid grid-cols-1 gap-500 lg:grid-cols-3">
@@ -36,7 +38,14 @@ export function ActionCenter({ initialSelectedItemName }: ActionCenterProps) {
             <div className="flex flex-col gap-500 lg:col-span-2">
                 <ItemDetailPanel stockItemKey={selected?.key ?? null} />
                 {selected ? (
-                    <ReorderActionForm stockItemKey={selected.key} stockItemName={selected.name} />
+                    <>
+                        <ReorderActionForm
+                            stockItemKey={selected.key}
+                            stockItemName={selected.name}
+                            onSubmitted={() => setHistoryRefreshKey((n) => n + 1)}
+                        />
+                        <ReorderActionHistory stockItemKey={selected.key} refreshKey={historyRefreshKey} />
+                    </>
                 ) : null}
             </div>
         </div>

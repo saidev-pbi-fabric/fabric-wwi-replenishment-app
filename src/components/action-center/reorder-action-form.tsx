@@ -9,24 +9,18 @@ import { useState } from "react";
 import { useQueryPanel } from "@/hooks/use-query-panel";
 import { itemDetail } from "@/queries/action-center/item-detail";
 import { useAuth } from "@/hooks/auth.context";
-import { getRayfinClient, type ReorderActionRecord } from "@/lib/rayfin-client";
+import { getRayfinClient, REORDER_ACTION_STATUSES, type ReorderActionRecord } from "@/lib/rayfin-client";
 import { scalarByColumnName } from "@/lib/to-data-table";
 import { ITEM_DETAIL_FIXTURE } from "@/lib/dev-preview-fixtures";
-
-const STATUSES: ReorderActionRecord["status"][] = [
-    "Pending Review",
-    "Approved",
-    "Ordered",
-    "Received",
-    "Dismissed",
-];
 
 interface ReorderActionFormProps {
     stockItemKey: number;
     stockItemName: string;
+    /** Called after a successful create, so a sibling history list can refetch. */
+    onSubmitted?: () => void;
 }
 
-export function ReorderActionForm({ stockItemKey, stockItemName }: ReorderActionFormProps) {
+export function ReorderActionForm({ stockItemKey, stockItemName, onSubmitted }: ReorderActionFormProps) {
     const panel = useQueryPanel(itemDetail(stockItemKey));
 
     // Dev-only fallback so `npm run dev` can render the ready state without
@@ -82,6 +76,7 @@ export function ReorderActionForm({ stockItemKey, stockItemName }: ReorderAction
                 stockItemKey={stockItemKey}
                 stockItemName={stockItemName}
                 defaultSuggestedReorderQty={defaultSuggestedReorderQty}
+                onSubmitted={onSubmitted}
             />
         </div>
     );
@@ -91,12 +86,14 @@ interface ReorderActionFormFieldsProps {
     stockItemKey: number;
     stockItemName: string;
     defaultSuggestedReorderQty: number;
+    onSubmitted?: () => void;
 }
 
 function ReorderActionFormFields({
     stockItemKey,
     stockItemName,
     defaultSuggestedReorderQty,
+    onSubmitted,
 }: ReorderActionFormFieldsProps) {
     const { session } = useAuth();
     const [suggestedReorderQty, setSuggestedReorderQty] = useState(defaultSuggestedReorderQty);
@@ -124,6 +121,7 @@ function ReorderActionFormFields({
                 createdBy: session?.user?.email ?? "unknown",
             });
             setSubmitState("success");
+            onSubmitted?.();
         } catch (err) {
             setSubmitState("error");
             setSubmitError(err instanceof Error ? err.message : String(err));
@@ -162,7 +160,7 @@ function ReorderActionFormFields({
                     onChange={(e) => setStatus(e.target.value as ReorderActionRecord["status"])}
                     className="rounded-md border border-border bg-background px-200 py-100-nudge text-300 text-foreground"
                 >
-                    {STATUSES.map((s) => (
+                    {REORDER_ACTION_STATUSES.map((s) => (
                         <option key={s} value={s}>
                             {s}
                         </option>

@@ -23,6 +23,7 @@ vi.mock("@/lib/rayfin-client", () => ({
     getRayfinClient: () => ({
         data: { ReorderAction: { create: mockCreate } },
     }),
+    REORDER_ACTION_STATUSES: ["Pending Review", "Approved", "Ordered", "Received", "Dismissed"],
 }));
 
 vi.mock("@/hooks/auth.context", () => ({
