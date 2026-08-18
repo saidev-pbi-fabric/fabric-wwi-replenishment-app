@@ -11,6 +11,7 @@ import { useThemeContext } from "@/hooks/theme.context";
 import { KpiStrip } from "@/components/overview/kpi-strip";
 import { SalesTrendChart } from "@/components/overview/sales-trend-chart";
 import { TopAtRiskList } from "@/components/overview/top-at-risk-list";
+import { ActionCenter } from "@/components/action-center/action-center";
 import { cn } from "@/lib/utils";
 
 type Page = "overview" | "action-center";
@@ -47,7 +48,7 @@ function App() {
                 {page === "overview" ? (
                     <OverviewPage onSelectItem={goToActionCenter} />
                 ) : (
-                    <ActionCenterStub selectedItemName={selectedItemName} />
+                    <ActionCenterPage initialSelectedItemName={selectedItemName} />
                 )}
             </main>
         </div>
@@ -118,15 +119,16 @@ function OverviewPage({ onSelectItem }: { onSelectItem: (stockItemName: string) 
     );
 }
 
-function ActionCenterStub({ selectedItemName }: { selectedItemName: string | null }) {
+function ActionCenterPage({ initialSelectedItemName }: { initialSelectedItemName: string | null }) {
     return (
-        <div className="flex flex-col gap-300">
-            <h1 className="font-heading text-600 font-semibold text-foreground">Action Center</h1>
-            <p className="font-base text-300 text-muted-foreground">
-                {selectedItemName
-                    ? `Selected: ${selectedItemName}. Full detail + write-back panel lands in Phase 5 (T5.1-T5.3).`
-                    : "Full master-detail Action Center lands in Phase 5 (T5.1-T5.3)."}
-            </p>
+        <div className="flex flex-col gap-500">
+            <div>
+                <h1 className="font-heading text-600 font-semibold text-foreground">Action Center</h1>
+                <p className="mt-100 font-base text-300 text-muted-foreground">
+                    Select an at-risk item to review its detail and record a reorder action.
+                </p>
+            </div>
+            <ActionCenter initialSelectedItemName={initialSelectedItemName} />
         </div>
     );
 }

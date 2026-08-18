@@ -62,3 +62,54 @@ export const TOP_AT_RISK_ITEMS_FIXTURE: QueryTable = {
         ["Foam corner protector 4-pack", "Long", 640, 0.07, 8],
     ],
 };
+
+export const RANKED_AT_RISK_LIST_FIXTURE: QueryTable = {
+    columns: [
+        { name: "Stock Item[Stock Item Key]", dataType: "Int64" },
+        { name: "Stock Item[Stock Item]", dataType: "String" },
+        { name: "Stock Item[Lead Time Priority Tier]", dataType: "String" },
+        { name: "[Suggested Reorder Qty]", dataType: "Double" },
+        { name: "[Demand Trend]", dataType: "Double" },
+        { name: "[At Risk Rank]", dataType: "Int64" },
+    ],
+    rows: [
+        [17, "Shipping carton (Brown) 413x285x187mm", "Long", 1840, 0.34, 1],
+        [58, "Bubble wrap 500mm x 10m", "Long", 1620, 0.28, 2],
+        [93, "Packing tape 48mm x 100m clear", "Medium", 1310, 0.22, 3],
+        [104, "Corrugated void fill 1m3 bag", "Medium", 1105, 0.19, 4],
+        [126, "Pallet wrap 500mm x 300m", "Short", 940, 0.15, 5],
+        [201, "Address label roll 100x150mm", "Short", 780, 0.11, 6],
+        [214, "Courier satchel 375x480mm", "Medium", 705, 0.09, 7],
+        [240, "Foam corner protector 4-pack", "Long", 640, 0.07, 8],
+    ],
+};
+
+// Keyed by Stock Item Key, matching RANKED_AT_RISK_LIST_FIXTURE's rows one-for-one so the
+// dev-preview detail panel reflects whichever row was actually clicked, instead of always
+// showing the same canned item regardless of selection (see item-detail-panel.tsx's lookup).
+export const ITEM_DETAIL_FIXTURE: QueryTable = {
+    columns: [
+        { name: "Stock Item[Stock Item Key]", dataType: "Int64" },
+        { name: "Stock Item[Stock Item]", dataType: "String" },
+        { name: "Stock Item[Brand]", dataType: "String" },
+        { name: "Stock Item[Color]", dataType: "String" },
+        { name: "Stock Item[Lead Time Days]", dataType: "Int64" },
+        { name: "Stock Item[Lead Time Priority Tier]", dataType: "String" },
+        { name: "Stock Item[Unit Price]", dataType: "Double" },
+        { name: "Stock Item[Recommended Retail Price]", dataType: "Double" },
+        { name: "[Recent Daily Sales Rate]", dataType: "Double" },
+        { name: "[Demand Trend]", dataType: "Double" },
+        { name: "[Suggested Reorder Qty]", dataType: "Double" },
+        { name: "[At Risk Rank]", dataType: "Int64" },
+    ],
+    rows: [
+        [17, "Shipping carton (Brown) 413x285x187mm", "Contoso", "Brown", 18, "Long", 4.25, 6.5, 62.4, 0.34, 1840, 1],
+        [58, "Bubble wrap 500mm x 10m", "Contoso", "Clear", 16, "Long", 3.1, 4.9, 55.2, 0.28, 1620, 2],
+        [93, "Packing tape 48mm x 100m clear", "Northwind", "Clear", 11, "Medium", 1.8, 2.9, 44.6, 0.22, 1310, 3],
+        [104, "Corrugated void fill 1m3 bag", "Northwind", "Brown", 10, "Medium", 5.4, 8.2, 37.8, 0.19, 1105, 4],
+        [126, "Pallet wrap 500mm x 300m", "Contoso", "Clear", 6, "Short", 2.1, 3.4, 20.1, 0.15, 940, 5],
+        [201, "Address label roll 100x150mm", "Fabrikam", "White", 5, "Short", 0.6, 1.1, 16.3, 0.11, 780, 6],
+        [214, "Courier satchel 375x480mm", "Fabrikam", "White", 9, "Medium", 1.2, 2.0, 14.7, 0.09, 705, 7],
+        [240, "Foam corner protector 4-pack", "Northwind", "Grey", 15, "Long", 2.7, 4.1, 12.5, 0.07, 640, 8],
+    ],
+};
