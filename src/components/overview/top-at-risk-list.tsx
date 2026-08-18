@@ -12,6 +12,7 @@ import { toDataTable } from "@/lib/to-data-table";
 import { topAtRiskItems } from "@/queries/overview/top-at-risk-items";
 import { useSemanticModelQuery } from "@/hooks/use-semantic-model-query";
 import { useThemeContext } from "@/hooks/theme.context";
+import { TOP_AT_RISK_ITEMS_FIXTURE } from "@/lib/dev-preview-fixtures";
 
 // Vega renders to SVG and can't resolve `var(--color-*)`, so the severity
 // scale is duplicated here as literal hex, matching global.css exactly.
@@ -29,8 +30,14 @@ export function TopAtRiskList({ onSelectItem }: TopAtRiskListProps) {
     const { data, isLoading, error } = useSemanticModelQuery({ connection, query });
     const theme = useCssTheme();
     const { isDark } = useThemeContext();
+    const isQueryError = Boolean(error) || data?.status === "error";
 
-    if (error || data?.status === "error") {
+    // Dev-only fallback so `npm run dev` can render the success state
+    // without a Fabric embed. `import.meta.env.DEV` is statically false in
+    // the production build, so this branch never ships.
+    const usingDevFixture = import.meta.env.DEV && !import.meta.env.VITEST && isQueryError;
+
+    if (isQueryError && !usingDevFixture) {
         const message = error?.message ?? (data?.status === "error" ? data.error.message : "Unknown error");
         return (
             <div
@@ -42,13 +49,20 @@ export function TopAtRiskList({ onSelectItem }: TopAtRiskListProps) {
         );
     }
 
-    if (isLoading || !data) {
+    if (!usingDevFixture && (isLoading || !data)) {
         return (
             <div className="h-full min-h-[320px] animate-pulse rounded-lg border border-border bg-card" />
         );
     }
 
-    if (data.table.rows.length === 0) {
+    const table = usingDevFixture
+        ? TOP_AT_RISK_ITEMS_FIXTURE
+        : data && data.status === "success"
+          ? data.table
+          : undefined;
+    if (!table) return null;
+
+    if (table.rows.length === 0) {
         return (
             <div className="flex h-full min-h-[320px] items-center justify-center rounded-lg border border-border bg-card text-300 text-muted-foreground">
                 No at-risk items right now.
@@ -78,11 +92,15 @@ export function TopAtRiskList({ onSelectItem }: TopAtRiskListProps) {
     return (
         <div className="h-full min-h-[320px] rounded-lg border border-border bg-card p-400">
             <h2 className="font-heading text-400 font-semibold text-foreground">Top At-Risk Items</h2>
+            {usingDevFixture ? (
+                <p className="text-200 text-muted-foreground">Sample data — dev preview (no Fabric embed)</p>
+            ) : null}
             <VegaVisual
                 spec={JSON.stringify(vegaLiteSpec)}
-                data={toDataTable(data.table, columnMetadata)}
+                data={toDataTable(table, columnMetadata)}
                 theme={theme}
                 configVegaLite={configVegaLite}
+                capabilities={{ disableLegendTruncation: true }}
                 onInteraction={handleInteraction}
                 style={{ height: 400 }}
             />

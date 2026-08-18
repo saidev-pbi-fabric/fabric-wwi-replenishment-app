@@ -26,6 +26,21 @@ export function AuthGate({ children }: AuthGateProps) {
         );
     }
 
+    // `import.meta.env.DEV` is statically false in the production build that
+    // ships to Fabric (`vite build`), so this can never bypass auth outside
+    // `npm run dev` — it only unblocks local layout/visual iteration without
+    // a Fabric embed. Semantic-model queries still won't resolve locally.
+    if (!isAuthenticated && import.meta.env.DEV) {
+        return (
+            <>
+                <div className="fixed bottom-200 right-200 z-50 rounded-full bg-destructive px-300 py-100 font-base text-200 text-destructive-foreground shadow">
+                    DEV PREVIEW — unauthenticated (no Fabric embed)
+                </div>
+                {children}
+            </>
+        );
+    }
+
     if (!isAuthenticated) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-background p-4">

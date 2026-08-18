@@ -10,6 +10,11 @@
       "title": "Suggested Reorder Qty",
       "scale": { "zero": true }
     },
-    "color": { "field": "LeadTimePriorityTier", "type": "nominal", "title": "Lead Time" }
+    "color": {
+      "field": "LeadTimePriorityTier",
+      "type": "nominal",
+      "title": "Lead Time",
+      "scale": { "domain": ["Short", "Medium", "Long"] }
+    }
   }
 }

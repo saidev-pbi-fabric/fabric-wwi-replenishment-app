@@ -9,6 +9,7 @@ import type { QueryTable } from "@microsoft/fabric-app-data";
 import { useSemanticModelQuery } from "@/hooks/use-semantic-model-query";
 import { kpiStrip } from "@/queries/overview/kpi-strip";
 import { cn } from "@/lib/utils";
+import { KPI_STRIP_FIXTURE } from "@/lib/dev-preview-fixtures";
 
 type Severity = "critical" | "at-risk" | "on-track" | "neutral";
 
@@ -66,8 +67,14 @@ function scalarByColumnName(table: QueryTable, name: string): unknown {
 
 export function KpiStrip() {
     const { data, isLoading, error } = useSemanticModelQuery(kpiStrip());
+    const isQueryError = Boolean(error) || data?.status === "error";
 
-    if (error || data?.status === "error") {
+    // Dev-only fallback so `npm run dev` can render the success state
+    // without a Fabric embed. `import.meta.env.DEV` is statically false in
+    // the production build, so this branch never ships.
+    const usingDevFixture = import.meta.env.DEV && !import.meta.env.VITEST && isQueryError;
+
+    if (isQueryError && !usingDevFixture) {
         const message = error?.message ?? (data?.status === "error" ? data.error.message : "Unknown error");
         return (
             <div
@@ -79,7 +86,7 @@ export function KpiStrip() {
         );
     }
 
-    if (isLoading || !data) {
+    if (!usingDevFixture && (isLoading || !data)) {
         return (
             <div className="grid grid-cols-2 gap-400 lg:grid-cols-4">
                 {TILES.map((tile) => (
@@ -96,7 +103,8 @@ export function KpiStrip() {
         );
     }
 
-    const table = data.table;
+    const table = usingDevFixture ? KPI_STRIP_FIXTURE : data && data.status === "success" ? data.table : undefined;
+    if (!table) return null;
     if (table.rows.length === 0) {
         return (
             <div className="rounded-lg border border-border bg-card px-400 py-600 text-center text-300 text-muted-foreground">
@@ -107,6 +115,11 @@ export function KpiStrip() {
 
     return (
         <div className="grid grid-cols-2 gap-400 lg:grid-cols-4">
+            {usingDevFixture ? (
+                <div className="col-span-2 -mb-200 text-200 text-muted-foreground lg:col-span-4">
+                    Sample data — dev preview (no Fabric embed)
+                </div>
+            ) : null}
             {TILES.map((tile) => {
                 const raw = scalarByColumnName(table, tile.key);
                 const severity = tile.severity(raw);

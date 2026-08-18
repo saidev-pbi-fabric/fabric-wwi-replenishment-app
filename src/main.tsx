@@ -13,12 +13,36 @@ import { ErrorFallback } from './ErrorFallback';
 import { useAppTheme } from './hooks/use-theme';
 import { ThemeContext } from './hooks/theme.context';
 import { AuthProvider } from './hooks/use-auth';
-import { bootstrapAuth } from './services/rayfin-auth.service';
+import { bootstrapAuth, type IAuthService } from './services/rayfin-auth.service';
 import { AuthGate } from './components/auth-gate.component';
 
 import "./global.css"
 
-const rayfinAuthService = bootstrapAuth();
+/**
+ * `bootstrapAuth()` throws synchronously when Rayfin/Fabric env vars aren't
+ * set (before `npx rayfin up` registers this app). In dev mode only, fall
+ * back to an unauthenticated stub instead of failing to boot at all, so
+ * layout/visual work can iterate locally without a Fabric embed —
+ * `AuthGate`'s own dev-only bypass then renders `<App>` with a "DEV
+ * PREVIEW" badge. `import.meta.env.DEV` is statically false in the
+ * production build, so this never runs there.
+ */
+function createAuthService(): IAuthService {
+    if (import.meta.env.DEV) {
+        try {
+            return bootstrapAuth();
+        } catch (err) {
+            console.warn(
+                "[dev] Rayfin not configured (run `npx rayfin up` for real auth) — using unauthenticated dev preview.",
+                err,
+            );
+            return { initEmbeddedAuth: () => Promise.resolve(null) };
+        }
+    }
+    return bootstrapAuth();
+}
+
+const rayfinAuthService = createAuthService();
 
 function Root() {
     const { isDark, toggleTheme } = useAppTheme();
