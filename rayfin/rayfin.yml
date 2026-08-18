@@ -8,8 +8,10 @@ services:
       enabled: true
     allowedRedirectUris:
       - http://localhost:5173
+      - https://clear-flora-56b47b3cae-westus.webapp.fabricapps.net
   data:
-    enabled: false
+    enabled: true
+    dialect: mssql
   storage:
     enabled: false
   staticHosting:
@@ -17,3 +19,5 @@ services:
     folder: dist
     buildCommand: npm run build:fabric
     indexDocument: index.html
+  functions:
+    enabled: false
