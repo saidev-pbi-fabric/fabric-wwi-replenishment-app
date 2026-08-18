@@ -6,10 +6,11 @@
 //-----------------------------------------------------------------------
 
 import { useState } from "react";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Loader2 } from "lucide-react";
 import { VegaVisual, useCssTheme } from "@microsoft/fabric-visuals";
 import type { VegaLiteConfig } from "@microsoft/fabric-visuals";
 import type { InteractionEventCallback } from "@microsoft/fabric-visuals-core";
+import { cn } from "@/lib/utils";
 import { toDataTable } from "@/lib/to-data-table";
 import { topAtRiskItems } from "@/queries/overview/top-at-risk-items";
 import { useQueryPanel } from "@/hooks/use-query-panel";
@@ -72,12 +73,17 @@ export function TopAtRiskList({ onSelectItem }: TopAtRiskListProps) {
                   return tierFilter === "All" || row[tierIdx] === tierFilter;
               }),
           }
-        : panel.status === "ready"
+        : panel.status === "ready" || panel.status === "refreshing"
           ? panel.table
           : panel.status === "empty"
             ? { columns: [], rows: [] }
             : undefined;
     if (!displayTable) return null;
+
+    // A filter change re-queries; keep the previous chart visible (dimmed)
+    // instead of swapping to a blank skeleton on every change — the abrupt
+    // swap was flagged directly by the user ("the transition ... goes blank").
+    const isRefreshing = !usingDevFixture && panel.status === "refreshing";
 
     const configVegaLite: VegaLiteConfig = {
         range: { category: [...SEVERITY_RANGE[isDark ? "dark" : "light"]] },
@@ -138,27 +144,35 @@ export function TopAtRiskList({ onSelectItem }: TopAtRiskListProps) {
                             ))}
                         </select>
                     </label>
+                    {isRefreshing ? (
+                        <Loader2
+                            className="icon-size-300 animate-spin text-muted-foreground"
+                            aria-label="Updating"
+                        />
+                    ) : null}
                 </div>
             </div>
             {usingDevFixture ? (
                 <p className="text-200 text-muted-foreground">Sample data — dev preview (no Fabric embed)</p>
             ) : null}
-            {displayTable.rows.length === 0 ? (
-                <div className="flex h-[400px] items-center justify-center text-300 text-muted-foreground">
-                    {tierFilter === "All"
-                        ? "No at-risk items right now."
-                        : `No at-risk items match "${tierFilterLabel(tierFilter)}" lead time.`}
-                </div>
-            ) : (
-                <VegaVisual
-                    spec={JSON.stringify(vegaLiteSpec)}
-                    data={toDataTable(displayTable, columnMetadata)}
-                    theme={theme}
-                    configVegaLite={configVegaLite}
-                    onInteraction={handleInteraction}
-                    style={{ height: 400 }}
-                />
-            )}
+            <div className={cn("transition-opacity duration-200", isRefreshing ? "opacity-50" : "opacity-100")}>
+                {displayTable.rows.length === 0 ? (
+                    <div className="flex h-[400px] items-center justify-center text-300 text-muted-foreground">
+                        {tierFilter === "All"
+                            ? "No at-risk items right now."
+                            : `No at-risk items match "${tierFilterLabel(tierFilter)}" lead time.`}
+                    </div>
+                ) : (
+                    <VegaVisual
+                        spec={JSON.stringify(vegaLiteSpec)}
+                        data={toDataTable(displayTable, columnMetadata)}
+                        theme={theme}
+                        configVegaLite={configVegaLite}
+                        onInteraction={handleInteraction}
+                        style={{ height: 400 }}
+                    />
+                )}
+            </div>
         </div>
     );
 }

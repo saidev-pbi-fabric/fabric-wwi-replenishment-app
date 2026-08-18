@@ -6,7 +6,7 @@
 //-----------------------------------------------------------------------
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { ItemDetailPanel } from "@/components/action-center/item-detail-panel";
 
 const mockQuery = vi.fn();
@@ -77,6 +77,28 @@ describe("ItemDetailPanel", () => {
         rerender(<ItemDetailPanel stockItemKey={126} />);
 
         expect(mockQuery).toHaveBeenCalledTimes(2);
+    });
+
+    // Regression: switching the selected item used to swap the whole panel
+    // for a blank skeleton while the new query was in flight (user: "the
+    // transition ... goes blank"). It should keep the previous item's detail
+    // visible (dimmed, with an "Updating" spinner) instead of going blank.
+    it("keeps showing the previous item's detail (dimmed) instead of a blank skeleton while re-querying", async () => {
+        let resolveSecond: (value: unknown) => void = () => {};
+        mockQuery
+            .mockResolvedValueOnce({ status: "success", table: TABLE, fromCache: false })
+            .mockImplementationOnce(() => new Promise((resolve) => (resolveSecond = resolve)));
+        const { rerender } = render(<ItemDetailPanel stockItemKey={17} />);
+
+        await screen.findByText("Shipping carton (Brown)");
+        rerender(<ItemDetailPanel stockItemKey={126} />);
+
+        expect(await screen.findByLabelText("Updating")).toBeInTheDocument();
+        expect(screen.getByText("Shipping carton (Brown)")).toBeInTheDocument();
+        expect(screen.queryByTestId("item-detail-loading")).not.toBeInTheDocument();
+
+        resolveSecond({ status: "success", table: TABLE, fromCache: false });
+        await waitFor(() => expect(screen.queryByLabelText("Updating")).not.toBeInTheDocument());
     });
 
     it("omits the brand/color line when the source data has no real brand or color", async () => {

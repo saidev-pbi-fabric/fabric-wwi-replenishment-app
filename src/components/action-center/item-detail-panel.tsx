@@ -5,6 +5,7 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
+import { Loader2 } from "lucide-react";
 import { useQueryPanel } from "@/hooks/use-query-panel";
 import { itemDetail } from "@/queries/action-center/item-detail";
 import { cn } from "@/lib/utils";
@@ -72,10 +73,16 @@ export function ItemDetailPanel({ stockItemKey }: ItemDetailPanelProps) {
                       ITEM_DETAIL_FIXTURE.rows[0],
               ],
           }
-        : panel.status === "ready"
+        : panel.status === "ready" || panel.status === "refreshing"
           ? panel.table
           : undefined;
     if (!table) return null;
+
+    // Switching the selected item re-queries; keep the previous item's
+    // detail visible (dimmed) instead of swapping to a blank skeleton on
+    // every selection — the abrupt swap was flagged directly by the user
+    // ("the transition ... goes blank").
+    const isRefreshing = !usingDevFixture && panel.status === "refreshing";
 
     const name = String(scalarByColumnName(table, "Stock Item[Stock Item]") ?? "—");
     const tier = String(scalarByColumnName(table, "Stock Item[Lead Time Priority Tier]") ?? "—");
@@ -90,7 +97,12 @@ export function ItemDetailPanel({ stockItemKey }: ItemDetailPanelProps) {
     const atRiskRank = String(scalarByColumnName(table, "[At Risk Rank]") ?? "—");
 
     return (
-        <div className="flex h-full min-h-[480px] flex-col rounded-lg border border-border bg-card shadow-sm">
+        <div
+            className={cn(
+                "flex h-full min-h-[480px] flex-col rounded-lg border border-border bg-card shadow-sm transition-opacity duration-200",
+                isRefreshing ? "opacity-50" : "opacity-100",
+            )}
+        >
             <div
                 className={cn(
                     "flex items-start justify-between gap-300 border-b border-l-4 border-border p-400",
@@ -108,7 +120,12 @@ export function ItemDetailPanel({ stockItemKey }: ItemDetailPanelProps) {
                         Rank #{atRiskRank}
                     </p>
                 </div>
-                {usingDevFixture ? (
+                {isRefreshing ? (
+                    <Loader2
+                        className="icon-size-300 shrink-0 animate-spin text-muted-foreground"
+                        aria-label="Updating"
+                    />
+                ) : usingDevFixture ? (
                     <span className="shrink-0 font-base text-200 text-muted-foreground">
                         Sample data — dev preview
                     </span>

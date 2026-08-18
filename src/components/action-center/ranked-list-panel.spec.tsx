@@ -6,7 +6,7 @@
 //-----------------------------------------------------------------------
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { RankedListPanel } from "@/components/action-center/ranked-list-panel";
 
 const mockQuery = vi.fn();
@@ -89,6 +89,32 @@ describe("RankedListPanel", () => {
         expect(await screen.findByText("Pallet wrap 500mm x 300m")).toBeInTheDocument();
         expect(screen.queryByText("Shipping carton (Brown)")).not.toBeInTheDocument();
         expect(mockQuery).toHaveBeenLastCalledWith(expect.stringContaining('"Short Lead Time"'), expect.anything());
+    });
+
+    // Regression: selecting a new tier used to swap the whole list for a
+    // blank skeleton while the new query was in flight (user: "the
+    // transition ... goes blank"). It should keep the previous rows visible
+    // (dimmed, with an "Updating" spinner) instead of going blank.
+    it("keeps showing the previous rows (dimmed) instead of a blank skeleton while a new tier query is in flight", async () => {
+        let resolveSecond: (value: unknown) => void = () => {};
+        mockQuery
+            .mockResolvedValueOnce({ status: "success", table: TABLE, fromCache: false })
+            .mockImplementationOnce(() => new Promise((resolve) => (resolveSecond = resolve)));
+        render(<RankedListPanel selectedStockItemKey={null} onSelectItem={vi.fn()} />);
+
+        await screen.findByText("Shipping carton (Brown)");
+        fireEvent.change(screen.getByLabelText("Filter by lead time"), { target: { value: "Short Lead Time" } });
+
+        expect(await screen.findByLabelText("Updating")).toBeInTheDocument();
+        expect(screen.getByText("Shipping carton (Brown)")).toBeInTheDocument();
+        expect(screen.queryByTestId("ranked-list-loading")).not.toBeInTheDocument();
+
+        resolveSecond({
+            status: "success",
+            table: { columns: TABLE.columns, rows: [TABLE.rows[1]] },
+            fromCache: false,
+        });
+        await waitFor(() => expect(screen.queryByLabelText("Updating")).not.toBeInTheDocument());
     });
 
     it("shows a filter-aware empty message when a tier genuinely has no matching rows", async () => {

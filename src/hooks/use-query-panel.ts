@@ -10,6 +10,7 @@ import { useSemanticModelQuery } from "@/hooks/use-semantic-model-query";
 
 export type QueryPanelState =
     | { status: "loading" }
+    | { status: "refreshing"; table: QueryTable }
     | { status: "error"; message: string }
     | { status: "empty" }
     | { status: "ready"; table: QueryTable };
@@ -40,11 +41,18 @@ export function useQueryPanel(options: { connection: string; query: string }): Q
         return { status: "error", message };
     }
 
-    if (isLoading || !data) {
+    if (isLoading) {
+        // A param-driven re-query (filter/selection change) leaves the
+        // previous successful result sitting in state while the new fetch is
+        // in flight — surface it as "refreshing" so a consumer can keep
+        // showing it instead of swapping to a blank skeleton on every change.
+        if (data?.status === "success" && data.table.rows.length > 0) {
+            return { status: "refreshing", table: data.table };
+        }
         return { status: "loading" };
     }
 
-    if (data.status !== "success") {
+    if (!data || data.status !== "success") {
         return { status: "loading" };
     }
 

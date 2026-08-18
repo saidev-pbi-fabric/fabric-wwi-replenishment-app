@@ -129,6 +129,31 @@ describe("TopAtRiskList", () => {
         expect(mockQuery).toHaveBeenLastCalledWith(expect.stringContaining('"Short Lead Time"'), expect.anything());
     });
 
+    // Regression: selecting a new tier used to swap the whole chart for a
+    // blank skeleton while the new query was in flight (user: "the
+    // transition ... goes blank"). It should keep the previous chart visible
+    // (dimmed, with an "Updating" spinner) instead of going blank.
+    it("keeps showing the previous chart (dimmed) instead of a blank skeleton while a new tier query is in flight", async () => {
+        let resolveSecond: (value: unknown) => void = () => {};
+        mockQuery
+            .mockResolvedValueOnce(successResult)
+            .mockImplementationOnce(() => new Promise((resolve) => (resolveSecond = resolve)));
+        render(<TopAtRiskList />);
+
+        await waitFor(() => expect(screen.getByTestId("fake-bar")).toHaveAttribute("data-row-count", "2"));
+        fireEvent.change(screen.getByLabelText("Filter by lead time"), { target: { value: "Short Lead Time" } });
+
+        expect(await screen.findByLabelText("Updating")).toBeInTheDocument();
+        expect(screen.getByTestId("fake-bar")).toHaveAttribute("data-row-count", "2");
+
+        resolveSecond({
+            status: "success",
+            table: { columns: successResult.table.columns, rows: [successResult.table.rows[0]] },
+            fromCache: false,
+        });
+        await waitFor(() => expect(screen.queryByLabelText("Updating")).not.toBeInTheDocument());
+    });
+
     it("shows a filter-aware empty message (not a broken chart) when a tier has no matching rows", async () => {
         mockQuery.mockImplementation((query: string) =>
             Promise.resolve(
