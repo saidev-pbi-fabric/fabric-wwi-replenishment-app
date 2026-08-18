@@ -5,15 +5,27 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
+import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { VegaVisual, useCssTheme } from "@microsoft/fabric-visuals";
 import type { VegaLiteConfig } from "@microsoft/fabric-visuals";
 import type { InteractionEventCallback } from "@microsoft/fabric-visuals-core";
+import type { QueryTable } from "@microsoft/fabric-app-data";
 import { toDataTable } from "@/lib/to-data-table";
 import { topAtRiskItems } from "@/queries/overview/top-at-risk-items";
 import { useQueryPanel } from "@/hooks/use-query-panel";
 import { useThemeContext } from "@/hooks/theme.context";
 import { TOP_AT_RISK_ITEMS_FIXTURE } from "@/lib/dev-preview-fixtures";
+import { TIER_FILTERS, tierFilterLabel } from "@/lib/severity";
+
+const DISPLAY_COUNT = 10;
+
+function filterAndSlice(table: QueryTable, tierFilter: (typeof TIER_FILTERS)[number]): QueryTable {
+    const tierIdx = table.columns.findIndex((col) => col.name === "Stock Item[Lead Time Priority Tier]");
+    const rows =
+        tierFilter === "All" ? table.rows : table.rows.filter((row) => row[tierIdx] === tierFilter);
+    return { columns: table.columns, rows: rows.slice(0, DISPLAY_COUNT) };
+}
 
 // Vega renders to SVG and can't resolve `var(--color-*)`, so the severity
 // scale is duplicated here as literal hex, matching global.css exactly.
@@ -36,6 +48,7 @@ export function TopAtRiskList({ onSelectItem }: TopAtRiskListProps) {
     const panel = useQueryPanel({ connection, query });
     const theme = useCssTheme();
     const { isDark } = useThemeContext();
+    const [tierFilter, setTierFilter] = useState<(typeof TIER_FILTERS)[number]>("All");
 
     // Dev-only fallback so `npm run dev` can render the ready state without
     // a Fabric embed. See use-query-panel.ts for why this stays a literal
@@ -74,6 +87,8 @@ export function TopAtRiskList({ onSelectItem }: TopAtRiskListProps) {
           : undefined;
     if (!table) return null;
 
+    const displayTable = filterAndSlice(table, tierFilter);
+
     const configVegaLite: VegaLiteConfig = {
         range: { category: [...SEVERITY_RANGE[isDark ? "dark" : "light"]] },
     };
@@ -102,28 +117,45 @@ export function TopAtRiskList({ onSelectItem }: TopAtRiskListProps) {
                     <AlertTriangle className="icon-size-300 text-muted-foreground" />
                     Top At-Risk Items
                 </h2>
-                {/* Custom legend, not Vega's built-in one: fabric-visuals' disableLegendTruncation
-                    capability didn't reliably show all 3 swatches at typical card widths, so this
-                    renders every label explicitly instead of fighting the auto-layout. */}
-                <ul className="flex items-center gap-300 font-base text-200 text-muted-foreground">
-                    {(["Short", "Medium", "Long"] as const).map((label, i) => (
-                        <li key={label} className="flex items-center gap-100">
-                            <span
-                                className="icon-size-100 inline-block rounded-full"
-                                style={{ backgroundColor: legendColors[i] }}
-                                aria-hidden="true"
-                            />
-                            {label}
-                        </li>
-                    ))}
-                </ul>
+                <div className="flex items-center gap-400">
+                    {/* Custom legend, not Vega's built-in one: fabric-visuals' disableLegendTruncation
+                        capability didn't reliably show all 3 swatches at typical card widths, so this
+                        renders every label explicitly instead of fighting the auto-layout. */}
+                    <ul className="flex items-center gap-300 font-base text-200 text-muted-foreground">
+                        {(["Short", "Medium", "Long"] as const).map((label, i) => (
+                            <li key={label} className="flex items-center gap-100">
+                                <span
+                                    className="icon-size-100 inline-block rounded-full"
+                                    style={{ backgroundColor: legendColors[i] }}
+                                    aria-hidden="true"
+                                />
+                                {label}
+                            </li>
+                        ))}
+                    </ul>
+                    <label className="flex items-center gap-200 font-base text-200 text-muted-foreground">
+                        Filter by lead time
+                        <select
+                            aria-label="Filter by lead time"
+                            value={tierFilter}
+                            onChange={(e) => setTierFilter(e.target.value as (typeof TIER_FILTERS)[number])}
+                            className="rounded-md border border-border bg-background px-200 py-100-nudge text-200 text-foreground"
+                        >
+                            {TIER_FILTERS.map((tier) => (
+                                <option key={tier} value={tier}>
+                                    {tierFilterLabel(tier)}
+                                </option>
+                            ))}
+                        </select>
+                    </label>
+                </div>
             </div>
             {usingDevFixture ? (
                 <p className="text-200 text-muted-foreground">Sample data — dev preview (no Fabric embed)</p>
             ) : null}
             <VegaVisual
                 spec={JSON.stringify(vegaLiteSpec)}
-                data={toDataTable(table, columnMetadata)}
+                data={toDataTable(displayTable, columnMetadata)}
                 theme={theme}
                 configVegaLite={configVegaLite}
                 onInteraction={handleInteraction}

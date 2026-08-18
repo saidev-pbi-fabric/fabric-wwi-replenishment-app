@@ -1,6 +1,6 @@
 EVALUATE
 TOPN(
-    10,
+    25,
     SUMMARIZECOLUMNS(
         'Stock Item'[Stock Item],
         'Stock Item'[Lead Time Priority Tier],

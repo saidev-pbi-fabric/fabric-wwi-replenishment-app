@@ -15,8 +15,11 @@ describe("topAtRiskItems", () => {
         expect(result.connection).toBe("wwiRetail");
     });
 
-    it("ranks the top 10 items by At Risk Rank", () => {
-        expect(result.query).toContain("TOPN(\n    10,");
+    it("ranks the top 25 items by At Risk Rank (superset, filtered/sliced client-side)", () => {
+        // Fetches a superset so the page's lead-time filter has rows to filter
+        // from; the chart itself still only displays the top 10 after filtering
+        // — see TopAtRiskList's client-side slice.
+        expect(result.query).toContain("TOPN(\n    25,");
         expect(result.query).toContain("[At Risk Rank]");
     });
 
@@ -28,6 +31,10 @@ describe("topAtRiskItems", () => {
             "[Demand Trend]",
             "[At Risk Rank]",
         ]);
+    });
+
+    it("caps y-axis label width so long WWI item names truncate with an ellipsis instead of crowding the chart", () => {
+        expect(result.vegaLiteSpec.encoding.y.axis.labelLimit).toBe(160);
     });
 
     it("colors the ranked bar chart by Lead Time Priority Tier", () => {

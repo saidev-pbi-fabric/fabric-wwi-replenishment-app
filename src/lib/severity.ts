@@ -19,3 +19,15 @@ export const LEAD_TIME_RAIL_CLASS: Record<string, string> = {
     "Medium Lead Time": "border-l-at-risk",
     "Short Lead Time": "border-l-on-track",
 };
+
+/**
+ * Shared "Filter by lead time" dropdown values, reused by both Page 1's chart
+ * and Page 2's ranked list so the two pages offer the same filter axis. Values
+ * are the real Stock Item[Lead Time Priority Tier] strings, verified live
+ * against the semantic model.
+ */
+export const TIER_FILTERS = ["All", "Short Lead Time", "Medium Lead Time", "Long Lead Time"] as const;
+
+export function tierFilterLabel(tier: (typeof TIER_FILTERS)[number]): string {
+    return tier === "All" ? "All" : tier.replace(" Lead Time", "");
+}

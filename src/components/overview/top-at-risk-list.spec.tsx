@@ -20,10 +20,17 @@ vi.mock("@/lib/fabric-client", () => ({
 }));
 
 vi.mock("@microsoft/fabric-visuals", () => ({
-    VegaVisual: ({ onInteraction }: { onInteraction?: InteractionEventCallback }) => (
+    VegaVisual: ({
+        data,
+        onInteraction,
+    }: {
+        data?: { rows: unknown[][] };
+        onInteraction?: InteractionEventCallback;
+    }) => (
         <button
             type="button"
             data-testid="fake-bar"
+            data-row-count={data?.rows.length}
             onClick={() =>
                 onInteraction?.([
                     {
@@ -55,7 +62,10 @@ const successResult = {
             { name: "[Demand Trend]" },
             { name: "[At Risk Rank]" },
         ],
-        rows: [["Widget A", "Short Lead Time", 42, 0.1, 1]],
+        rows: [
+            ["Widget A", "Short Lead Time", 42, 0.1, 1],
+            ["Widget B", "Long Lead Time", 30, 0.2, 2],
+        ],
     },
     fromCache: false,
 };
@@ -93,6 +103,17 @@ describe("TopAtRiskList", () => {
         render(<TopAtRiskList />);
 
         await waitFor(() => expect(screen.getByText(/no at-risk items/i)).toBeInTheDocument());
+    });
+
+    it("filters rows client-side by lead time tier", async () => {
+        mockQuery.mockResolvedValue(successResult);
+        render(<TopAtRiskList />);
+
+        await waitFor(() => expect(screen.getByTestId("fake-bar")).toHaveAttribute("data-row-count", "2"));
+
+        fireEvent.change(screen.getByLabelText("Filter by lead time"), { target: { value: "Short Lead Time" } });
+
+        expect(screen.getByTestId("fake-bar")).toHaveAttribute("data-row-count", "1");
     });
 
     it("shows a destructive banner on query error", async () => {

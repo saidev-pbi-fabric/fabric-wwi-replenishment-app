@@ -15,8 +15,9 @@ describe("rankedAtRiskList", () => {
         expect(result.connection).toBe("wwiRetail");
     });
 
-    it("returns every stock item ordered by At Risk Rank, unfiltered", () => {
-        expect(result.query).not.toContain("TOPN");
+    it("caps to the top 25 at-risk stock items ordered by At Risk Rank", () => {
+        expect(result.query).toContain("TOPN(\n    25,");
+        expect(result.query).toContain("[At Risk Rank], ASC");
         expect(result.query).toContain("ORDER BY [At Risk Rank] ASC");
     });
 

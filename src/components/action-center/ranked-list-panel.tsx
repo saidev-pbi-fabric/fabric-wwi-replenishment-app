@@ -6,21 +6,13 @@
 //-----------------------------------------------------------------------
 
 import { useEffect, useRef, useState } from "react";
+import { AlertTriangle } from "lucide-react";
 import type { QueryTable } from "@microsoft/fabric-app-data";
 import { useQueryPanel } from "@/hooks/use-query-panel";
 import { rankedAtRiskList } from "@/queries/action-center/ranked-at-risk-list";
 import { cn } from "@/lib/utils";
 import { RANKED_AT_RISK_LIST_FIXTURE } from "@/lib/dev-preview-fixtures";
-import { LEAD_TIME_RAIL_CLASS } from "@/lib/severity";
-
-// Filter values are the real Stock Item[Lead Time Priority Tier] strings
-// (verified live against the semantic model) — displayed with the
-// " Lead Time" suffix trimmed for a compact dropdown, see tierFilterLabel.
-const TIER_FILTERS = ["All", "Short Lead Time", "Medium Lead Time", "Long Lead Time"] as const;
-
-function tierFilterLabel(tier: (typeof TIER_FILTERS)[number]): string {
-    return tier === "All" ? "All" : tier.replace(" Lead Time", "");
-}
+import { LEAD_TIME_RAIL_CLASS, TIER_FILTERS, tierFilterLabel } from "@/lib/severity";
 
 interface Row {
     key: number;
@@ -116,9 +108,12 @@ export function RankedListPanel({
     const rows = rowsFromTable(loadedTable).filter((row) => tierFilter === "All" || row.tier === tierFilter);
 
     return (
-        <div className="flex h-full min-h-[480px] flex-col rounded-lg border border-border bg-card shadow-sm">
+        <div className="flex max-h-[640px] min-h-[480px] flex-col rounded-lg border border-border bg-card shadow-sm">
             <div className="flex items-center justify-between gap-300 border-b border-border p-400">
-                <h2 className="font-heading text-400 font-semibold text-foreground">At-Risk Items</h2>
+                <h2 className="flex items-center gap-200 font-heading text-400 font-semibold text-foreground">
+                    <AlertTriangle className="icon-size-300 text-muted-foreground" />
+                    At-Risk Items
+                </h2>
                 <label className="flex items-center gap-200 font-base text-200 text-muted-foreground">
                     Filter by lead time
                     <select

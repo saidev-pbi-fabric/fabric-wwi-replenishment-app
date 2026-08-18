@@ -87,4 +87,13 @@ describe("RankedListPanel", () => {
 
         expect(await screen.findByRole("alert")).toHaveTextContent("401 Unauthorized");
     });
+
+    it("bounds the panel height so a long list scrolls internally instead of growing the page", async () => {
+        mockQuery.mockResolvedValue({ status: "success", table: TABLE, fromCache: false });
+        const { container } = render(<RankedListPanel selectedStockItemKey={null} onSelectItem={vi.fn()} />);
+
+        await screen.findByText("Shipping carton (Brown)");
+
+        expect(container.firstElementChild?.className).toMatch(/max-h-/);
+    });
 });

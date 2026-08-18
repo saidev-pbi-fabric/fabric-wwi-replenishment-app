@@ -78,4 +78,17 @@ describe("ItemDetailPanel", () => {
 
         expect(mockQuery).toHaveBeenCalledTimes(2);
     });
+
+    it("omits the brand/color line when the source data has no real brand or color", async () => {
+        const tableWithoutBrandColor = {
+            columns: TABLE.columns,
+            rows: [[17, "Shipping carton (Brown)", "N/A", "N/A", 18, "Long Lead Time", 4.25, 6.5, 62.4, 0.34, 1840, 1]],
+        };
+        mockQuery.mockResolvedValue({ status: "success", table: tableWithoutBrandColor, fromCache: false });
+        render(<ItemDetailPanel stockItemKey={17} />);
+
+        await screen.findByText("Shipping carton (Brown)");
+
+        expect(screen.queryByText("N/A", { exact: false })).not.toBeInTheDocument();
+    });
 });

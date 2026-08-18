@@ -6,6 +6,7 @@
 //-----------------------------------------------------------------------
 
 import { useState } from "react";
+import { PackagePlus } from "lucide-react";
 import { useQueryPanel } from "@/hooks/use-query-panel";
 import { itemDetail } from "@/queries/action-center/item-detail";
 import { useAuth } from "@/hooks/auth.context";
@@ -130,7 +131,10 @@ function ReorderActionFormFields({
 
     return (
         <form onSubmit={handleSubmit} className="flex flex-col gap-300 rounded-lg border border-border bg-card p-400 shadow-sm">
-            <h3 className="font-heading text-400 font-semibold text-foreground">Record a Reorder Action</h3>
+            <h3 className="flex items-center gap-200 font-heading text-400 font-semibold text-foreground">
+                <PackagePlus className="icon-size-300 text-muted-foreground" />
+                Record a Reorder Action
+            </h3>
 
             <div className="grid grid-cols-2 gap-300">
                 <label className="flex flex-col gap-100 font-base text-200 text-muted-foreground">

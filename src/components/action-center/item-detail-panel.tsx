@@ -100,7 +100,12 @@ export function ItemDetailPanel({ stockItemKey }: ItemDetailPanelProps) {
                 <div>
                     <h2 className="font-heading text-400 font-semibold text-foreground">{name}</h2>
                     <p className="mt-100 font-base text-200 text-muted-foreground">
-                        <span>{brand}</span> · <span>{color}</span> · Rank #{atRiskRank}
+                        {brand !== "N/A" || color !== "N/A" ? (
+                            <>
+                                <span>{brand}</span> · <span>{color}</span> ·{" "}
+                            </>
+                        ) : null}
+                        Rank #{atRiskRank}
                     </p>
                 </div>
                 {usingDevFixture ? (

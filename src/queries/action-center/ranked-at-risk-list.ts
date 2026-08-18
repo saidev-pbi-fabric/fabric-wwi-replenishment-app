@@ -16,9 +16,11 @@ const columnMetadata: ColumnMetadataMap = {
 };
 
 /**
- * Full ranked at-risk list (all stock items, one row each). Severity/lead-time filtering
- * happens client-side against LeadTimePriorityTier — no supplier dimension exists in this
- * dataset (see docs/wwi-schema-reference.md), so that's the filter axis instead.
+ * Top 25 ranked at-risk stock items (capped server-side, same TOPN pattern as Page 1's
+ * top-at-risk-items chart — an uncapped list here pulled every stock item in the model,
+ * including zero-suggested-reorder noise rows). Severity/lead-time filtering happens
+ * client-side against LeadTimePriorityTier — no supplier dimension exists in this dataset
+ * (see docs/wwi-schema-reference.md), so that's the filter axis instead.
  */
 export function rankedAtRiskList() {
   return { connection, query, columnMetadata };
