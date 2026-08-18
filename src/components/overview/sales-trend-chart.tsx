@@ -51,7 +51,9 @@ export function SalesTrendChart() {
 
     return (
         <div className="h-full min-h-[320px] rounded-lg border border-border bg-card p-400">
-            <h2 className="font-heading text-400 font-semibold text-foreground">Daily Sales Trend</h2>
+            <h2 className="font-heading text-400 font-semibold text-foreground">
+                Daily Sales Trend — Top At-Risk Items
+            </h2>
             {usingDevFixture ? (
                 <p className="text-200 text-muted-foreground">Sample data — dev preview (no Fabric embed)</p>
             ) : null}

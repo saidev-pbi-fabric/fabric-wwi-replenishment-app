@@ -1,6 +1,7 @@
 EVALUATE
 SUMMARIZECOLUMNS(
     'Date'[Date],
+    FILTER(ALL('Stock Item'), [At Risk Rank] <= 20),
     "Total Quantity", CALCULATE(SUM(Sale[Total Quantity]))
 )
 ORDER BY 'Date'[Date] ASC

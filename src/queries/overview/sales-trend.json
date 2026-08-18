@@ -1,14 +1,14 @@
 {
   "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-  "description": "Daily total units sold, trailing over the dataset's covered date range. Y-axis fixed at zero and no interpolation smoothing, per docs/design-and-dax-references.md line-chart guidance.",
+  "description": "Daily units sold for the top 20 at-risk items (At Risk Rank <= 20), trailing over the dataset's covered date range. Deliberately NOT zero-based: this dataset's daily totals vary only ~9% day to day even scoped to at-risk items, so a zero-based axis (the general default per docs/design-and-dax-references.md) renders as a flat band and hides the real signal. This is a 'zoomed detail trend' read, not a magnitude comparison — the same rationale as a sparkline. No interpolation smoothing.",
   "mark": { "type": "line", "point": false, "interpolate": "linear" },
   "encoding": {
     "x": { "field": "Date", "type": "temporal", "title": "Date" },
     "y": {
       "field": "TotalQuantity",
       "type": "quantitative",
-      "title": "Units Sold",
-      "scale": { "zero": true }
+      "title": "Units Sold (Top 20 At-Risk Items)",
+      "scale": { "zero": false }
     }
   }
 }

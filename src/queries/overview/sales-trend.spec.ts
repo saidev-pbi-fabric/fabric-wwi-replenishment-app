@@ -15,9 +15,10 @@ describe("salesTrend", () => {
         expect(result.connection).toBe("wwiRetail");
     });
 
-    it("groups by Date and sums Total Quantity", () => {
+    it("groups by Date and sums Total Quantity, scoped to the top 20 at-risk items", () => {
         expect(result.query).toContain("'Date'[Date]");
         expect(result.query).toContain("SUM(Sale[Total Quantity])");
+        expect(result.query).toContain("[At Risk Rank] <= 20");
     });
 
     it("maps Date and Total Quantity columns", () => {
@@ -28,8 +29,11 @@ describe("salesTrend", () => {
         });
     });
 
-    it("renders a zero-based, unsmoothed line chart per the line-chart guidance", () => {
+    it("renders an unsmoothed line chart, deliberately not zero-based", () => {
+        // Regression: zero-based (the general default per line-chart guidance) rendered as a
+        // flat band — this dataset's daily totals vary only ~9% day to day even scoped to
+        // at-risk items, so zero-based hides the real signal. Verified live against the model.
         expect(result.vegaLiteSpec.mark).toEqual({ type: "line", point: false, interpolate: "linear" });
-        expect(result.vegaLiteSpec.encoding.y.scale).toEqual({ zero: true });
+        expect(result.vegaLiteSpec.encoding.y.scale).toEqual({ zero: false });
     });
 });

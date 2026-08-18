@@ -26,20 +26,23 @@ export const KPI_STRIP_FIXTURE: QueryTable = {
     rows: [[672, 12.3, 20, 15]],
 };
 
+// Values in the real ~2.0M-2.3M range for the top-20-at-risk-items scope
+// (checked live against the model — see sales-trend.dax), not the earlier
+// unrealistic ~46K-63K placeholder.
 export const SALES_TREND_FIXTURE: QueryTable = {
     columns: [
         { name: "Date[Date]", dataType: "DateTime" },
         { name: "[Total Quantity]", dataType: "Int64" },
     ],
     rows: [
-        ["2000-11-01", 48210],
-        ["2000-11-05", 51330],
-        ["2000-11-09", 46980],
-        ["2000-11-13", 55120],
-        ["2000-11-17", 52870],
-        ["2000-11-21", 61040],
-        ["2000-11-25", 58390],
-        ["2000-11-30", 63510],
+        ["2000-11-01", 2160152],
+        ["2000-11-05", 2218360],
+        ["2000-11-09", 2169200],
+        ["2000-11-13", 2177672],
+        ["2000-11-17", 2161496],
+        ["2000-11-21", 2117576],
+        ["2000-11-25", 2106672],
+        ["2000-11-30", 2191560],
     ],
 };
 
