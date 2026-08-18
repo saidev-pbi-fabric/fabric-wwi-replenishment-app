@@ -33,4 +33,15 @@ describe("topAtRiskItems", () => {
     it("colors the ranked bar chart by Lead Time Priority Tier", () => {
         expect(result.vegaLiteSpec.encoding.color.field).toBe("LeadTimePriorityTier");
     });
+
+    it("pins the color domain to Short/Medium/Long, not Vega-Lite's alphabetical default", () => {
+        // Regression: without an explicit domain, Vega-Lite alphabetizes nominal
+        // domains (Long, Medium, Short), which inverted the severity color mapping —
+        // "Long" (highest risk) rendered green instead of red. See top-at-risk-list.tsx.
+        expect(result.vegaLiteSpec.encoding.color.scale.domain).toEqual([
+            "Short",
+            "Medium",
+            "Long",
+        ]);
+    });
 });

@@ -6,7 +6,7 @@
 //-----------------------------------------------------------------------
 
 import type { QueryTable } from "@microsoft/fabric-app-data";
-import { useSemanticModelQuery } from "@/hooks/use-semantic-model-query";
+import { useQueryPanel } from "@/hooks/use-query-panel";
 import { kpiStrip } from "@/queries/overview/kpi-strip";
 import { cn } from "@/lib/utils";
 import { KPI_STRIP_FIXTURE } from "@/lib/dev-preview-fixtures";
@@ -66,27 +66,27 @@ function scalarByColumnName(table: QueryTable, name: string): unknown {
 }
 
 export function KpiStrip() {
-    const { data, isLoading, error } = useSemanticModelQuery(kpiStrip());
-    const isQueryError = Boolean(error) || data?.status === "error";
+    const panel = useQueryPanel(kpiStrip());
 
-    // Dev-only fallback so `npm run dev` can render the success state
-    // without a Fabric embed. `import.meta.env.DEV` is statically false in
-    // the production build, so this branch never ships.
-    const usingDevFixture = import.meta.env.DEV && !import.meta.env.VITEST && isQueryError;
+    // Dev-only fallback so `npm run dev` can render the ready state without
+    // a Fabric embed. Kept as a literal `import.meta.env.DEV` check right
+    // here (not routed through the hook) so the production build's DCE can
+    // fold this branch away and drop KPI_STRIP_FIXTURE — see
+    // use-query-panel.ts for why that placement matters.
+    const usingDevFixture = import.meta.env.DEV && !import.meta.env.VITEST && panel.status === "error";
 
-    if (isQueryError && !usingDevFixture) {
-        const message = error?.message ?? (data?.status === "error" ? data.error.message : "Unknown error");
+    if (panel.status === "error" && !usingDevFixture) {
         return (
             <div
                 role="alert"
                 className="rounded-lg border border-destructive bg-destructive/10 px-400 py-300 text-300 text-destructive"
             >
-                Couldn't load KPI strip: {message}
+                Couldn't load KPI strip: {panel.message}
             </div>
         );
     }
 
-    if (!usingDevFixture && (isLoading || !data)) {
+    if (!usingDevFixture && panel.status === "loading") {
         return (
             <div className="grid grid-cols-2 gap-400 lg:grid-cols-4">
                 {TILES.map((tile) => (
@@ -103,15 +103,16 @@ export function KpiStrip() {
         );
     }
 
-    const table = usingDevFixture ? KPI_STRIP_FIXTURE : data && data.status === "success" ? data.table : undefined;
-    if (!table) return null;
-    if (table.rows.length === 0) {
+    if (!usingDevFixture && panel.status === "empty") {
         return (
             <div className="rounded-lg border border-border bg-card px-400 py-600 text-center text-300 text-muted-foreground">
                 No KPI data available yet.
             </div>
         );
     }
+
+    const table = usingDevFixture ? KPI_STRIP_FIXTURE : panel.status === "ready" ? panel.table : undefined;
+    if (!table) return null;
 
     return (
         <div className="grid grid-cols-2 gap-400 lg:grid-cols-4">

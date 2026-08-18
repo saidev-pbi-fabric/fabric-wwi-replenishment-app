@@ -10,12 +10,15 @@ import type { VegaLiteConfig } from "@microsoft/fabric-visuals";
 import type { InteractionEventCallback } from "@microsoft/fabric-visuals-core";
 import { toDataTable } from "@/lib/to-data-table";
 import { topAtRiskItems } from "@/queries/overview/top-at-risk-items";
-import { useSemanticModelQuery } from "@/hooks/use-semantic-model-query";
+import { useQueryPanel } from "@/hooks/use-query-panel";
 import { useThemeContext } from "@/hooks/theme.context";
 import { TOP_AT_RISK_ITEMS_FIXTURE } from "@/lib/dev-preview-fixtures";
 
 // Vega renders to SVG and can't resolve `var(--color-*)`, so the severity
 // scale is duplicated here as literal hex, matching global.css exactly.
+// Order matches the explicit `scale.domain` pinned in top-at-risk-items.json
+// (Short/Medium/Long) — Vega-Lite otherwise alphabetizes the domain, which
+// previously inverted the severity mapping (Long rendered green).
 const SEVERITY_RANGE = {
     light: ["#0e700e", "#9a6700", "#c50f1f"], // Short / Medium / Long lead time
     dark: ["#54c454", "#e0a828", "#f1707b"],
@@ -27,48 +30,46 @@ interface TopAtRiskListProps {
 
 export function TopAtRiskList({ onSelectItem }: TopAtRiskListProps) {
     const { connection, query, columnMetadata, vegaLiteSpec } = topAtRiskItems();
-    const { data, isLoading, error } = useSemanticModelQuery({ connection, query });
+    const panel = useQueryPanel({ connection, query });
     const theme = useCssTheme();
     const { isDark } = useThemeContext();
-    const isQueryError = Boolean(error) || data?.status === "error";
 
-    // Dev-only fallback so `npm run dev` can render the success state
-    // without a Fabric embed. `import.meta.env.DEV` is statically false in
-    // the production build, so this branch never ships.
-    const usingDevFixture = import.meta.env.DEV && !import.meta.env.VITEST && isQueryError;
+    // Dev-only fallback so `npm run dev` can render the ready state without
+    // a Fabric embed. See use-query-panel.ts for why this stays a literal
+    // `import.meta.env.DEV` check in this module rather than a hook param.
+    const usingDevFixture = import.meta.env.DEV && !import.meta.env.VITEST && panel.status === "error";
 
-    if (isQueryError && !usingDevFixture) {
-        const message = error?.message ?? (data?.status === "error" ? data.error.message : "Unknown error");
+    if (panel.status === "error" && !usingDevFixture) {
         return (
             <div
                 role="alert"
                 className="flex h-full min-h-[320px] items-center justify-center rounded-lg border border-destructive bg-destructive/10 px-400 py-300 text-300 text-destructive"
             >
-                Couldn't load top at-risk items: {message}
+                Couldn't load top at-risk items: {panel.message}
             </div>
         );
     }
 
-    if (!usingDevFixture && (isLoading || !data)) {
+    if (!usingDevFixture && panel.status === "loading") {
         return (
             <div className="h-full min-h-[320px] animate-pulse rounded-lg border border-border bg-card" />
         );
     }
 
-    const table = usingDevFixture
-        ? TOP_AT_RISK_ITEMS_FIXTURE
-        : data && data.status === "success"
-          ? data.table
-          : undefined;
-    if (!table) return null;
-
-    if (table.rows.length === 0) {
+    if (!usingDevFixture && panel.status === "empty") {
         return (
             <div className="flex h-full min-h-[320px] items-center justify-center rounded-lg border border-border bg-card text-300 text-muted-foreground">
                 No at-risk items right now.
             </div>
         );
     }
+
+    const table = usingDevFixture
+        ? TOP_AT_RISK_ITEMS_FIXTURE
+        : panel.status === "ready"
+          ? panel.table
+          : undefined;
+    if (!table) return null;
 
     const configVegaLite: VegaLiteConfig = {
         range: { category: [...SEVERITY_RANGE[isDark ? "dark" : "light"]] },
