@@ -187,13 +187,36 @@ dependency; a second team member can start T5.1 in parallel with T3.2/T3.3 if Pa
     selection, and with the lead-time filter applied.
   - Files: `src/components/action-center/*`, `src/App.tsx`, `src/lib/dev-preview-fixtures.ts`.
 
-- [ ] **T5.2** — `ReorderAction` write-back form: create path end-to-end
-  - Acceptance: submitting creates a real row with suggested qty pre-filled/editable; a reload
-    shows it persisted.
-  - Verify: `npm run test:fabric` golden path (view → select → create → reload) + a spec file
-    covering the entity-call shape.
-  - Files: `src/components/action-center/reorder-action-form.tsx` (+ spec), `rayfin/data/reorder-action.ts`
-    if fields need adjusting.
+- [x] **T5.2** — `ReorderAction` write-back form: create path (done 8/18, persistence check
+      deferred — see note)
+  - `ReorderActionForm` renders once the selected item's detail loads, prefills Suggested Reorder
+    Qty from the live query (editable), submits via `client.data.ReorderAction.create()` with
+    `createdBy` from the real signed-in Fabric user (`useAuth`). Wired into `ActionCenter` beneath
+    `ItemDetailPanel`. Typed the Rayfin client for the first time (`AppDataSchema` /
+    `ReorderActionRecord` in `rayfin-client.ts`) so `client.data.ReorderAction` is compile-checked.
+  - Bug caught + fixed during the local screenshot pass: passing `usingDevFixture` as a prop into
+    a child component broke esbuild's dead-code elimination (same class of bug as an earlier
+    session), leaking the dev-preview banner text into the production bundle. Fixed by keeping the
+    literal `import.meta.env.DEV` check and its dependent JSX in the same module scope; re-verified
+    0 matches in the built bundle.
+  - `/agent-skills:review` flagged `scalarByColumnName` duplicated a 3rd time — extracted to
+    `src/lib/to-data-table.ts`, updated all 3 call sites (including `kpi-strip.tsx` from Phase 3,
+    now justified since the 3rd-use threshold was hit). Also disabled the submit button after
+    success to prevent an accidental double-submit.
+  - Note (acceptance partially deferred, same root cause as T4.1): "submitting creates a real row
+    ... a reload shows it persisted" needs a live Fabric-embedded session — not available yet (same
+    `playwright-cli` gap as T4.1). Live-tested what IS testable locally instead: clicking submit in
+    dev-preview hit the real deployed GraphQL endpoint (not a mock) and correctly surfaced "The
+    current user is not authorized to access this resource" — confirms `@authenticated()` is
+    enforced and the write path is genuinely live-wired, not a stub. Full create→reload persistence
+    check deferred to a real Fabric-embedded session.
+  - Verify: `npm run lint`, `npx tsc --noEmit`, `npm test` (67/67, 6 new), `npm run build` all
+    clean; 0 fixture-string matches in the production bundle; screenshotted light+dark with the
+    form open, and the live-endpoint submit-error state.
+  - Files: `src/components/action-center/reorder-action-form.tsx` (+ spec),
+    `src/components/action-center/action-center.tsx` (+ spec), `src/lib/rayfin-client.ts`,
+    `src/lib/to-data-table.ts`, `src/components/overview/kpi-strip.tsx`,
+    `src/components/action-center/item-detail-panel.tsx`, `src/services/rayfin-auth.service.ts`.
 
 - [ ] **T5.3** — Status update path (Pending Review → Approved → Ordered → Received / Dismissed)
   - Acceptance: status dropdown updates the existing row; all 5 values reachable and reflected.
