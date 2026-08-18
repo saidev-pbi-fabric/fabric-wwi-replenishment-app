@@ -76,6 +76,10 @@ See `tasks/plan.md` for the dependency graph and checkpoints. Check off as compl
   - Note: KPI/chart content deviates from the original wireframe-design-brief.md labels
     ("Open Backorders" etc — stale, no such data exists). Real KPIs chosen from what's actually
     computable; brief still needs a text-only pass to match (tracked, not yet done).
+  - [UPDATED 8/18, T6.1] `sales-trend.dax` rescoped to the top 20 at-risk items (was whole
+    catalog — flat/uninformative on real data, caught after live testing) and its Vega-Lite
+    y-axis is deliberately non-zero-based (this dataset's daily totals vary only ~9% even
+    scoped, so zero-based hid all signal) — see that commit for the full rationale.
   - Verify: all 3 `.dax` files validated live via `dax_query_operations` (exact result-column
     headers captured for `columnMetadata`, not guessed). `npm test` 23/23 passing (incl. 3 new
     spec files), `npm run lint` clean (0 errors).
