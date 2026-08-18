@@ -7,7 +7,14 @@
 
 import { motion } from "framer-motion";
 import { AlertTriangle, ArrowRight, Info, PackagePlus, History } from "lucide-react";
+import { useQueryPanel } from "@/hooks/use-query-panel";
+import { kpiStrip } from "@/queries/overview/kpi-strip";
+import { topAtRiskItems } from "@/queries/overview/top-at-risk-items";
+import { scalarByColumnName } from "@/lib/to-data-table";
+import { KPI_STRIP_FIXTURE, TOP_AT_RISK_ITEMS_FIXTURE } from "@/lib/dev-preview-fixtures";
+import { LEAD_TIME_DOT_CLASS } from "@/lib/severity";
 import { fadeInUp, staggerContainer } from "@/lib/motion";
+import { CountUp } from "@/components/landing/count-up";
 
 interface LandingPageProps {
     onOpenDashboard: () => void;
@@ -41,6 +48,34 @@ const STEPS: Step[] = [
 ];
 
 export function LandingPage({ onOpenDashboard }: LandingPageProps) {
+    const kpiPanel = useQueryPanel(kpiStrip());
+    const topItemsPanel = useQueryPanel(topAtRiskItems("All"));
+
+    // Dev-only fallback, same pattern as every other query-backed component —
+    // see use-query-panel.ts for why this stays a literal `import.meta.env.DEV`
+    // check in this module rather than a hook param.
+    const usingDevFixture = import.meta.env.DEV && !import.meta.env.VITEST && kpiPanel.status === "error";
+
+    const kpiTable = usingDevFixture
+        ? KPI_STRIP_FIXTURE
+        : kpiPanel.status === "ready" || kpiPanel.status === "refreshing"
+          ? kpiPanel.table
+          : undefined;
+
+    const topTable = usingDevFixture
+        ? TOP_AT_RISK_ITEMS_FIXTURE
+        : topItemsPanel.status === "ready" || topItemsPanel.status === "refreshing"
+          ? topItemsPanel.table
+          : undefined;
+
+    const itemsTracked = kpiTable ? Number(scalarByColumnName(kpiTable, "[Items Tracked]") ?? 0) : null;
+    const atRiskCount = kpiTable ? Number(scalarByColumnName(kpiTable, "[Top At Risk Items]") ?? 0) : null;
+    const acceleratingCount = kpiTable
+        ? Number(scalarByColumnName(kpiTable, "[Accelerating Demand Items]") ?? 0)
+        : null;
+
+    const glimpseRows = topTable ? topRowsFromTable(topTable).slice(0, 3) : [];
+
     return (
         <motion.div
             className="flex flex-col gap-700"
@@ -55,7 +90,29 @@ export function LandingPage({ onOpenDashboard }: LandingPageProps) {
                 <span className="font-base text-200 font-semibold uppercase tracking-wide text-muted-foreground">
                     Microsoft Fabric Hackathon 2026 &middot; Fabric App Champion
                 </span>
-                <h1 className="font-heading text-800 font-semibold text-foreground">WWI Replenishment</h1>
+
+                {atRiskCount !== null ? (
+                    <h1 className="flex flex-wrap items-end gap-300">
+                        <span className="font-numeric text-hero-1000 font-semibold leading-none tracking-tight text-critical">
+                            <CountUp value={atRiskCount} />
+                        </span>
+                        <span className="pb-100 font-heading text-500 font-semibold leading-none text-foreground">
+                            items need attention
+                        </span>
+                    </h1>
+                ) : (
+                    <h1 className="font-heading text-800 font-semibold text-foreground">WWI Replenishment</h1>
+                )}
+
+                {itemsTracked !== null && acceleratingCount !== null ? (
+                    <p className="mt-300 font-numeric text-300 text-muted-foreground">
+                        <CountUp value={itemsTracked} /> stock items tracked &middot;{" "}
+                        <span className="text-at-risk">
+                            <CountUp value={acceleratingCount} /> accelerating
+                        </span>
+                    </p>
+                ) : null}
+
                 <p className="max-w-[720px] font-base text-400 text-muted-foreground">
                     Demand-driven reorder attention for a wholesale distributor — ranks stock items by
                     sales velocity vs. supplier lead time, and lets you log and track the reorder decision,
@@ -73,13 +130,47 @@ export function LandingPage({ onOpenDashboard }: LandingPageProps) {
                 </motion.button>
             </motion.section>
 
+            {glimpseRows.length > 0 ? (
+                <motion.section
+                    variants={fadeInUp}
+                    className="rounded-lg border border-border bg-card shadow-sm"
+                >
+                    <div className="border-b border-border px-400 py-300">
+                        <h2 className="font-base text-200 font-semibold uppercase tracking-wide text-muted-foreground">
+                            Right now, ranked by risk
+                        </h2>
+                    </div>
+                    <ul>
+                        {glimpseRows.map((row) => (
+                            <li
+                                key={row.name}
+                                className="flex items-center gap-300 border-b border-border px-400 py-200 last:border-b-0"
+                            >
+                                <span
+                                    className={`icon-size-100 inline-block shrink-0 rounded-full ${
+                                        LEAD_TIME_DOT_CLASS[row.tier] ?? "bg-muted-foreground"
+                                    }`}
+                                    aria-hidden="true"
+                                />
+                                <span className="min-w-0 flex-1 truncate font-base text-300 text-foreground">
+                                    {row.name}
+                                </span>
+                                <span className="shrink-0 font-numeric text-200 text-muted-foreground">
+                                    Rank #{row.rank}
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
+                </motion.section>
+            ) : null}
+
             <motion.section variants={fadeInUp} className="flex flex-col gap-300">
                 <h2 className="font-heading text-500 font-semibold text-foreground">The problem</h2>
                 <p className="max-w-[820px] font-base text-300 text-muted-foreground">
-                    Standard BI dashboards show sales history but leave the "what do I do about it" step to a
-                    human working outside the report — usually a spreadsheet or an email. This app closes
-                    that loop inside a single Fabric Data App: view what's at risk of stocking out, then
-                    record and track the reorder action for it, without leaving the app.
+                    Sales dashboards show what happened. They don't say what to do about it — that step
+                    still lives in a spreadsheet or an email, outside the report. This app closes that
+                    loop: see what's at risk of stocking out, then record and track the reorder action for
+                    it, in the same place.
                 </p>
             </motion.section>
 
@@ -127,4 +218,23 @@ export function LandingPage({ onOpenDashboard }: LandingPageProps) {
             </motion.p>
         </motion.div>
     );
+}
+
+interface GlimpseRow {
+    name: string;
+    tier: string;
+    rank: number;
+}
+
+function topRowsFromTable(table: { columns: { name: string }[]; rows: unknown[][] }): GlimpseRow[] {
+    const idx = (name: string) => table.columns.findIndex((col) => col.name === name);
+    const nameIdx = idx("Stock Item[Stock Item]");
+    const tierIdx = idx("Stock Item[Lead Time Priority Tier]");
+    const rankIdx = idx("[At Risk Rank]");
+
+    return table.rows.map((row) => ({
+        name: String(row[nameIdx]),
+        tier: String(row[tierIdx]),
+        rank: Number(row[rankIdx]),
+    }));
 }

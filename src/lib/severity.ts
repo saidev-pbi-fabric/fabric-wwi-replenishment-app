@@ -20,6 +20,13 @@ export const LEAD_TIME_RAIL_CLASS: Record<string, string> = {
     "Short Lead Time": "border-l-on-track",
 };
 
+/** Same tiers, as a solid dot fill — for compact previews (e.g. the landing page glimpse list). */
+export const LEAD_TIME_DOT_CLASS: Record<string, string> = {
+    "Long Lead Time": "bg-critical",
+    "Medium Lead Time": "bg-at-risk",
+    "Short Lead Time": "bg-on-track",
+};
+
 /**
  * Shared "Filter by lead time" dropdown values, reused by both Page 1's chart
  * and Page 2's ranked list so the two pages offer the same filter axis. Values

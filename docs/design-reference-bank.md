@@ -72,9 +72,9 @@ checking against `docs/wireframe-design-brief.md`), `minimalist-ui`, `motion-pri
 `vercel-optimize`, `vercel-react-best-practices`, `vercel-react-view-transitions`,
 `web-design-guidelines`, `writing-guidelines` (landing-page copy help).
 
-**Not restart-tested yet** — same caveat as the original `addyosmani/agent-skills` plugin
-install this project already hit once: newly dropped skill files may need a Claude Code session
-restart before `Skill()` calls can see them. Verify next session before assuming they're live.
+**Confirmed live without a restart** — unlike the earlier `addyosmani/agent-skills` plugin
+marketplace install (which needed one), these are loose skill files picked up mid-session; all
+26 showed up in the available-skills listing immediately after install.
 
 ## Not yet evaluated in depth
 
