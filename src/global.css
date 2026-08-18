@@ -45,6 +45,16 @@
   --color-input: #e0e0e0;                                            /* input field borders */
   --color-ring: #0f6cbd;                                             /* focus rings */
 
+  /* Severity scale — domain signal, additive to the theme above.
+     Signature detail: left-edge severity rail on at-risk rows/tiles/panels.
+     See docs/wireframe-design-brief.md "Signature detail". */
+  --color-critical: #c50f1f;                                         /* at-risk rank in top tier / high demand accel */
+  --color-critical-foreground: #ffffff;
+  --color-at-risk: #9a6700;                                          /* mid-tier risk */
+  --color-at-risk-foreground: #ffffff;
+  --color-on-track: #0e700e;                                         /* low risk / stable */
+  --color-on-track-foreground: #ffffff;
+
   --radius-none: 0;
   --radius-sm: 2px;
   --radius-md: 4px;
@@ -56,7 +66,7 @@
   --radius-5xl: 32px;
   --radius-6xl: 40px;
   --radius-full: 9999px;
-  --radius: 6px;
+  --radius: 4px;                                                     /* industrial, not soft — structural elements */
 
   /* Spacing — 4px grid; use only these tokens, no interpolation. *-nudge = base − 2px.
      Usage: p-*, m-*, gap-* (e.g. p-400 gap-300) */
@@ -106,16 +116,16 @@
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
 
-  /* Font Families
+  /* Font Families — industrial control-room tone (IBM Plex family, loaded
+     via Google Fonts <link> in index.html). See wireframe-design-brief.md.
      Usage: font-* (e.g. font-heading, font-base) */
-  --font-heading: 'Segoe UI', 'Segoe UI Web (West European)',       /* headings, titles, display text */
+  --font-heading: 'IBM Plex Sans Condensed', 'Segoe UI',            /* headings, titles, display text — compact/technical */
     -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', sans-serif;
-  --font-base: 'Segoe UI', 'Segoe UI Web (West European)',          /* body text, labels, UI controls */
+  --font-base: 'IBM Plex Sans', 'Segoe UI',                         /* body text, labels, UI controls */
     -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', sans-serif;
-  --font-monospace: Consolas, 'Courier New', Courier, monospace;     /* code, pre-formatted text */
-  --font-numeric: Bahnschrift, 'Segoe UI',                          /* KPI values, numeric displays */
-    'Segoe UI Web (West European)', -apple-system, BlinkMacSystemFont, Roboto,
-    'Helvetica Neue', sans-serif;
+  --font-monospace: 'IBM Plex Mono', Consolas, 'Courier New', Courier, monospace;
+  --font-numeric: 'IBM Plex Mono', Consolas,                        /* KPI values, tabular stock counts */
+    'Courier New', Courier, monospace;
 
   /* Icon Sizes — 100-based scale
      Usage: icon-size-* custom utility (e.g. icon-size-200) */
@@ -163,6 +173,13 @@
     --color-border: #525252;
     --color-input: #525252;
     --color-ring: #479ef5;
+
+    --color-critical: #f1707b;
+    --color-critical-foreground: #1a0000;
+    --color-at-risk: #e0a828;
+    --color-at-risk-foreground: #1a1200;
+    --color-on-track: #54c454;
+    --color-on-track-foreground: #001a00;
 
     --color-brand:            #115ea3;
     --color-brand-foreground: #479ef5;
