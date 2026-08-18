@@ -5,17 +5,12 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-import type { QueryTable } from "@microsoft/fabric-app-data";
 import { useQueryPanel } from "@/hooks/use-query-panel";
 import { itemDetail } from "@/queries/action-center/item-detail";
 import { cn } from "@/lib/utils";
+import { scalarByColumnName } from "@/lib/to-data-table";
 import { ITEM_DETAIL_FIXTURE } from "@/lib/dev-preview-fixtures";
 import { LEAD_TIME_RAIL_CLASS } from "@/lib/severity";
-
-function scalarByColumnName(table: QueryTable, name: string): unknown {
-    const index = table.columns.findIndex((col) => col.name === name);
-    return index === -1 ? undefined : table.rows[0]?.[index];
-}
 
 interface ItemDetailPanelProps {
     stockItemKey: number | null;

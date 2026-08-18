@@ -8,6 +8,7 @@
 import { useState } from "react";
 import { RankedListPanel } from "@/components/action-center/ranked-list-panel";
 import { ItemDetailPanel } from "@/components/action-center/item-detail-panel";
+import { ReorderActionForm } from "@/components/action-center/reorder-action-form";
 
 interface SelectedItem {
     key: number;
@@ -32,8 +33,11 @@ export function ActionCenter({ initialSelectedItemName }: ActionCenterProps) {
                     onSelectItem={(key, name, tier) => setSelected({ key, name, tier })}
                 />
             </div>
-            <div className="lg:col-span-2">
+            <div className="flex flex-col gap-500 lg:col-span-2">
                 <ItemDetailPanel stockItemKey={selected?.key ?? null} />
+                {selected ? (
+                    <ReorderActionForm stockItemKey={selected.key} stockItemName={selected.name} />
+                ) : null}
             </div>
         </div>
     );

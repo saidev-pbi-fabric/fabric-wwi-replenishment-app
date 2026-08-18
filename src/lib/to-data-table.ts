@@ -46,3 +46,13 @@ export function toDataTable(
 
     return { columns, rows: queryTable.rows };
 }
+
+/**
+ * Reads a single scalar value out of a `QueryTable` by its original column name,
+ * from the first row. For single-row result sets (KPI scalars, a parameterized
+ * detail-by-key lookup) rather than tabular data destined for `toDataTable`.
+ */
+export function scalarByColumnName(table: QueryTable, name: string): unknown {
+    const index = table.columns.findIndex((col) => col.name === name);
+    return index === -1 ? undefined : table.rows[0]?.[index];
+}

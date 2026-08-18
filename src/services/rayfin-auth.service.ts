@@ -11,7 +11,7 @@ import {
     initEmbeddedAuth as sdkInitEmbeddedAuth,
     type FabricAuthOptions,
 } from "@microsoft/rayfin-auth-provider-fabric";
-import { getRayfinClient } from "@/lib/rayfin-client";
+import { getRayfinClient, type AppDataSchema } from "@/lib/rayfin-client";
 
 export interface IAuthService {
     /**
@@ -70,7 +70,7 @@ export function bootstrapAuth(): IAuthService {
  */
 class RayfinAuthService implements IAuthService {
     constructor(
-        private readonly client: RayfinClient,
+        private readonly client: RayfinClient<AppDataSchema>,
         private readonly fabricOptions: FabricAuthOptions,
     ) {}
 

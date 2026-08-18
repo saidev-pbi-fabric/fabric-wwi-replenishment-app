@@ -18,6 +18,21 @@ vi.mock("@/lib/fabric-client", () => ({
     }),
 }));
 
+vi.mock("@/lib/rayfin-client", () => ({
+    getRayfinClient: () => ({
+        data: { ReorderAction: { create: vi.fn() } },
+    }),
+}));
+
+vi.mock("@/hooks/auth.context", () => ({
+    useAuth: () => ({
+        session: { user: { email: "sai@r4k5.onmicrosoft.com" }, isAuthenticated: true, isAnonymous: false },
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+    }),
+}));
+
 const LIST_TABLE = {
     columns: [
         { name: "Stock Item[Stock Item Key]" },

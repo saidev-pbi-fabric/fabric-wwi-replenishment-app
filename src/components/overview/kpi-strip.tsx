@@ -5,10 +5,10 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-import type { QueryTable } from "@microsoft/fabric-app-data";
 import { useQueryPanel } from "@/hooks/use-query-panel";
 import { kpiStrip } from "@/queries/overview/kpi-strip";
 import { cn } from "@/lib/utils";
+import { scalarByColumnName } from "@/lib/to-data-table";
 import { KPI_STRIP_FIXTURE } from "@/lib/dev-preview-fixtures";
 
 type Severity = "critical" | "at-risk" | "on-track" | "neutral";
@@ -58,12 +58,6 @@ const RAIL_CLASS: Record<Severity, string> = {
     "on-track": "border-l-on-track",
     neutral: "border-l-transparent",
 };
-
-function scalarByColumnName(table: QueryTable, name: string): unknown {
-    const index = table.columns.findIndex((col) => col.name === name);
-    if (index === -1) return undefined;
-    return table.rows[0]?.[index];
-}
 
 export function KpiStrip() {
     const panel = useQueryPanel(kpiStrip());
