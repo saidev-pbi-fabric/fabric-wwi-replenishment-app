@@ -6,11 +6,13 @@
 //-----------------------------------------------------------------------
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import type { QueryTable } from "@microsoft/fabric-app-data";
 import { useQueryPanel } from "@/hooks/use-query-panel";
 import { rankedAtRiskList } from "@/queries/action-center/ranked-at-risk-list";
 import { cn } from "@/lib/utils";
+import { fadeInUp, staggerContainer } from "@/lib/motion";
 import { RANKED_AT_RISK_LIST_FIXTURE } from "@/lib/dev-preview-fixtures";
 import { LEAD_TIME_RAIL_CLASS, TIER_FILTERS, tierFilterLabel } from "@/lib/severity";
 
@@ -160,15 +162,21 @@ export function RankedListPanel({
                             : `No at-risk items match "${tierFilterLabel(tierFilter)}" lead time.`}
                     </div>
                 ) : (
-                    <ul className="flex-1 overflow-y-auto">
+                    <motion.ul
+                        key={tierFilter}
+                        className="flex-1 overflow-y-auto"
+                        initial="hidden"
+                        animate="visible"
+                        variants={staggerContainer}
+                    >
                         {rows.map((row) => (
-                            <li key={row.key}>
+                            <motion.li key={row.key} variants={fadeInUp}>
                                 <button
                                     type="button"
                                     onClick={() => onSelectItem(row.key, row.name, row.tier)}
                                     aria-current={row.key === selectedStockItemKey ? "true" : undefined}
                                     className={cn(
-                                        "flex w-full items-center justify-between gap-300 border-b border-l-4 border-border px-400 py-300 text-left transition-colors hover:bg-accent",
+                                        "flex w-full items-center justify-between gap-300 border-b border-l-4 border-border px-400 py-300 text-left transition-all hover:-translate-y-px hover:bg-accent hover:shadow-sm",
                                         LEAD_TIME_RAIL_CLASS[row.tier] ?? "border-l-transparent",
                                         row.key === selectedStockItemKey ? "bg-accent" : undefined,
                                     )}
@@ -182,9 +190,9 @@ export function RankedListPanel({
                                         </span>
                                     </span>
                                 </button>
-                            </li>
+                            </motion.li>
                         ))}
-                    </ul>
+                    </motion.ul>
                 )}
             </div>
         </div>

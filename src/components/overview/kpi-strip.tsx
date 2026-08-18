@@ -5,7 +5,9 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
+import { motion } from "framer-motion";
 import { Package, Clock, AlertTriangle, TrendingUp } from "lucide-react";
+import { fadeInUp, staggerContainer } from "@/lib/motion";
 import { useQueryPanel } from "@/hooks/use-query-panel";
 import { kpiStrip } from "@/queries/overview/kpi-strip";
 import { cn } from "@/lib/utils";
@@ -127,7 +129,12 @@ export function KpiStrip() {
     if (!table) return null;
 
     return (
-        <div className="grid grid-cols-2 gap-400 lg:grid-cols-4">
+        <motion.div
+            className="grid grid-cols-2 gap-400 lg:grid-cols-4"
+            initial="hidden"
+            animate="visible"
+            variants={staggerContainer}
+        >
             {usingDevFixture ? (
                 <div className="col-span-2 -mb-200 text-200 text-muted-foreground lg:col-span-4">
                     Sample data — dev preview (no Fabric embed)
@@ -138,10 +145,12 @@ export function KpiStrip() {
                 const severity = tile.severity(raw);
                 const Icon = tile.icon;
                 return (
-                    <div
+                    <motion.div
                         key={tile.key}
+                        variants={fadeInUp}
+                        whileHover={{ y: -2 }}
                         className={cn(
-                            "rounded-lg border border-border border-l-4 bg-card p-400 shadow-sm",
+                            "rounded-lg border border-border border-l-4 bg-card p-400 shadow-sm transition-shadow hover:shadow-md",
                             RAIL_CLASS[severity],
                         )}
                     >
@@ -155,9 +164,9 @@ export function KpiStrip() {
                             {tile.format(raw)}
                         </div>
                         <div className="mt-200 text-200 text-muted-foreground">{tile.context}</div>
-                    </div>
+                    </motion.div>
                 );
             })}
-        </div>
+        </motion.div>
     );
 }

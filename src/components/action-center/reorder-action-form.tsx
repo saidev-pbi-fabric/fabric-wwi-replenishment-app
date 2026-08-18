@@ -6,6 +6,7 @@
 //-----------------------------------------------------------------------
 
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { PackagePlus } from "lucide-react";
 import { useQueryPanel } from "@/hooks/use-query-panel";
 import { itemDetail } from "@/queries/action-center/item-detail";
@@ -192,13 +193,15 @@ function ReorderActionFormFields({
                 />
             </label>
 
-            <button
+            <motion.button
                 type="submit"
                 disabled={submitState === "submitting" || submitState === "success"}
-                className="self-start rounded-md bg-primary px-400 py-200 font-base text-300 text-primary-foreground disabled:opacity-50"
+                whileHover={submitState === "idle" ? { scale: 1.03 } : undefined}
+                whileTap={submitState === "idle" ? { scale: 0.97 } : undefined}
+                className="self-start rounded-md bg-primary px-400 py-200 font-base text-300 text-primary-foreground shadow-sm disabled:opacity-50"
             >
                 {submitState === "submitting" ? "Submitting…" : "Submit Reorder Action"}
-            </button>
+            </motion.button>
 
             {submitState === "success" ? (
                 <p className="font-base text-300 text-on-track">Reorder action recorded.</p>

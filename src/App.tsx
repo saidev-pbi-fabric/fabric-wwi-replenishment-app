@@ -6,8 +6,10 @@
 //-----------------------------------------------------------------------
 
 import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Moon, Sun } from "lucide-react";
 import { useThemeContext } from "@/hooks/theme.context";
+import { fadeInUp } from "@/lib/motion";
 import { LandingPage } from "@/components/landing/landing-page";
 import { KpiStrip } from "@/components/overview/kpi-strip";
 import { SalesTrendChart } from "@/components/overview/sales-trend-chart";
@@ -53,13 +55,17 @@ function App() {
             </header>
 
             <main className="mx-auto w-full max-w-[1400px] flex-1 p-500">
-                {page === "landing" ? (
-                    <LandingPage onOpenDashboard={() => setPage("overview")} />
-                ) : page === "overview" ? (
-                    <OverviewPage onSelectItem={goToActionCenter} />
-                ) : (
-                    <ActionCenterPage initialSelectedItemName={selectedItemName} />
-                )}
+                <AnimatePresence mode="popLayout" initial={false}>
+                    <motion.div key={page} initial="hidden" animate="visible" exit="hidden" variants={fadeInUp}>
+                        {page === "landing" ? (
+                            <LandingPage onOpenDashboard={() => setPage("overview")} />
+                        ) : page === "overview" ? (
+                            <OverviewPage onSelectItem={goToActionCenter} />
+                        ) : (
+                            <ActionCenterPage initialSelectedItemName={selectedItemName} />
+                        )}
+                    </motion.div>
+                </AnimatePresence>
             </main>
         </div>
     );
@@ -80,7 +86,7 @@ function NavTab({
             onClick={onClick}
             aria-current={active ? "page" : undefined}
             className={cn(
-                "rounded-md px-300 py-100-nudge font-base text-300 transition-colors",
+                "rounded-md px-300 py-100-nudge font-base text-300 transition-all active:scale-95",
                 active
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",

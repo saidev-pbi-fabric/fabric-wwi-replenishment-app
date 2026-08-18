@@ -5,7 +5,9 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
+import { motion } from "framer-motion";
 import { AlertTriangle, ArrowRight, Info, PackagePlus, History } from "lucide-react";
+import { fadeInUp, staggerContainer } from "@/lib/motion";
 
 interface LandingPageProps {
     onOpenDashboard: () => void;
@@ -40,8 +42,16 @@ const STEPS: Step[] = [
 
 export function LandingPage({ onOpenDashboard }: LandingPageProps) {
     return (
-        <div className="flex flex-col gap-700">
-            <section className="flex flex-col items-start gap-300 rounded-lg border border-border bg-card p-600 shadow-sm">
+        <motion.div
+            className="flex flex-col gap-700"
+            initial="hidden"
+            animate="visible"
+            variants={staggerContainer}
+        >
+            <motion.section
+                variants={fadeInUp}
+                className="flex flex-col items-start gap-300 rounded-lg border border-border bg-card p-600 shadow-sm"
+            >
                 <span className="font-base text-200 font-semibold uppercase tracking-wide text-muted-foreground">
                     Microsoft Fabric Hackathon 2026 &middot; Fabric App Champion
                 </span>
@@ -51,17 +61,19 @@ export function LandingPage({ onOpenDashboard }: LandingPageProps) {
                     sales velocity vs. supplier lead time, and lets you log and track the reorder decision,
                     without leaving the app.
                 </p>
-                <button
+                <motion.button
                     type="button"
                     onClick={onOpenDashboard}
-                    className="mt-200 flex items-center gap-200 rounded-md bg-primary px-400 py-200 font-base text-300 text-primary-foreground"
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    className="mt-200 flex items-center gap-200 rounded-md bg-primary px-400 py-200 font-base text-300 text-primary-foreground shadow-sm"
                 >
                     Open the Dashboard
                     <ArrowRight className="icon-size-300" />
-                </button>
-            </section>
+                </motion.button>
+            </motion.section>
 
-            <section className="flex flex-col gap-300">
+            <motion.section variants={fadeInUp} className="flex flex-col gap-300">
                 <h2 className="font-heading text-500 font-semibold text-foreground">The problem</h2>
                 <p className="max-w-[820px] font-base text-300 text-muted-foreground">
                     Standard BI dashboards show sales history but leave the "what do I do about it" step to a
@@ -69,27 +81,35 @@ export function LandingPage({ onOpenDashboard }: LandingPageProps) {
                     that loop inside a single Fabric Data App: view what's at risk of stocking out, then
                     record and track the reorder action for it, without leaving the app.
                 </p>
-            </section>
+            </motion.section>
 
-            <section className="grid grid-cols-1 gap-400 md:grid-cols-3">
+            <motion.section
+                variants={staggerContainer}
+                className="grid grid-cols-1 gap-400 md:grid-cols-3"
+            >
                 {STEPS.map((step) => {
                     const Icon = step.icon;
                     return (
-                        <div
+                        <motion.div
                             key={step.title}
-                            className="flex flex-col gap-200 rounded-lg border border-border bg-card p-400 shadow-sm"
+                            variants={fadeInUp}
+                            whileHover={{ y: -3 }}
+                            className="flex flex-col gap-200 rounded-lg border border-border bg-card p-400 shadow-sm transition-shadow hover:shadow-md"
                         >
                             <Icon className="icon-size-400 text-muted-foreground" />
                             <h3 className="font-heading text-400 font-semibold text-foreground">
                                 {step.title}
                             </h3>
                             <p className="font-base text-200 text-muted-foreground">{step.description}</p>
-                        </div>
+                        </motion.div>
                     );
                 })}
-            </section>
+            </motion.section>
 
-            <section className="flex items-start gap-300 rounded-lg border border-border bg-card p-400 text-200 text-muted-foreground shadow-sm">
+            <motion.section
+                variants={fadeInUp}
+                className="flex items-start gap-300 rounded-lg border border-border bg-card p-400 text-200 text-muted-foreground shadow-sm"
+            >
                 <Info className="icon-size-300 shrink-0" />
                 <p>
                     Built on the Wide World Importers retail sample data (Fabric Warehouse Copy Job, ~50M sales
@@ -97,11 +117,14 @@ export function LandingPage({ onOpenDashboard }: LandingPageProps) {
                     <strong className="text-foreground">disclosed proxy</strong> — sales velocity trend vs.
                     lead time, ranked — not a literal stock count.
                 </p>
-            </section>
+            </motion.section>
 
-            <p className="font-base text-200 uppercase tracking-wide text-muted-foreground">
+            <motion.p
+                variants={fadeInUp}
+                className="font-base text-200 uppercase tracking-wide text-muted-foreground"
+            >
                 Fabric Warehouse &middot; Power BI Semantic Model &middot; Rayfin Backend &middot; React + Vite
-            </p>
-        </div>
+            </motion.p>
+        </motion.div>
     );
 }
