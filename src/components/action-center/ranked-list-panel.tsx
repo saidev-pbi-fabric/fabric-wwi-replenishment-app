@@ -11,12 +11,7 @@ import { useQueryPanel } from "@/hooks/use-query-panel";
 import { rankedAtRiskList } from "@/queries/action-center/ranked-at-risk-list";
 import { cn } from "@/lib/utils";
 import { RANKED_AT_RISK_LIST_FIXTURE } from "@/lib/dev-preview-fixtures";
-
-const RAIL_CLASS: Record<string, string> = {
-    Long: "border-l-critical",
-    Medium: "border-l-at-risk",
-    Short: "border-l-on-track",
-};
+import { LEAD_TIME_RAIL_CLASS } from "@/lib/severity";
 
 const TIER_FILTERS = ["All", "Short", "Medium", "Long"] as const;
 
@@ -147,7 +142,7 @@ export function RankedListPanel({
                             aria-current={row.key === selectedStockItemKey ? "true" : undefined}
                             className={cn(
                                 "flex w-full items-center justify-between gap-300 border-b border-l-4 border-border px-400 py-300 text-left transition-colors hover:bg-accent",
-                                RAIL_CLASS[row.tier] ?? "border-l-transparent",
+                                LEAD_TIME_RAIL_CLASS[row.tier] ?? "border-l-transparent",
                                 row.key === selectedStockItemKey ? "bg-accent" : undefined,
                             )}
                         >

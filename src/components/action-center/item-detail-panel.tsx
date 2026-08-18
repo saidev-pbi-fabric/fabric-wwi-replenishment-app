@@ -10,12 +10,7 @@ import { useQueryPanel } from "@/hooks/use-query-panel";
 import { itemDetail } from "@/queries/action-center/item-detail";
 import { cn } from "@/lib/utils";
 import { ITEM_DETAIL_FIXTURE } from "@/lib/dev-preview-fixtures";
-
-const RAIL_CLASS: Record<string, string> = {
-    Long: "border-l-critical",
-    Medium: "border-l-at-risk",
-    Short: "border-l-on-track",
-};
+import { LEAD_TIME_RAIL_CLASS } from "@/lib/severity";
 
 function scalarByColumnName(table: QueryTable, name: string): unknown {
     const index = table.columns.findIndex((col) => col.name === name);
@@ -104,7 +99,7 @@ export function ItemDetailPanel({ stockItemKey }: ItemDetailPanelProps) {
             <div
                 className={cn(
                     "flex items-start justify-between gap-300 border-b border-l-4 border-border p-400",
-                    RAIL_CLASS[tier] ?? "border-l-transparent",
+                    LEAD_TIME_RAIL_CLASS[tier] ?? "border-l-transparent",
                 )}
             >
                 <div>
