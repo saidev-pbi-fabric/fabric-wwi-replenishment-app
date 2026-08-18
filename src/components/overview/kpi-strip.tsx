@@ -176,6 +176,16 @@ export function KpiStrip() {
                                     }
                                     animate={{ scale: 1, rotate: 0, opacity: 1 }}
                                     transition={{ type: "spring", stiffness: 260, damping: 18, delay: 0.15 }}
+                                    // Only the drill-through tile's icon gets a hover/tap animation —
+                                    // it's the only one bound to a real action (opening the full-list
+                                    // table). Animating the other three's icons would suggest they're
+                                    // clickable when they aren't, which is a false affordance.
+                                    {...(tile.drillThrough && !prefersReducedMotion
+                                        ? {
+                                              whileHover: { rotate: [0, -8, 8, -5, 0], transition: { duration: 0.4 } },
+                                              whileTap: { scale: 0.85 },
+                                          }
+                                        : {})}
                                 >
                                     <Icon className={cn("icon-size-300 shrink-0", ICON_CLASS[severity])} />
                                 </motion.span>

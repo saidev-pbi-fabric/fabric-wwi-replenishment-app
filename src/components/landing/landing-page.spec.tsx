@@ -18,16 +18,6 @@ vi.mock("@/lib/fabric-client", () => ({
     }),
 }));
 
-const KPI_TABLE = {
-    columns: [
-        { name: "[Items Tracked]" },
-        { name: "[Avg Lead Time Days]" },
-        { name: "[Top At Risk Items]" },
-        { name: "[Accelerating Demand Items]" },
-    ],
-    rows: [[672, 12.3, 20, 15]],
-};
-
 const TOP_ITEMS_TABLE = {
     columns: [
         { name: "Stock Item[Stock Item]" },
@@ -48,31 +38,24 @@ describe("LandingPage", () => {
         vi.clearAllMocks();
     });
 
-    it("shows a static heading and the one-liner pitch when no data is loaded yet", () => {
+    // Regression: the hero used to lead with a large animated at-risk count
+    // ("20 items need attention"). User feedback: "we don't need any numbers
+    // here in the first place ... it needs to give you the direction only."
+    // The headline is now a fixed directional statement, not data-driven —
+    // it must render identically whether or not the query has resolved.
+    it("always shows the directional headline and the one-liner pitch, regardless of data state", () => {
         mockQuery.mockResolvedValue({ status: "error", error: { message: "no embed" } });
         render(<LandingPage onOpenDashboard={vi.fn()} />);
 
-        expect(screen.getByRole("heading", { name: /wwi replenishment/i })).toBeInTheDocument();
+        expect(
+            screen.getByRole("heading", { name: /know what's at risk\. decide what to do about it\./i }),
+        ).toBeInTheDocument();
         expect(screen.getByText(/sales velocity vs\. supplier lead time/i)).toBeInTheDocument();
-    });
-
-    it("leads with the real at-risk count once KPI data loads, instead of static copy", async () => {
-        mockQuery.mockResolvedValue({ status: "success", table: KPI_TABLE, fromCache: false });
-        render(<LandingPage onOpenDashboard={vi.fn()} />);
-
-        expect(await screen.findByText(/20/)).toBeInTheDocument();
-        expect(screen.getByText(/items need attention/i)).toBeInTheDocument();
-        expect(screen.queryByRole("heading", { name: /^wwi replenishment$/i })).not.toBeInTheDocument();
+        expect(screen.queryByText(/items need attention/i)).not.toBeInTheDocument();
     });
 
     it("shows a glimpse of the real top at-risk items once loaded", async () => {
-        mockQuery.mockImplementation((query: string) =>
-            Promise.resolve(
-                query.includes("TOPN")
-                    ? { status: "success", table: TOP_ITEMS_TABLE, fromCache: false }
-                    : { status: "success", table: KPI_TABLE, fromCache: false },
-            ),
-        );
+        mockQuery.mockResolvedValue({ status: "success", table: TOP_ITEMS_TABLE, fromCache: false });
         render(<LandingPage onOpenDashboard={vi.fn()} />);
 
         expect(await screen.findByText("Shipping carton (Brown)")).toBeInTheDocument();

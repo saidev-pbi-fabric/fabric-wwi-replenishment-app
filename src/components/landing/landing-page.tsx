@@ -8,13 +8,10 @@
 import { motion } from "framer-motion";
 import { AlertTriangle, ArrowRight, Info, PackagePlus, History } from "lucide-react";
 import { useQueryPanel } from "@/hooks/use-query-panel";
-import { kpiStrip } from "@/queries/overview/kpi-strip";
 import { topAtRiskItems } from "@/queries/overview/top-at-risk-items";
-import { scalarByColumnName } from "@/lib/to-data-table";
-import { KPI_STRIP_FIXTURE, TOP_AT_RISK_ITEMS_FIXTURE } from "@/lib/dev-preview-fixtures";
+import { TOP_AT_RISK_ITEMS_FIXTURE } from "@/lib/dev-preview-fixtures";
 import { LEAD_TIME_DOT_CLASS } from "@/lib/severity";
 import { fadeInUp, staggerContainer } from "@/lib/motion";
-import { CountUp } from "@/components/landing/count-up";
 
 interface LandingPageProps {
     onOpenDashboard: () => void;
@@ -48,31 +45,18 @@ const STEPS: Step[] = [
 ];
 
 export function LandingPage({ onOpenDashboard }: LandingPageProps) {
-    const kpiPanel = useQueryPanel(kpiStrip());
     const topItemsPanel = useQueryPanel(topAtRiskItems("All"));
 
     // Dev-only fallback, same pattern as every other query-backed component —
     // see use-query-panel.ts for why this stays a literal `import.meta.env.DEV`
     // check in this module rather than a hook param.
-    const usingDevFixture = import.meta.env.DEV && !import.meta.env.VITEST && kpiPanel.status === "error";
-
-    const kpiTable = usingDevFixture
-        ? KPI_STRIP_FIXTURE
-        : kpiPanel.status === "ready" || kpiPanel.status === "refreshing"
-          ? kpiPanel.table
-          : undefined;
+    const usingDevFixture = import.meta.env.DEV && !import.meta.env.VITEST && topItemsPanel.status === "error";
 
     const topTable = usingDevFixture
         ? TOP_AT_RISK_ITEMS_FIXTURE
         : topItemsPanel.status === "ready" || topItemsPanel.status === "refreshing"
           ? topItemsPanel.table
           : undefined;
-
-    const itemsTracked = kpiTable ? Number(scalarByColumnName(kpiTable, "[Items Tracked]") ?? 0) : null;
-    const atRiskCount = kpiTable ? Number(scalarByColumnName(kpiTable, "[Top At Risk Items]") ?? 0) : null;
-    const acceleratingCount = kpiTable
-        ? Number(scalarByColumnName(kpiTable, "[Accelerating Demand Items]") ?? 0)
-        : null;
 
     const glimpseRows = topTable ? topRowsFromTable(topTable).slice(0, 3) : [];
 
@@ -91,27 +75,9 @@ export function LandingPage({ onOpenDashboard }: LandingPageProps) {
                     Microsoft Fabric Hackathon 2026 &middot; Fabric App Champion
                 </span>
 
-                {atRiskCount !== null ? (
-                    <h1 className="flex flex-wrap items-end gap-300">
-                        <span className="font-numeric text-hero-1000 font-semibold leading-none tracking-tight text-critical">
-                            <CountUp value={atRiskCount} />
-                        </span>
-                        <span className="pb-100 font-heading text-500 font-semibold leading-none text-foreground">
-                            items need attention
-                        </span>
-                    </h1>
-                ) : (
-                    <h1 className="font-heading text-800 font-semibold text-foreground">WWI Replenishment</h1>
-                )}
-
-                {itemsTracked !== null && acceleratingCount !== null ? (
-                    <p className="mt-300 font-numeric text-300 text-muted-foreground">
-                        <CountUp value={itemsTracked} /> stock items tracked &middot;{" "}
-                        <span className="text-at-risk">
-                            <CountUp value={acceleratingCount} /> accelerating
-                        </span>
-                    </p>
-                ) : null}
+                <h1 className="font-heading text-800 font-semibold leading-tight text-foreground">
+                    Know what's at risk. Decide what to do about it.
+                </h1>
 
                 <p className="max-w-[720px] font-base text-400 text-muted-foreground">
                     Demand-driven reorder attention for a wholesale distributor — ranks stock items by
