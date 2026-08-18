@@ -146,13 +146,24 @@ dependency; a second team member can start T5.1 in parallel with T3.2/T3.3 if Pa
 
 ## Phase 5 — Page 2: Action Center
 
-- [ ] **T5.1** — Master list + detail panel end-to-end (real data, filter by severity/supplier,
-      selection state)
-  - Acceptance: selecting a left-panel item populates the right-panel detail view.
-  - Verify: `npm run test:fabric`.
-  - Files: `src/components/action-center/*`.
-  - Design: use `frontend-ui-engineering` + `dataviz` skills for the master-detail layout.
-  - Depends only on T3.1, T2.3, T4.1 — can start in parallel with T3.2/T3.3, see note above.
+- [x] **T5.1** — Master list + detail panel end-to-end (done 8/18, local dev-preview only)
+  - `RankedListPanel` (left, `rankedAtRiskList()`, client-side filter by Lead Time Priority Tier,
+    severity rail per row) + `ItemDetailPanel` (right, `itemDetail(key)`, populates on selection,
+    severity-colored header strip) + `ActionCenter` composing both, resolving Page 1's
+    click-through handoff (`selectedItemName`) to a key once the list loads. Wired into `App.tsx`,
+    replacing the Phase-3 stub.
+  - Note: built and verified against **local dev-preview only** (same `import.meta.env.DEV`
+    fixture pattern as Page 1) — the app isn't registered as a Fabric item yet (T4.1 not started),
+    so `npm run test:fabric` isn't runnable and there's no live semantic-model data to select
+    against. Real "selecting a left-panel item populates the right-panel detail view" acceptance
+    is satisfied against fixture data now; needs a live-embed re-check after T4.1.
+  - Bug caught + fixed during the local screenshot pass: `ITEM_DETAIL_FIXTURE` was a single
+    hardcoded row, so selecting different items in dev preview always showed the same detail.
+    Expanded to one fixture row per ranked item, keyed by Stock Item Key.
+  - Verify: `npm run lint`, `npx tsc --noEmit`, `npm test` (61/61, 19 new), `npm run build` all
+    clean; 0 fixture-string matches in the production bundle; screenshotted light+dark, with a
+    selection, and with the lead-time filter applied.
+  - Files: `src/components/action-center/*`, `src/App.tsx`, `src/lib/dev-preview-fixtures.ts`.
 
 - [ ] **T5.2** — `ReorderAction` write-back form: create path end-to-end
   - Acceptance: submitting creates a real row with suggested qty pre-filled/editable; a reload
