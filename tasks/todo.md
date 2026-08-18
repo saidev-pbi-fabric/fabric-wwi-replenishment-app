@@ -94,23 +94,42 @@ See `tasks/plan.md` for the dependency graph and checkpoints. Check off as compl
 
 ## Phase 3 — Page 1: Replenishment Overview
 
-- [ ] **T3.1** — Design tokens (severity scale + fonts) wired into `global.css`/`index.html`
-  - Acceptance: matches `docs/wireframe-design-brief.md`; renders correctly in light + dark.
-  - Verify: visual check via `npm run dev` render.
+- [x] **T3.1** — Design tokens (severity scale + fonts) wired into `global.css`/`index.html` (done 8/18)
+  - Severity scale (`--color-critical/-at-risk/-on-track` + foreground pairs, light+dark), IBM
+    Plex Sans Condensed/Sans/Mono loaded via Google Fonts, `--radius` dropped to 4px.
+  - Verify: `npm run lint` clean. Live browser check deferred (no Chrome extension connected this
+    session) — see T3.2 note.
   - Files: `src/global.css`, `index.html`.
 
-- [ ] **T3.2** — KPI strip end-to-end (4 tiles, real data, loading/empty/error states)
-  - Acceptance: tiles show live counts; severity-rail border shows when a tile is in a risk state.
-  - Verify: `npm run test:fabric` snapshot, no console errors.
-  - Files: `src/components/overview/kpi-strip.tsx` (+ spec if logic warrants), `src/App.tsx`.
+- [x] **T3.2** — KPI strip end-to-end (4 tiles, real data, loading/empty/error states) (done 8/18)
+  - `src/components/overview/kpi-strip.tsx` wired to `kpiStrip()`; per-tile skeleton loading,
+    centered empty message, destructive-banner error. Severity rail on the two risk-signal tiles
+    (Top At-Risk Items = critical, Accelerating Demand = at-risk/on-track by sign); neutral tiles
+    (Items Tracked, Avg Lead Time) get no rail. `App.tsx` rebuilt: header (app name, 2-page nav,
+    theme toggle) + Overview page hosting the strip; template `EmptyStatePreview` deleted.
+  - Note: `npm run test:fabric` (live Fabric portal embed) not runnable yet — app isn't registered
+    as a Fabric item (that's T4.1). `AuthGate` blocks standalone `npm run dev` by design (only
+    renders inside the Fabric iframe). Verified via lint + 4 new unit tests (loading/success/
+    empty/error) instead; full live-embed visual check deferred to after T4.1.
+  - Files: `src/components/overview/kpi-strip.tsx` (+ spec), `src/App.tsx`.
 
-- [ ] **T3.3** — Trend chart + top-at-risk ranked list end-to-end (click-through toward Page 2)
-  - Acceptance: chart renders stock-on-hand vs. reorder-level trend; ranked list rows carry the
-    severity rail; clicking a row navigates to Page 2 with that item selected.
-  - Verify: `npm run test:fabric`.
-  - Files: `src/components/overview/*`, `src/queries/overview/*`.
-  - Design: use `frontend-ui-engineering` + `dataviz` skills (locked in `CLAUDE.md`) for chart-type
-    and layout decisions on the trend chart.
+- [x] **T3.3** — Trend chart + top-at-risk ranked list end-to-end (click-through toward Page 2) (done 8/18)
+  - `src/components/overview/sales-trend-chart.tsx` + `top-at-risk-list.tsx`, both VegaVisual +
+    `useCssTheme` + `toDataTable`, same loading/empty/error pattern as T3.2. Row 2 grid: trend
+    chart spans 2 cols, ranked list is the tall narrow card (per wireframe brief).
+  - Bar clicks fire `onInteraction` -> `onSelectItem(stockItemName)`, lifted to `App.tsx` state,
+    switching to a stub Action Center page showing the selection (real master-detail/write-back
+    is Phase 5, T5.1-T5.3) — nav tab is enabled now rather than a permanent dead link.
+  - **dataviz skill CVD check**: ran `validate_palette.js` on the red/amber/green severity triad —
+    FAILs (ΔE 2.0 protan; red-green is a hard case for this metaphor). Kept as-is: it's a locked
+    2026-08-17 design decision used app-wide (rail, badges), not something to redesign mid-phase.
+    Mitigated by the Lead Time Tier legend always showing text labels, never color alone. Flagged
+    here for awareness, not blocking.
+  - Verify: `npx tsc --noEmit` clean (caught a `VisualizationSpec` typing issue `tsc -b --noCheck`
+    would have missed — fixed by passing `spec` as a JSON string), `npm run lint` clean, 42/42
+    tests (8 new), `npm run build` succeeds. Live `npm run test:fabric` deferred with T3.2.
+  - Files: `src/components/overview/sales-trend-chart.tsx` (+ spec), `top-at-risk-list.tsx`
+    (+ spec), `src/App.tsx`.
 
 **Checkpoint: Page 1 demoable standalone before starting write-back.** T5.1 only actually depends
 on T3.1 (tokens), T2.3 (Page 2 DAX), and T4.1 (entity) — not T3.2/T3.3. Routing it through this

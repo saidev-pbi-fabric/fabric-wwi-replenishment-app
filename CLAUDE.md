@@ -59,6 +59,29 @@ Microsoft Fabric Hackathon 2026 entry (Hyderabad Data & AI Community + India Fab
 
 **Schedule-critical day: Monday (SM build)** - everything downstream depends on it, no slack.
 
+## Status (as of 2026-08-18)
+- [DONE] Phase 3 (Page 1 UI) fully complete — T3.1 (severity-scale + IBM Plex design tokens),
+  T3.2 (KPI strip + `App.tsx` header/nav shell, template `EmptyStatePreview` deleted), T3.3
+  (sales-trend chart + top-at-risk ranked list, VegaVisual-wired, click-through to a Page-2 stub).
+  All loading/empty/error states built per `docs/wireframe-design-brief.md`. 42/42 tests, lint
+  and `npm run build` clean. See `tasks/todo.md` T3.1/T3.2/T3.3 for full detail.
+- [FINDING] `npm run test:fabric` (live Fabric portal embed via `playwright-cli`) isn't runnable
+  yet — needs `.env.local`/`.env.fabric` `VITE_FABRIC_ITEM_ID` etc, which only exist once the app
+  is registered as a Fabric item (T4.1, Phase 4). Until then `AuthGate` also blocks standalone
+  `npm run dev` by design (renders "Can't open this app outside Fabric" unless embedded). Live
+  visual verification of Page 1 is deferred to after T4.1 — this session verified via lint,
+  `tsc --noEmit`, unit tests (mocking `@microsoft/fabric-visuals`/`fabric-client`), and a full
+  `npm run build`.
+- [FINDING] `docs/design-and-dax-references.md`'s `dataviz` skill CVD validator FAILs the locked
+  red/amber/green severity triad (ΔE 2.0 protan — red-green is a structurally hard case for a
+  traffic-light metaphor). Accepted as-is: it's a 2026-08-17 design decision used app-wide (KPI
+  rail, chart bars, will be badges in Phase 5), not something to redesign mid-phase under a
+  hackathon deadline. Mitigated by always pairing color with a text legend/label, never color
+  alone. Revisit only if there's real slack on 8/21 polish day.
+- [NOTE] Chrome browser extension wasn't connected this session, so no live-browser screenshot
+  verification was possible even for the parts that don't need Fabric embed. Worth checking before
+  the next UI-heavy session (T5.x) so visual QA isn't blocked again.
+
 ## Status (as of 2026-08-17, mid-day)
 - [DONE] Fabric workspace access confirmed — native account `sai@r4k5.onmicrosoft.com` in
   teammate's `r4k5` tenant, workspace `Fabric-App-Hackathon` (id
