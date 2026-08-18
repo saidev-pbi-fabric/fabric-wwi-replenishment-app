@@ -5,12 +5,130 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-import { EmptyStatePreview } from "./EmptyStatePreview";
+import { useState } from "react";
+import { Moon, Sun } from "lucide-react";
+import { useThemeContext } from "@/hooks/theme.context";
+import { KpiStrip } from "@/components/overview/kpi-strip";
+import { SalesTrendChart } from "@/components/overview/sales-trend-chart";
+import { TopAtRiskList } from "@/components/overview/top-at-risk-list";
+import { cn } from "@/lib/utils";
 
-// Replace `<EmptyStatePreview />` with your dashboard, remove the import
-// above, and delete `EmptyStatePreview.tsx` and `empty-state-preview-world-map.png`.
+type Page = "overview" | "action-center";
+
 function App() {
-    return <EmptyStatePreview />;
+    const [page, setPage] = useState<Page>("overview");
+    const [selectedItemName, setSelectedItemName] = useState<string | null>(null);
+
+    const goToActionCenter = (stockItemName: string) => {
+        setSelectedItemName(stockItemName);
+        setPage("action-center");
+    };
+
+    return (
+        <div className="flex min-h-full flex-col bg-background">
+            <header className="flex items-center justify-between border-b border-border px-500 py-300">
+                <div className="flex items-center gap-600">
+                    <span className="font-heading text-500 font-semibold tracking-tight text-foreground">
+                        WWI Replenishment
+                    </span>
+                    <nav className="flex items-center gap-200" aria-label="Pages">
+                        <NavTab active={page === "overview"} onClick={() => setPage("overview")}>
+                            Overview
+                        </NavTab>
+                        <NavTab active={page === "action-center"} onClick={() => setPage("action-center")}>
+                            Action Center
+                        </NavTab>
+                    </nav>
+                </div>
+                <ThemeToggle />
+            </header>
+
+            <main className="mx-auto w-full max-w-[1400px] flex-1 p-500">
+                {page === "overview" ? (
+                    <OverviewPage onSelectItem={goToActionCenter} />
+                ) : (
+                    <ActionCenterStub selectedItemName={selectedItemName} />
+                )}
+            </main>
+        </div>
+    );
+}
+
+function NavTab({
+    active,
+    onClick,
+    children,
+}: {
+    active: boolean;
+    onClick: () => void;
+    children: React.ReactNode;
+}) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            aria-current={active ? "page" : undefined}
+            className={cn(
+                "rounded-md px-300 py-100-nudge font-base text-300 transition-colors",
+                active
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+            )}
+        >
+            {children}
+        </button>
+    );
+}
+
+function ThemeToggle() {
+    const { isDark, toggleTheme } = useThemeContext();
+    return (
+        <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
+            className="flex icon-size-600 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+        >
+            {isDark ? <Sun className="icon-size-300" /> : <Moon className="icon-size-300" />}
+        </button>
+    );
+}
+
+function OverviewPage({ onSelectItem }: { onSelectItem: (stockItemName: string) => void }) {
+    return (
+        <div className="flex flex-col gap-500">
+            <div>
+                <h1 className="font-heading text-600 font-semibold text-foreground">
+                    Replenishment Overview
+                </h1>
+                <p className="mt-100 font-base text-300 text-muted-foreground">
+                    Demand-driven reorder attention, ranked by sales velocity vs. lead time.
+                </p>
+            </div>
+            <KpiStrip />
+            <div className="grid grid-cols-1 gap-500 lg:grid-cols-3">
+                <div className="lg:col-span-2">
+                    <SalesTrendChart />
+                </div>
+                <div className="lg:col-span-1">
+                    <TopAtRiskList onSelectItem={onSelectItem} />
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function ActionCenterStub({ selectedItemName }: { selectedItemName: string | null }) {
+    return (
+        <div className="flex flex-col gap-300">
+            <h1 className="font-heading text-600 font-semibold text-foreground">Action Center</h1>
+            <p className="font-base text-300 text-muted-foreground">
+                {selectedItemName
+                    ? `Selected: ${selectedItemName}. Full detail + write-back panel lands in Phase 5 (T5.1-T5.3).`
+                    : "Full master-detail Action Center lands in Phase 5 (T5.1-T5.3)."}
+            </p>
+        </div>
+    );
 }
 
 export default App;
