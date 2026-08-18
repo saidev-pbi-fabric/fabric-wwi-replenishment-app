@@ -78,9 +78,35 @@ Microsoft Fabric Hackathon 2026 entry (Hyderabad Data & AI Community + India Fab
   rail, chart bars, will be badges in Phase 5), not something to redesign mid-phase under a
   hackathon deadline. Mitigated by always pairing color with a text legend/label, never color
   alone. Revisit only if there's real slack on 8/21 polish day.
-- [NOTE] Chrome browser extension wasn't connected this session, so no live-browser screenshot
-  verification was possible even for the parts that don't need Fabric embed. Worth checking before
-  the next UI-heavy session (T5.x) so visual QA isn't blocked again.
+- [DONE] **Local visual verification unblocked, durably.** The two findings above led to a real
+  fix, not just a workaround: (1) Playwright is now available via `npx -y playwright@latest` with
+  chromium already installed on this machine (`C:\Users\user\AppData\Local\ms-playwright`) — the
+  Chrome extension not connecting is no longer a blocker for screenshotting the app. (2)
+  `AuthGate` (`src/components/auth-gate.component.tsx`) and `main.tsx`'s `createAuthService()` now
+  have a dev-only bypass: unauthenticated + `import.meta.env.DEV` renders the app with a "DEV
+  PREVIEW" badge instead of the Fabric-only notice, and a `bootstrapAuth()` failure (missing
+  Rayfin env vars, expected pre-T4.1) falls back to an unauthenticated stub instead of failing to
+  boot the SPA. (3) `src/lib/dev-preview-fixtures.ts` + a per-component dev-fixture ternary
+  (`import.meta.env.DEV && !import.meta.env.VITEST && panel.status === "error" ? FIXTURE : ...`)
+  renders the real success-state UI (filled KPI tiles, chart, ranked bars) locally too, not just
+  the error state. All of this is gated on `import.meta.env.DEV`, verified false-and-stripped in
+  the production bundle by grepping the built JS for the dev-only strings (zero matches). To
+  screenshot: `npm run dev`, then `npx -y playwright@latest screenshot --color-scheme light
+  --full-page http://localhost:5173 out.png` (or a small node script with the `playwright` package
+  installed locally for console/error capture — see this session's scratchpad pattern).
+- [FINDING] This same local-render pass caught a real bug lint/tests/build all missed: the
+  top-at-risk-items bar chart colored by Lead Time Priority Tier had no explicit `scale.domain`,
+  so Vega-Lite alphabetized it (Long, Medium, Short) — "Long" (highest risk) rendered green,
+  "Short" rendered red, backwards. Fixed by pinning `encoding.color.scale.domain:
+  ["Short","Medium","Long"]` in `top-at-risk-items.json`; regression test added. **Lesson:
+  code passing lint/tests/build is not sufficient sign-off for UI work — render it and look.**
+- [PROCESS] Ran `/agent-skills:review` (code-review-and-quality skill) on the Phase 3 diff per the
+  locked `addyosmani/agent-skills` tooling stack — hadn't been using the 8 lifecycle commands
+  (`/spec /plan /build /test /review /webperf /code-simplify /ship`) beyond the initial `/spec`
+  and `/plan` calls; had been hand-driving `tasks/todo.md` since. The review pass found and fixed
+  a real architecture issue (3 components duplicating the same loading/error/empty branching,
+  extracted to `src/hooks/use-query-panel.ts`) — worth running `/agent-skills:review` again before
+  each phase is considered done, not just at the end.
 
 ## Status (as of 2026-08-17, mid-day)
 - [DONE] Fabric workspace access confirmed — native account `sai@r4k5.onmicrosoft.com` in
