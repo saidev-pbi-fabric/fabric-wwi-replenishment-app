@@ -138,11 +138,33 @@ dependency; a second team member can start T5.1 in parallel with T3.2/T3.3 if Pa
 
 ## Phase 4 — Write-back Foundation
 
-- [ ] **T4.1** — Define `ReorderAction` Rayfin entity, flip `data.enabled: true`, deploy schema
-  - Acceptance: `rayfin up` succeeds; `client.data.ReorderAction` create/read round-trips from a
-    scratch script or console.
-  - Verify: `npx rayfin up status`; manual create → read check.
-  - Files: `rayfin/rayfin.yml`, `rayfin/data/schema.ts`, `rayfin/data/reorder-action.ts`.
+- [x] **T4.1** — Define `ReorderAction` Rayfin entity, flip `data.enabled: true`, deploy schema
+      (done 8/18, one acceptance criterion partially deferred — see note)
+  - App deployed as a real Fabric item in `Fabric-App-Hackathon` (item id
+    `1abea9ee-a336-481b-95e7-16987ff27cca`), static hosting live at
+    `https://clear-flora-56b47b3cae-westus.webapp.fabricapps.net`, `ReorderAction` schema applied
+    to the provisioned SQL database (12 fields, `status` as a DB-level enum constraint via
+    `@set()`, verified field-by-field in the `rayfin up db apply` output).
+  - Two real deploy bugs found + fixed (not spec-authoring guesses): `rayfin.yml` needed
+    `dialect: mssql` alongside `data.enabled: true` (server rejects it otherwise); entity
+    compilation needed its own `rayfin/tsconfig.json` (the root `tsconfig.json` has `noEmit: true`
+    for Vite — without an override, `tsc` reported "successful" while emitting zero files).
+  - Deviated from SPEC.md's illustrative snippet in 2 places after checking the real decorator
+    types: `status` uses `@set()` not `@text()` (enum constraint, not just a comment); `createdAt`
+    is `Date` not `string` (matches `@date()`'s actual signature).
+  - Note (acceptance not fully met): "`client.data.ReorderAction` create/read round-trips from a
+    scratch script" could not be completed. `ReorderAction`'s `@authenticated()` policy requires a
+    token from Rayfin's embedded Fabric SSO flow specifically — confirmed by reading
+    `@microsoft/rayfin-auth-provider-fabric`'s source (postMessage bridge, embedded-only, no
+    standalone token path). `az account get-access-token` tokens (both Fabric and Power BI
+    resources) were rejected with 401. `npm run test:fabric` also isn't runnable — it shells out to
+    a `playwright-cli` tool not installed on this machine (pre-existing gap from an earlier
+    session, not fixed here). Real round-trip verification deferred to T5.2, where a live
+    Fabric-embedded click-through through the actual write-back form exercises create/read
+    naturally.
+  - Verify: `npx rayfin up status` (auth + data both enabled, SQL database provisioned, endpoint
+    reachable); `npx rayfin up db apply` output.
+  - Files: `rayfin/rayfin.yml`, `rayfin/data/reorder-action.ts`, `rayfin/tsconfig.json`.
 
 ## Phase 5 — Page 2: Action Center
 
