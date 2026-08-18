@@ -8,16 +8,17 @@
 import { useState } from "react";
 import { Moon, Sun } from "lucide-react";
 import { useThemeContext } from "@/hooks/theme.context";
+import { LandingPage } from "@/components/landing/landing-page";
 import { KpiStrip } from "@/components/overview/kpi-strip";
 import { SalesTrendChart } from "@/components/overview/sales-trend-chart";
 import { TopAtRiskList } from "@/components/overview/top-at-risk-list";
 import { ActionCenter } from "@/components/action-center/action-center";
 import { cn } from "@/lib/utils";
 
-type Page = "overview" | "action-center";
+type Page = "landing" | "overview" | "action-center";
 
 function App() {
-    const [page, setPage] = useState<Page>("overview");
+    const [page, setPage] = useState<Page>("landing");
     const [selectedItemName, setSelectedItemName] = useState<string | null>(null);
 
     const goToActionCenter = (stockItemName: string) => {
@@ -29,10 +30,17 @@ function App() {
         <div className="flex min-h-full flex-col bg-background">
             <header className="flex items-center justify-between border-b border-border px-500 py-300">
                 <div className="flex items-center gap-600">
-                    <span className="font-heading text-500 font-semibold tracking-tight text-foreground">
+                    <button
+                        type="button"
+                        onClick={() => setPage("landing")}
+                        className="font-heading text-500 font-semibold tracking-tight text-foreground"
+                    >
                         WWI Replenishment
-                    </span>
+                    </button>
                     <nav className="flex items-center gap-200" aria-label="Pages">
+                        <NavTab active={page === "landing"} onClick={() => setPage("landing")}>
+                            Home
+                        </NavTab>
                         <NavTab active={page === "overview"} onClick={() => setPage("overview")}>
                             Overview
                         </NavTab>
@@ -45,7 +53,9 @@ function App() {
             </header>
 
             <main className="mx-auto w-full max-w-[1400px] flex-1 p-500">
-                {page === "overview" ? (
+                {page === "landing" ? (
+                    <LandingPage onOpenDashboard={() => setPage("overview")} />
+                ) : page === "overview" ? (
                     <OverviewPage onSelectItem={goToActionCenter} />
                 ) : (
                     <ActionCenterPage initialSelectedItemName={selectedItemName} />

@@ -245,15 +245,32 @@ dependency; a second team member can start T5.1 in parallel with T3.2/T3.3 if Pa
 
 ## Phase 6 — Validation & Polish
 
-- [ ] **T6.1** — Full `app-validation` pass across both pages (accessibility, console errors,
-      visual-consistency checklist), plus a clean build
-  - Acceptance: no console errors from `http://localhost:5173` sources; no visual-consistency
-    check failures; `npm run lint`, `npm test`, and `npm run build` all pass clean (per `SPEC.md`
-    Success Criteria — `build` also type-checks and regenerates `fabric.generated.ts`, so this is
-    the one place a break would otherwise slip through every prior task).
-  - Verify: `npm run test:fabric` walking the full checklist in the `app-validation` skill, then
-    `npm run lint && npm test && npm run build`.
-  - Files: none / small fixes as issues surface.
+- [x] **T6.1** — Full `app-validation` pass across both pages (accessibility, console errors,
+      visual-consistency checklist), plus a clean build — **done 8/18**
+  - Real bugs found from live-portal screenshots the user sent, not from local dev preview alone
+    (dev fixtures shared the same blind spots): (1) `ranked-at-risk-list.dax` had no `TOPN`, pulling
+    every stock item in the model (hundreds, incl. zero-suggested-reorder noise rows) — the actual
+    cause of the "page is too long to scroll" complaint, not a CSS issue. Capped to `TOPN(25)`,
+    matching Page 1's chart pattern. (2) The list panel's `overflow-y-auto` did nothing because no
+    ancestor had a bounded height — gave it a real `max-h-[640px]`. (3) Page 1's chart had no
+    lead-time filter while Page 2 did — extended `top-at-risk-items.dax` to the same
+    `TOPN(25)`-superset-then-client-filter-then-slice-10 pattern so both pages now share one
+    `TIER_FILTERS` constant (extracted to `src/lib/severity.ts`). (4) Long WWI item names crowded
+    the chart's y-axis — added `axis.labelLimit: 160` for ellipsis truncation. (5) Item-detail header
+    showed literal "N/A · N/A" for stock items with no real brand/color in the WWI sample (mostly
+    non-apparel SKUs) — now omitted when both are "N/A". (6) Finished the icon pass started in the
+    prior WIP commit — added header icons to the 3 remaining components (ranked list, reorder form,
+    reorder history) for parity with the KPI strip/charts.
+  - Verify: 85/85 tests (11 new), `npm run lint` (0 errors), `tsc --noEmit` clean, `npm run build`
+    clean with zero dev-fixture-string leakage into the prod bundle, screenshot-verified locally in
+    both light and dark (Overview + Action Center). **Not verified**: `npm run test:fabric`
+    (live Fabric portal walkthrough) — no Fabric-authenticated browser session available in this
+    environment; redeployed via `rayfin up` instead and left live-portal confirmation to the user.
+  - Files: `src/queries/action-center/ranked-at-risk-list.dax`, `src/queries/overview/top-at-risk-items.dax`,
+    `src/queries/overview/top-at-risk-items.json`, `src/lib/severity.ts`,
+    `src/components/action-center/ranked-list-panel.tsx`, `src/components/action-center/item-detail-panel.tsx`,
+    `src/components/action-center/reorder-action-form.tsx`, `src/components/action-center/reorder-action-history.tsx`,
+    `src/components/overview/top-at-risk-list.tsx` + specs for each.
 
 - [ ] **T6.2** — Talk-track outline + buffer for bug fixes (Fri 8/21)
   - Acceptance: a short talk-track exists covering the scenario, the two pages, and the write-back
@@ -261,15 +278,27 @@ dependency; a second team member can start T5.1 in parallel with T3.2/T3.3 if Pa
   - Verify: dry-run the talk track against the running app.
   - Files: `docs/talk-track.md` (optional, not blocking).
 
-- [ ] **T6.4** — Landing page (Fri 8/21; decided 2026-08-17, see `CLAUDE.md` locked scope)
-  - Problem framing + one-liner pitch + entry point into the Overview page. Rich is fine, not
-    required to be minimal — no DAX wiring needed so it's genuinely cheap relative to Phase 3-5.
-    Scope/visual design not locked yet; decide at build time, same design language as
-    `docs/wireframe-design-brief.md` (severity-rail motif, IBM Plex fonts).
-  - Acceptance: renders with real app framing (not a stock template splash), links into the
-    Overview page, matches the locked visual direction.
-  - Verify: `npm run test:fabric`, visual check against the wireframe brief's tone.
-  - Files: new landing component + route in `App.tsx`.
+- [x] **T6.4** — Landing page (built 8/18, ahead of the Fri 8/21 slot; decided 2026-08-17, see
+      `CLAUDE.md` locked scope)
+  - Built `src/components/landing/landing-page.tsx`: hero (event/track eyebrow, app name, one-liner
+    pitch, primary CTA "Open the Dashboard"), a "The problem" section (reused verbatim from
+    `docs/hackathon-registration-details.md`'s problem statement so the pitch stays consistent
+    across the app and the registration write-up), a 3-card "how it works" row (surface risk /
+    record action / track status), a disclosed-proxy dataset callout (WWI sample, no real
+    backorder data — same honesty framing as `docs/wwi-schema-reference.md`), and a tech-stack
+    strip. Wired into `App.tsx` as a new `"landing"` page, default on load, with a "Home" nav tab
+    and the header title also acting as a home link.
+  - Acceptance: renders with real app framing (not a stock template splash) — met, content is
+    project-specific throughout, no placeholder copy. Links into the Overview page — met, CTA and
+    Home nav both wired and tested. Matches the locked visual direction — met, reuses the same
+    card/rail/icon language as the KPI strip and query panels (`rounded-lg border bg-card
+    shadow-sm`, IBM Plex via the existing font tokens); deliberately did NOT reuse the
+    critical/at-risk/on-track severity colors here since this content isn't conveying risk status
+    (`dataviz` skill: status colors are reserved, never repurposed for unrelated content).
+  - Verify: 5 new component tests + 3 new `App.spec.tsx` tests (default page, CTA navigation, Home
+    nav), full suite 85/85, lint/tsc/build clean, screenshot-verified locally light + dark. **Not
+    verified**: `npm run test:fabric` (live Fabric portal) — same environment limitation as T6.1.
+  - Files: `src/components/landing/landing-page.tsx` (+ spec), `src/App.tsx` (+ spec).
 
 - [ ] **T6.3 (stretch, optional)** — Tabular Editor 2 (free CLI) Best Practice Analyzer sanity pass
       on the semantic model (Fri 8/21, only if T6.1/T6.2 leave slack)
