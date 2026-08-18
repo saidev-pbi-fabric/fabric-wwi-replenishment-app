@@ -55,7 +55,7 @@ const successResult = {
             { name: "[Demand Trend]" },
             { name: "[At Risk Rank]" },
         ],
-        rows: [["Widget A", "Short", 42, 0.1, 1]],
+        rows: [["Widget A", "Short Lead Time", 42, 0.1, 1]],
     },
     fromCache: false,
 };

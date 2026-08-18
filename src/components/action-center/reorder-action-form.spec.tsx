@@ -49,7 +49,7 @@ const DETAIL_TABLE = {
         { name: "[Suggested Reorder Qty]" },
         { name: "[At Risk Rank]" },
     ],
-    rows: [[17, "Shipping carton (Brown)", "Contoso", "Brown", 18, "Long", 4.25, 6.5, 62.4, 0.34, 1840, 1]],
+    rows: [[17, "Shipping carton (Brown)", "Contoso", "Brown", 18, "Long Lead Time", 4.25, 6.5, 62.4, 0.34, 1840, 1]],
 };
 
 describe("ReorderActionForm", () => {

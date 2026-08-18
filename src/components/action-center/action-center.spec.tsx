@@ -43,8 +43,8 @@ const LIST_TABLE = {
         { name: "[At Risk Rank]" },
     ],
     rows: [
-        [17, "Shipping carton (Brown)", "Long", 1840, 0.34, 1],
-        [126, "Pallet wrap 500mm x 300m", "Short", 940, 0.15, 5],
+        [17, "Shipping carton (Brown)", "Long Lead Time", 1840, 0.34, 1],
+        [126, "Pallet wrap 500mm x 300m", "Short Lead Time", 940, 0.15, 5],
     ],
 };
 
@@ -63,7 +63,7 @@ const DETAIL_TABLE = {
         { name: "[Suggested Reorder Qty]" },
         { name: "[At Risk Rank]" },
     ],
-    rows: [[126, "Pallet wrap 500mm x 300m", "Contoso", "Clear", 6, "Short", 2.1, 3.4, 20.1, 0.15, 940, 5]],
+    rows: [[126, "Pallet wrap 500mm x 300m", "Contoso", "Clear", 6, "Short Lead Time", 2.1, 3.4, 20.1, 0.15, 940, 5]],
 };
 
 describe("ActionCenter", () => {

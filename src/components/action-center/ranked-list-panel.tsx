@@ -13,7 +13,14 @@ import { cn } from "@/lib/utils";
 import { RANKED_AT_RISK_LIST_FIXTURE } from "@/lib/dev-preview-fixtures";
 import { LEAD_TIME_RAIL_CLASS } from "@/lib/severity";
 
-const TIER_FILTERS = ["All", "Short", "Medium", "Long"] as const;
+// Filter values are the real Stock Item[Lead Time Priority Tier] strings
+// (verified live against the semantic model) — displayed with the
+// " Lead Time" suffix trimmed for a compact dropdown, see tierFilterLabel.
+const TIER_FILTERS = ["All", "Short Lead Time", "Medium Lead Time", "Long Lead Time"] as const;
+
+function tierFilterLabel(tier: (typeof TIER_FILTERS)[number]): string {
+    return tier === "All" ? "All" : tier.replace(" Lead Time", "");
+}
 
 interface Row {
     key: number;
@@ -122,7 +129,7 @@ export function RankedListPanel({
                     >
                         {TIER_FILTERS.map((tier) => (
                             <option key={tier} value={tier}>
-                                {tier}
+                                {tierFilterLabel(tier)}
                             </option>
                         ))}
                     </select>

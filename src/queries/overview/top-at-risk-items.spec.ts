@@ -34,14 +34,18 @@ describe("topAtRiskItems", () => {
         expect(result.vegaLiteSpec.encoding.color.field).toBe("LeadTimePriorityTier");
     });
 
-    it("pins the color domain to Short/Medium/Long, not Vega-Lite's alphabetical default", () => {
+    it("pins the color domain to the real Short/Medium/Long Lead Time values, not Vega-Lite's alphabetical default", () => {
         // Regression: without an explicit domain, Vega-Lite alphabetizes nominal
         // domains (Long, Medium, Short), which inverted the severity color mapping —
         // "Long" (highest risk) rendered green instead of red. See top-at-risk-list.tsx.
+        // Domain values are the real Stock Item[Lead Time Priority Tier] strings
+        // ("Short Lead Time" etc, verified live against the semantic model) — an
+        // earlier version of this domain used bare "Short"/"Medium"/"Long", which
+        // never matched any real row and silently disabled the color mapping.
         expect(result.vegaLiteSpec.encoding.color.scale.domain).toEqual([
-            "Short",
-            "Medium",
-            "Long",
+            "Short Lead Time",
+            "Medium Lead Time",
+            "Long Lead Time",
         ]);
     });
 });

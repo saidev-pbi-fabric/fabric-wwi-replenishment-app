@@ -28,8 +28,8 @@ const TABLE = {
         { name: "[At Risk Rank]" },
     ],
     rows: [
-        [17, "Shipping carton (Brown)", "Long", 1840, 0.34, 1],
-        [126, "Pallet wrap 500mm x 300m", "Short", 940, 0.15, 5],
+        [17, "Shipping carton (Brown)", "Long Lead Time", 1840, 0.34, 1],
+        [126, "Pallet wrap 500mm x 300m", "Short Lead Time", 940, 0.15, 5],
     ],
 };
 
@@ -60,7 +60,7 @@ describe("RankedListPanel", () => {
         const row = await screen.findByText("Shipping carton (Brown)");
         fireEvent.click(row);
 
-        expect(onSelectItem).toHaveBeenCalledWith(17, "Shipping carton (Brown)", "Long");
+        expect(onSelectItem).toHaveBeenCalledWith(17, "Shipping carton (Brown)", "Long Lead Time");
     });
 
     it("filters rows client-side by lead time tier", async () => {
@@ -68,7 +68,7 @@ describe("RankedListPanel", () => {
         render(<RankedListPanel selectedStockItemKey={null} onSelectItem={vi.fn()} />);
 
         await screen.findByText("Shipping carton (Brown)");
-        fireEvent.change(screen.getByLabelText("Filter by lead time"), { target: { value: "Short" } });
+        fireEvent.change(screen.getByLabelText("Filter by lead time"), { target: { value: "Short Lead Time" } });
 
         expect(screen.queryByText("Shipping carton (Brown)")).not.toBeInTheDocument();
         expect(screen.getByText("Pallet wrap 500mm x 300m")).toBeInTheDocument();

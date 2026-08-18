@@ -17,8 +17,10 @@ import { TOP_AT_RISK_ITEMS_FIXTURE } from "@/lib/dev-preview-fixtures";
 // Vega renders to SVG and can't resolve `var(--color-*)`, so the severity
 // scale is duplicated here as literal hex, matching global.css exactly.
 // Order matches the explicit `scale.domain` pinned in top-at-risk-items.json
-// (Short/Medium/Long) — Vega-Lite otherwise alphabetizes the domain, which
-// previously inverted the severity mapping (Long rendered green).
+// (Short/Medium/Long Lead Time, the real Stock Item[Lead Time Priority Tier]
+// values verified live against the semantic model) — Vega-Lite otherwise
+// alphabetizes the domain, which previously inverted the severity mapping
+// (Long rendered green).
 const SEVERITY_RANGE = {
     light: ["#0e700e", "#9a6700", "#c50f1f"], // Short / Medium / Long lead time
     dark: ["#54c454", "#e0a828", "#f1707b"],

@@ -14,7 +14,7 @@
       "field": "LeadTimePriorityTier",
       "type": "nominal",
       "title": "Lead Time",
-      "scale": { "domain": ["Short", "Medium", "Long"] }
+      "scale": { "domain": ["Short Lead Time", "Medium Lead Time", "Long Lead Time"] }
     }
   }
 }
