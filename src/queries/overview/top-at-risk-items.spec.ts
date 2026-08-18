@@ -9,17 +9,14 @@ import { describe, it, expect } from "vitest";
 import { topAtRiskItems } from "./top-at-risk-items";
 
 describe("topAtRiskItems", () => {
-    const result = topAtRiskItems();
+    const result = topAtRiskItems("All");
 
     it("targets the wwiRetail connection", () => {
         expect(result.connection).toBe("wwiRetail");
     });
 
-    it("ranks the top 25 items by At Risk Rank (superset, filtered/sliced client-side)", () => {
-        // Fetches a superset so the page's lead-time filter has rows to filter
-        // from; the chart itself still only displays the top 10 after filtering
-        // — see TopAtRiskList's client-side slice.
-        expect(result.query).toContain("TOPN(\n    25,");
+    it("ranks the top 10 items by At Risk Rank", () => {
+        expect(result.query).toContain("TOPN(\n    10,");
         expect(result.query).toContain("[At Risk Rank]");
     });
 
@@ -54,5 +51,21 @@ describe("topAtRiskItems", () => {
             "Medium Lead Time",
             "Long Lead Time",
         ]);
+    });
+
+    it("applies no tier filter for 'All'", () => {
+        expect(result.query).not.toContain("FILTER(ALL('Stock Item'[Lead Time Priority Tier])");
+    });
+
+    // Regression: this chart used to fetch one global TOPN(25) and filter/slice
+    // it client-side by tier. On the real data, Medium Lead Time dominates the
+    // top of At Risk Rank (Long doesn't appear until rank 27, Short not until
+    // rank 43), so a global top-25 silently excluded both — selecting "Short" or
+    // "Long" showed an empty chart. Each tier now queries its own top 10.
+    it("filters server-side to the selected tier, so a tier can never be silently excluded by the global rank cutoff", () => {
+        const filtered = topAtRiskItems("Long Lead Time");
+        expect(filtered.query).toContain(
+            "FILTER(ALL('Stock Item'[Lead Time Priority Tier]), 'Stock Item'[Lead Time Priority Tier] = \"Long Lead Time\")",
+        );
     });
 });

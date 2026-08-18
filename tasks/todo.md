@@ -266,6 +266,34 @@ dependency; a second team member can start T5.1 in parallel with T3.2/T3.3 if Pa
     both light and dark (Overview + Action Center). **Not verified**: `npm run test:fabric`
     (live Fabric portal walkthrough) — no Fabric-authenticated browser session available in this
     environment; redeployed via `rayfin up` instead and left live-portal confirmation to the user.
+  - **[FOLLOW-UP BUG, found by the user on the live portal, fixed same day]** Item (3) above shipped
+    broken: the "client-filter a shared global TOPN(25)/(10)" design was wrong on the real data.
+    Queried the live semantic model directly (Power BI REST `executeQueries`, not just
+    fixtures/unit tests) and confirmed Medium Lead Time dominates the top of `At Risk Rank`
+    (582 of 672 stock items are Medium tier) — Long doesn't appear until rank 27, Short not until
+    rank 43. A global TOPN(25) cap silently excluded both, so selecting "Short" or "Long" in either
+    page's filter always showed zero rows/an empty chart. Root cause of why the earlier fix's own
+    unit tests didn't catch this: the test fixtures were hand-built with one row per tier by
+    construction, which can never reproduce a real skewed distribution — a process gap, not a
+    tooling one. Fixed properly: both `ranked-at-risk-list.dax` and `top-at-risk-items.dax` now
+    take a `{{TIER_FILTER}}` placeholder (same safe-substitution pattern as `item-detail.dax`'s
+    `{{STOCK_ITEM_KEY}}`, enum-only, no injection risk) so each tier gets its own server-side
+    ranked query instead of a client-side slice — `tierFilterClause()` in `src/lib/severity.ts`.
+    Also fixed a real DAX syntax bug caught only by live execution (unit tests can't catch invalid
+    DAX): `SUMMARIZECOLUMNS`'s filter-table arguments must come directly after the group-by columns,
+    not after the named measure pairs — moving the placement fixed a
+    "`SUMMARIZECOLUMNS` expects a column name as argument number 9" error. Also added a real
+    filter-aware "No items match this tier" empty state (previously a blank box with no way to
+    change the filter — the empty-state branches had returned early before the header/dropdown
+    rendered at all) and fixed the KPI strip's neutral-severity tiles, which used a fully
+    transparent left rail and looked visually "incomplete" next to the colored-rail tiles beside
+    them (also user-flagged) — now a visible neutral gray rail (`border-l-border`).
+  - Verify (follow-up): live-queried the corrected DAX directly against the semantic model (not
+    fixtures) for every tier — `ranked-at-risk-list` (Page 2, TOPN 25): Short → 25 real rows.
+    `top-at-risk-items` (Page 1, TOPN 10): All → 10, Short → 10, Long → 4 (real data — only 4 of
+    the 12 Long-tier items have a computable risk signal in this ~11-month sample window; that's a
+    genuine data characteristic, not a bug). 91/91 tests (6 new, incl. explicit regressions for
+    this exact bug), lint/tsc/build clean, zero dev-fixture leakage, redeployed via `rayfin up`.
   - Files: `src/queries/action-center/ranked-at-risk-list.dax`, `src/queries/overview/top-at-risk-items.dax`,
     `src/queries/overview/top-at-risk-items.json`, `src/lib/severity.ts`,
     `src/components/action-center/ranked-list-panel.tsx`, `src/components/action-center/item-detail-panel.tsx`,

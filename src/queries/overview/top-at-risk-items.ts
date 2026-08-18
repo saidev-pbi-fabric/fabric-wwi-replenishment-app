@@ -1,5 +1,6 @@
 import type { ColumnMetadataMap } from "@/lib/to-data-table";
-import query from "./top-at-risk-items.dax?raw";
+import { TIER_FILTERS, tierFilterClause } from "@/lib/severity";
+import queryTemplate from "./top-at-risk-items.dax?raw";
 import spec from "./top-at-risk-items.json";
 
 const connection = "wwiRetail"; // from fabric.yaml
@@ -15,6 +16,12 @@ const columnMetadata: ColumnMetadataMap = {
   "[At Risk Rank]": { name: "AtRiskRank", displayName: "Rank" },
 };
 
-export function topAtRiskItems() {
+/**
+ * Top 10 at-risk items for the selected lead-time tier (or every tier for
+ * "All"). Filters server-side — see tierFilterClause's doc comment for why a
+ * client-side slice of one shared global TOPN was wrong on the real data.
+ */
+export function topAtRiskItems(tierFilter: (typeof TIER_FILTERS)[number]) {
+  const query = queryTemplate.replace("{{TIER_FILTER}}", tierFilterClause(tierFilter));
   return { connection, query, columnMetadata, vegaLiteSpec: spec };
 }

@@ -1,5 +1,6 @@
 import type { ColumnMetadataMap } from "@/lib/to-data-table";
-import query from "./ranked-at-risk-list.dax?raw";
+import { TIER_FILTERS, tierFilterClause } from "@/lib/severity";
+import queryTemplate from "./ranked-at-risk-list.dax?raw";
 
 const connection = "wwiRetail"; // from fabric.yaml
 
@@ -16,12 +17,13 @@ const columnMetadata: ColumnMetadataMap = {
 };
 
 /**
- * Top 25 ranked at-risk stock items (capped server-side, same TOPN pattern as Page 1's
- * top-at-risk-items chart — an uncapped list here pulled every stock item in the model,
- * including zero-suggested-reorder noise rows). Severity/lead-time filtering happens
- * client-side against LeadTimePriorityTier — no supplier dimension exists in this dataset
- * (see docs/wwi-schema-reference.md), so that's the filter axis instead.
+ * Top 25 ranked at-risk stock items for the selected lead-time tier (or every
+ * tier for "All"). Filters server-side, not client-side against a shared
+ * global TOPN — see tierFilterClause's doc comment for why that mattered on
+ * the real data. No supplier dimension exists in this dataset (see
+ * docs/wwi-schema-reference.md), so lead-time tier is the filter axis instead.
  */
-export function rankedAtRiskList() {
+export function rankedAtRiskList(tierFilter: (typeof TIER_FILTERS)[number]) {
+  const query = queryTemplate.replace("{{TIER_FILTER}}", tierFilterClause(tierFilter));
   return { connection, query, columnMetadata };
 }

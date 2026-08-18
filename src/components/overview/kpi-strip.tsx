@@ -62,7 +62,12 @@ const RAIL_CLASS: Record<Severity, string> = {
     critical: "border-l-critical",
     "at-risk": "border-l-at-risk",
     "on-track": "border-l-on-track",
-    neutral: "border-l-transparent",
+    // Visible neutral gray, not transparent: a transparent rail made these two
+    // tiles look unstyled/unfinished next to the colored-rail tiles beside
+    // them (flagged directly by the user against the live app) — this keeps
+    // all 4 tiles visually consistent while still reserving color for actual
+    // severity.
+    neutral: "border-l-border",
 };
 
 const ICON_CLASS: Record<Severity, string> = {

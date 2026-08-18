@@ -5,7 +5,7 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import type { QueryTable } from "@microsoft/fabric-app-data";
 import { useQueryPanel } from "@/hooks/use-query-panel";
@@ -51,8 +51,8 @@ export function RankedListPanel({
     onSelectItem,
     initialSelectedItemName,
 }: RankedListPanelProps) {
-    const panel = useQueryPanel(rankedAtRiskList());
     const [tierFilter, setTierFilter] = useState<(typeof TIER_FILTERS)[number]>("All");
+    const panel = useQueryPanel(rankedAtRiskList(tierFilter));
     const autoSelectedRef = useRef(false);
 
     // Dev-only fallback so `npm run dev` can render the ready state without
@@ -60,11 +60,20 @@ export function RankedListPanel({
     // `import.meta.env.DEV` check in this module rather than a hook param.
     const usingDevFixture = import.meta.env.DEV && !import.meta.env.VITEST && panel.status === "error";
 
-    const loadedTable = usingDevFixture
-        ? RANKED_AT_RISK_LIST_FIXTURE
-        : panel.status === "ready"
-          ? panel.table
-          : undefined;
+    const loadedTable = useMemo(() => {
+        if (usingDevFixture) {
+            return {
+                columns: RANKED_AT_RISK_LIST_FIXTURE.columns,
+                rows: RANKED_AT_RISK_LIST_FIXTURE.rows.filter(
+                    (row) => tierFilter === "All" || row[2] === tierFilter,
+                ),
+            };
+        }
+        if (panel.status === "ready") return panel.table;
+        if (panel.status === "empty") return { columns: [], rows: [] };
+        return undefined;
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- panel.table/panel.status cover the panel branches
+    }, [usingDevFixture, tierFilter, panel.status]);
 
     useEffect(() => {
         if (autoSelectedRef.current || !initialSelectedItemName || !loadedTable) return;
@@ -95,17 +104,9 @@ export function RankedListPanel({
         );
     }
 
-    if (!usingDevFixture && panel.status === "empty") {
-        return (
-            <div className="flex h-full min-h-[480px] items-center justify-center rounded-lg border border-border bg-card text-300 text-muted-foreground">
-                No at-risk items right now.
-            </div>
-        );
-    }
-
     if (!loadedTable) return null;
 
-    const rows = rowsFromTable(loadedTable).filter((row) => tierFilter === "All" || row.tier === tierFilter);
+    const rows = rowsFromTable(loadedTable);
 
     return (
         <div className="flex max-h-[640px] min-h-[480px] flex-col rounded-lg border border-border bg-card shadow-sm">
@@ -135,31 +136,39 @@ export function RankedListPanel({
                     Sample data — dev preview (no Fabric embed)
                 </p>
             ) : null}
-            <ul className="flex-1 overflow-y-auto">
-                {rows.map((row) => (
-                    <li key={row.key}>
-                        <button
-                            type="button"
-                            onClick={() => onSelectItem(row.key, row.name, row.tier)}
-                            aria-current={row.key === selectedStockItemKey ? "true" : undefined}
-                            className={cn(
-                                "flex w-full items-center justify-between gap-300 border-b border-l-4 border-border px-400 py-300 text-left transition-colors hover:bg-accent",
-                                LEAD_TIME_RAIL_CLASS[row.tier] ?? "border-l-transparent",
-                                row.key === selectedStockItemKey ? "bg-accent" : undefined,
-                            )}
-                        >
-                            <span className="min-w-0 flex-1">
-                                <span className="block truncate font-base text-300 text-foreground">
-                                    {row.name}
+            {rows.length === 0 ? (
+                <div className="flex flex-1 items-center justify-center px-400 py-300 text-300 text-muted-foreground">
+                    {tierFilter === "All"
+                        ? "No at-risk items right now."
+                        : `No at-risk items match "${tierFilterLabel(tierFilter)}" lead time.`}
+                </div>
+            ) : (
+                <ul className="flex-1 overflow-y-auto">
+                    {rows.map((row) => (
+                        <li key={row.key}>
+                            <button
+                                type="button"
+                                onClick={() => onSelectItem(row.key, row.name, row.tier)}
+                                aria-current={row.key === selectedStockItemKey ? "true" : undefined}
+                                className={cn(
+                                    "flex w-full items-center justify-between gap-300 border-b border-l-4 border-border px-400 py-300 text-left transition-colors hover:bg-accent",
+                                    LEAD_TIME_RAIL_CLASS[row.tier] ?? "border-l-transparent",
+                                    row.key === selectedStockItemKey ? "bg-accent" : undefined,
+                                )}
+                            >
+                                <span className="min-w-0 flex-1">
+                                    <span className="block truncate font-base text-300 text-foreground">
+                                        {row.name}
+                                    </span>
+                                    <span className="block font-base text-200 text-muted-foreground">
+                                        Rank #{row.atRiskRank} · Suggested reorder {row.suggestedReorderQty}
+                                    </span>
                                 </span>
-                                <span className="block font-base text-200 text-muted-foreground">
-                                    Rank #{row.atRiskRank} · Suggested reorder {row.suggestedReorderQty}
-                                </span>
-                            </span>
-                        </button>
-                    </li>
-                ))}
-            </ul>
+                            </button>
+                        </li>
+                    ))}
+                </ul>
+            )}
         </div>
     );
 }

@@ -10,22 +10,12 @@ import { AlertTriangle } from "lucide-react";
 import { VegaVisual, useCssTheme } from "@microsoft/fabric-visuals";
 import type { VegaLiteConfig } from "@microsoft/fabric-visuals";
 import type { InteractionEventCallback } from "@microsoft/fabric-visuals-core";
-import type { QueryTable } from "@microsoft/fabric-app-data";
 import { toDataTable } from "@/lib/to-data-table";
 import { topAtRiskItems } from "@/queries/overview/top-at-risk-items";
 import { useQueryPanel } from "@/hooks/use-query-panel";
 import { useThemeContext } from "@/hooks/theme.context";
 import { TOP_AT_RISK_ITEMS_FIXTURE } from "@/lib/dev-preview-fixtures";
 import { TIER_FILTERS, tierFilterLabel } from "@/lib/severity";
-
-const DISPLAY_COUNT = 10;
-
-function filterAndSlice(table: QueryTable, tierFilter: (typeof TIER_FILTERS)[number]): QueryTable {
-    const tierIdx = table.columns.findIndex((col) => col.name === "Stock Item[Lead Time Priority Tier]");
-    const rows =
-        tierFilter === "All" ? table.rows : table.rows.filter((row) => row[tierIdx] === tierFilter);
-    return { columns: table.columns, rows: rows.slice(0, DISPLAY_COUNT) };
-}
 
 // Vega renders to SVG and can't resolve `var(--color-*)`, so the severity
 // scale is duplicated here as literal hex, matching global.css exactly.
@@ -44,11 +34,11 @@ interface TopAtRiskListProps {
 }
 
 export function TopAtRiskList({ onSelectItem }: TopAtRiskListProps) {
-    const { connection, query, columnMetadata, vegaLiteSpec } = topAtRiskItems();
+    const [tierFilter, setTierFilter] = useState<(typeof TIER_FILTERS)[number]>("All");
+    const { connection, query, columnMetadata, vegaLiteSpec } = topAtRiskItems(tierFilter);
     const panel = useQueryPanel({ connection, query });
     const theme = useCssTheme();
     const { isDark } = useThemeContext();
-    const [tierFilter, setTierFilter] = useState<(typeof TIER_FILTERS)[number]>("All");
 
     // Dev-only fallback so `npm run dev` can render the ready state without
     // a Fabric embed. See use-query-panel.ts for why this stays a literal
@@ -72,22 +62,22 @@ export function TopAtRiskList({ onSelectItem }: TopAtRiskListProps) {
         );
     }
 
-    if (!usingDevFixture && panel.status === "empty") {
-        return (
-            <div className="flex h-full min-h-[320px] items-center justify-center rounded-lg border border-border bg-card text-300 text-muted-foreground">
-                No at-risk items right now.
-            </div>
-        );
-    }
-
-    const table = usingDevFixture
-        ? TOP_AT_RISK_ITEMS_FIXTURE
+    const displayTable = usingDevFixture
+        ? {
+              columns: TOP_AT_RISK_ITEMS_FIXTURE.columns,
+              rows: TOP_AT_RISK_ITEMS_FIXTURE.rows.filter((row) => {
+                  const tierIdx = TOP_AT_RISK_ITEMS_FIXTURE.columns.findIndex(
+                      (col) => col.name === "Stock Item[Lead Time Priority Tier]",
+                  );
+                  return tierFilter === "All" || row[tierIdx] === tierFilter;
+              }),
+          }
         : panel.status === "ready"
           ? panel.table
-          : undefined;
-    if (!table) return null;
-
-    const displayTable = filterAndSlice(table, tierFilter);
+          : panel.status === "empty"
+            ? { columns: [], rows: [] }
+            : undefined;
+    if (!displayTable) return null;
 
     const configVegaLite: VegaLiteConfig = {
         range: { category: [...SEVERITY_RANGE[isDark ? "dark" : "light"]] },
@@ -153,14 +143,22 @@ export function TopAtRiskList({ onSelectItem }: TopAtRiskListProps) {
             {usingDevFixture ? (
                 <p className="text-200 text-muted-foreground">Sample data — dev preview (no Fabric embed)</p>
             ) : null}
-            <VegaVisual
-                spec={JSON.stringify(vegaLiteSpec)}
-                data={toDataTable(displayTable, columnMetadata)}
-                theme={theme}
-                configVegaLite={configVegaLite}
-                onInteraction={handleInteraction}
-                style={{ height: 400 }}
-            />
+            {displayTable.rows.length === 0 ? (
+                <div className="flex h-[400px] items-center justify-center text-300 text-muted-foreground">
+                    {tierFilter === "All"
+                        ? "No at-risk items right now."
+                        : `No at-risk items match "${tierFilterLabel(tierFilter)}" lead time.`}
+                </div>
+            ) : (
+                <VegaVisual
+                    spec={JSON.stringify(vegaLiteSpec)}
+                    data={toDataTable(displayTable, columnMetadata)}
+                    theme={theme}
+                    configVegaLite={configVegaLite}
+                    onInteraction={handleInteraction}
+                    style={{ height: 400 }}
+                />
+            )}
         </div>
     );
 }

@@ -63,15 +63,43 @@ describe("RankedListPanel", () => {
         expect(onSelectItem).toHaveBeenCalledWith(17, "Shipping carton (Brown)", "Long Lead Time");
     });
 
-    it("filters rows client-side by lead time tier", async () => {
-        mockQuery.mockResolvedValue({ status: "success", table: TABLE, fromCache: false });
+    // Regression: this used to fetch one global TOPN(25) and filter it
+    // client-side by tier. On the real data, Medium Lead Time dominates the
+    // top of At Risk Rank, so Long/Short tiers didn't appear in that top-25
+    // at all — selecting "Short" or "Long" showed zero rows even though real
+    // items exist in those tiers further down the full ranking. The filter
+    // now re-queries server-side per tier instead of slicing a shared list.
+    it("re-queries server-side (not just re-filters client-side) when the tier filter changes", async () => {
+        const shortOnlyTable = {
+            columns: TABLE.columns,
+            rows: [[126, "Pallet wrap 500mm x 300m", "Short Lead Time", 940, 0.15, 5]],
+        };
+        mockQuery.mockImplementation((query: string) =>
+            Promise.resolve({
+                status: "success",
+                table: query.includes('"Short Lead Time"') ? shortOnlyTable : TABLE,
+                fromCache: false,
+            }),
+        );
         render(<RankedListPanel selectedStockItemKey={null} onSelectItem={vi.fn()} />);
 
         await screen.findByText("Shipping carton (Brown)");
         fireEvent.change(screen.getByLabelText("Filter by lead time"), { target: { value: "Short Lead Time" } });
 
+        expect(await screen.findByText("Pallet wrap 500mm x 300m")).toBeInTheDocument();
         expect(screen.queryByText("Shipping carton (Brown)")).not.toBeInTheDocument();
-        expect(screen.getByText("Pallet wrap 500mm x 300m")).toBeInTheDocument();
+        expect(mockQuery).toHaveBeenLastCalledWith(expect.stringContaining('"Short Lead Time"'), expect.anything());
+    });
+
+    it("shows a filter-aware empty message when a tier genuinely has no matching rows", async () => {
+        mockQuery.mockResolvedValue({ status: "success", table: { columns: TABLE.columns, rows: [] }, fromCache: false });
+        render(<RankedListPanel selectedStockItemKey={null} onSelectItem={vi.fn()} />);
+
+        fireEvent.change(await screen.findByLabelText("Filter by lead time"), {
+            target: { value: "Long Lead Time" },
+        });
+
+        expect(await screen.findByText(/no at-risk items match "long"/i)).toBeInTheDocument();
     });
 
     it("shows an empty message when the query returns no rows", async () => {
