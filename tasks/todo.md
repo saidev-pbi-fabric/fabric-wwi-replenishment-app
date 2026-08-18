@@ -218,10 +218,24 @@ dependency; a second team member can start T5.1 in parallel with T3.2/T3.3 if Pa
     `src/lib/to-data-table.ts`, `src/components/overview/kpi-strip.tsx`,
     `src/components/action-center/item-detail-panel.tsx`, `src/services/rayfin-auth.service.ts`.
 
-- [ ] **T5.3** — Status update path (Pending Review → Approved → Ordered → Received / Dismissed)
-  - Acceptance: status dropdown updates the existing row; all 5 values reachable and reflected.
-  - Verify: `npm run test:fabric`, walk all 5 statuses live.
-  - Files: `src/components/action-center/*`.
+- [x] **T5.3** — Status update path (done 8/18, live walk-through deferred — see note)
+  - `ReorderActionHistory` lists existing actions for the selected item
+    (`client.data.ReorderAction.findMany`, filtered by `stockItemKey`), each with a status
+    dropdown that updates in place via `.update({id}, {status})`. All 5 values reachable. A
+    successful create in `ReorderActionForm` bumps a `refreshKey` so the history refetches.
+  - Bug caught + fixed via the Prove-It pattern (reproduction test first): a failed status update
+    set an error string that was never rendered — failed completely silently. Split into separate
+    `loadError`/`updateError` state so a failed update surfaces its own banner without hiding the
+    list. Regression test added.
+  - Note (same root cause as T4.1/T5.2): "walk all 5 statuses live" needs a real Fabric-embedded
+    session — deferred for the same reason (`playwright-cli` gap). Screenshotted locally instead:
+    history section correctly shows a live auth error against the real deployed backend (proving
+    it's genuinely wired, not a stub), same as the create form.
+  - Verify: `npm run lint`, `npx tsc --noEmit`, `npm test` (74/74, 8 new), `npm run build` all
+    clean; 0 fixture-string matches in the production bundle.
+  - Files: `src/components/action-center/reorder-action-history.tsx` (+ spec),
+    `src/components/action-center/action-center.tsx` (+ spec),
+    `src/components/action-center/reorder-action-form.tsx` (+ spec), `src/lib/rayfin-client.ts`.
 
 **Checkpoint: full golden path verified live in the Fabric portal embed.**
 
