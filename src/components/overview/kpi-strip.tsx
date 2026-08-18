@@ -5,14 +5,16 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-import { motion } from "framer-motion";
-import { Package, Clock, AlertTriangle, TrendingUp } from "lucide-react";
+import { useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
+import { Package, Clock, AlertTriangle, TrendingUp, ArrowUpRight } from "lucide-react";
 import { fadeInUp, staggerContainer } from "@/lib/motion";
 import { useQueryPanel } from "@/hooks/use-query-panel";
 import { kpiStrip } from "@/queries/overview/kpi-strip";
 import { cn } from "@/lib/utils";
 import { scalarByColumnName } from "@/lib/to-data-table";
 import { KPI_STRIP_FIXTURE } from "@/lib/dev-preview-fixtures";
+import { TopAtRiskDrillThrough } from "@/components/overview/top-at-risk-drill-through";
 
 type Severity = "critical" | "at-risk" | "on-track" | "neutral";
 
@@ -23,6 +25,8 @@ interface Tile {
     format: (value: unknown) => string;
     context: string;
     severity: (value: unknown) => Severity;
+    /** Opens the full-list drill-through table when the tile is clicked. */
+    drillThrough?: boolean;
 }
 
 const TILES: Tile[] = [
@@ -49,6 +53,7 @@ const TILES: Tile[] = [
         format: (v) => String(v ?? "—"),
         context: "Ranked in the top 20 by demand-vs-lead-time risk",
         severity: () => "critical",
+        drillThrough: true,
     },
     {
         key: "[Accelerating Demand Items]",
@@ -81,6 +86,8 @@ const ICON_CLASS: Record<Severity, string> = {
 
 export function KpiStrip() {
     const panel = useQueryPanel(kpiStrip());
+    const [drillOpen, setDrillOpen] = useState(false);
+    const prefersReducedMotion = useReducedMotion();
 
     // Dev-only fallback so `npm run dev` can render the ready state without
     // a Fabric embed. Kept as a literal `import.meta.env.DEV` check right
@@ -129,44 +136,68 @@ export function KpiStrip() {
     if (!table) return null;
 
     return (
-        <motion.div
-            className="grid grid-cols-2 gap-400 lg:grid-cols-4"
-            initial="hidden"
-            animate="visible"
-            variants={staggerContainer}
-        >
-            {usingDevFixture ? (
-                <div className="col-span-2 -mb-200 text-200 text-muted-foreground lg:col-span-4">
-                    Sample data — dev preview (no Fabric embed)
-                </div>
-            ) : null}
-            {TILES.map((tile) => {
-                const raw = scalarByColumnName(table, tile.key);
-                const severity = tile.severity(raw);
-                const Icon = tile.icon;
-                return (
-                    <motion.div
-                        key={tile.key}
-                        variants={fadeInUp}
-                        whileHover={{ y: -2 }}
-                        className={cn(
-                            "rounded-lg border border-border border-l-4 bg-card p-400 shadow-sm transition-shadow hover:shadow-md",
-                            RAIL_CLASS[severity],
-                        )}
-                    >
-                        <div className="flex items-center justify-between gap-200">
-                            <div className="font-base text-200 uppercase tracking-wide text-muted-foreground">
-                                {tile.label}
+        <>
+            <motion.div
+                className="grid grid-cols-2 gap-400 lg:grid-cols-4"
+                initial="hidden"
+                animate="visible"
+                variants={staggerContainer}
+            >
+                {usingDevFixture ? (
+                    <div className="col-span-2 -mb-200 text-200 text-muted-foreground lg:col-span-4">
+                        Sample data — dev preview (no Fabric embed)
+                    </div>
+                ) : null}
+                {TILES.map((tile) => {
+                    const raw = scalarByColumnName(table, tile.key);
+                    const severity = tile.severity(raw);
+                    const Icon = tile.icon;
+                    const Tag = tile.drillThrough ? motion.button : motion.div;
+                    return (
+                        <Tag
+                            key={tile.key}
+                            type={tile.drillThrough ? "button" : undefined}
+                            onClick={tile.drillThrough ? () => setDrillOpen(true) : undefined}
+                            variants={fadeInUp}
+                            whileHover={{ y: -2 }}
+                            className={cn(
+                                "rounded-lg border border-border border-l-4 bg-card p-400 text-left shadow-sm transition-shadow hover:shadow-md",
+                                tile.drillThrough && "cursor-pointer",
+                                RAIL_CLASS[severity],
+                            )}
+                        >
+                            <div className="flex items-center justify-between gap-200">
+                                <div className="font-base text-200 uppercase tracking-wide text-muted-foreground">
+                                    {tile.label}
+                                </div>
+                                <motion.span
+                                    initial={
+                                        prefersReducedMotion ? false : { scale: 0.4, rotate: -20, opacity: 0 }
+                                    }
+                                    animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                                    transition={{ type: "spring", stiffness: 260, damping: 18, delay: 0.15 }}
+                                >
+                                    <Icon className={cn("icon-size-300 shrink-0", ICON_CLASS[severity])} />
+                                </motion.span>
                             </div>
-                            <Icon className={cn("icon-size-300 shrink-0", ICON_CLASS[severity])} />
-                        </div>
-                        <div className="mt-200 font-numeric text-hero-800 font-semibold text-foreground">
-                            {tile.format(raw)}
-                        </div>
-                        <div className="mt-200 text-200 text-muted-foreground">{tile.context}</div>
-                    </motion.div>
-                );
-            })}
-        </motion.div>
+                            <div className="mt-200 font-numeric text-hero-800 font-semibold text-foreground">
+                                {tile.format(raw)}
+                            </div>
+                            <div className="mt-200 flex items-center justify-between gap-200 text-200 text-muted-foreground">
+                                <span>{tile.context}</span>
+                                {tile.drillThrough ? (
+                                    <span className="flex shrink-0 items-center gap-100 font-semibold text-foreground">
+                                        View all
+                                        <ArrowUpRight className="icon-size-200" />
+                                    </span>
+                                ) : null}
+                            </div>
+                        </Tag>
+                    );
+                })}
+            </motion.div>
+
+            <TopAtRiskDrillThrough open={drillOpen} onClose={() => setDrillOpen(false)} />
+        </>
     );
 }

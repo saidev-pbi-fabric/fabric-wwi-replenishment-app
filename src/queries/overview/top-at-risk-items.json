@@ -8,7 +8,7 @@
       "type": "nominal",
       "sort": "-x",
       "title": "Item",
-      "axis": { "labelLimit": 160 }
+      "axis": { "labelLimit": 420 }
     },
     "x": {
       "field": "SuggestedReorderQty",

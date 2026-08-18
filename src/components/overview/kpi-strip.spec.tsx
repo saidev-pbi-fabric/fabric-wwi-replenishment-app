@@ -6,7 +6,7 @@
 //-----------------------------------------------------------------------
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { KpiStrip } from "./kpi-strip";
 
 const mockQuery = vi.fn();
@@ -53,6 +53,31 @@ describe("KpiStrip", () => {
         expect(screen.getByText("12.3")).toBeInTheDocument();
         expect(screen.getByText("20")).toBeInTheDocument();
         expect(screen.getByText("15")).toBeInTheDocument();
+    });
+
+    it("opens the drill-through table when the Top At-Risk Items tile is clicked", async () => {
+        mockQuery.mockResolvedValue({
+            status: "success",
+            table: {
+                columns: [
+                    { name: "[Items Tracked]" },
+                    { name: "[Avg Lead Time Days]" },
+                    { name: "[Top At Risk Items]" },
+                    { name: "[Accelerating Demand Items]" },
+                ],
+                rows: [[672, 12.3, 20, 15]],
+            },
+            fromCache: false,
+        });
+
+        render(<KpiStrip />);
+
+        const tile = await screen.findByRole("button", { name: /top at-risk items/i });
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+        fireEvent.click(tile);
+
+        expect(await screen.findByRole("dialog")).toBeInTheDocument();
     });
 
     it("shows an empty state when the query returns no rows", async () => {

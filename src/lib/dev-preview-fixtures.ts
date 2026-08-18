@@ -66,6 +66,27 @@ export const TOP_AT_RISK_ITEMS_FIXTURE: QueryTable = {
     ],
 };
 
+export const TOP_AT_RISK_DRILL_FIXTURE: QueryTable = {
+    columns: [
+        { name: "Stock Item[Stock Item]", dataType: "String" },
+        { name: "Stock Item[Lead Time Priority Tier]", dataType: "String" },
+        { name: "Stock Item[Lead Time Days]", dataType: "Int64" },
+        { name: "[Suggested Reorder Qty]", dataType: "Double" },
+        { name: "[Demand Trend]", dataType: "Double" },
+        { name: "[At Risk Rank]", dataType: "Int64" },
+    ],
+    rows: [
+        ["Shipping carton (Brown) 413x285x187mm", "Long Lead Time", 18, 1840, 0.34, 1],
+        ["Bubble wrap 500mm x 10m", "Long Lead Time", 21, 1620, 0.28, 2],
+        ["Packing tape 48mm x 100m clear", "Medium Lead Time", 11, 1310, 0.22, 3],
+        ["Corrugated void fill 1m3 bag", "Medium Lead Time", 10, 1105, 0.19, 4],
+        ["Pallet wrap 500mm x 300m", "Short Lead Time", 4, 940, 0.15, 5],
+        ["Address label roll 100x150mm", "Short Lead Time", 3, 780, 0.11, 6],
+        ["Courier satchel 375x480mm", "Medium Lead Time", 9, 705, 0.09, 7],
+        ["Foam corner protector 4-pack", "Long Lead Time", 19, 640, 0.07, 8],
+    ],
+};
+
 export const RANKED_AT_RISK_LIST_FIXTURE: QueryTable = {
     columns: [
         { name: "Stock Item[Stock Item Key]", dataType: "Int64" },

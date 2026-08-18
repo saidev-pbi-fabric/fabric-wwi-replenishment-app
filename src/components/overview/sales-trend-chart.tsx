@@ -63,7 +63,7 @@ export function SalesTrendChart() {
                 spec={JSON.stringify(vegaLiteSpec)}
                 data={toDataTable(table, columnMetadata)}
                 theme={theme}
-                style={{ height: 280 }}
+                style={{ height: 320 }}
             />
         </div>
     );

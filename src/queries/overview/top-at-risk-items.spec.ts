@@ -31,7 +31,10 @@ describe("topAtRiskItems", () => {
     });
 
     it("caps y-axis label width so long WWI item names truncate with an ellipsis instead of crowding the chart", () => {
-        expect(result.vegaLiteSpec.encoding.y.axis.labelLimit).toBe(160);
+        // Widened from the original 160 once the chart went full-width (App.tsx
+        // stacked it under the trend chart instead of squeezing it into a 1/3
+        // column) — most real item names now fit without truncating at all.
+        expect(result.vegaLiteSpec.encoding.y.axis.labelLimit).toBe(420);
     });
 
     it("colors the ranked bar chart by Lead Time Priority Tier", () => {

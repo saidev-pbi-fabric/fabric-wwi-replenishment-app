@@ -123,14 +123,8 @@ function OverviewPage({ onSelectItem }: { onSelectItem: (stockItemName: string) 
                 </p>
             </div>
             <KpiStrip />
-            <div className="grid grid-cols-1 gap-500 lg:grid-cols-3">
-                <div className="lg:col-span-2">
-                    <SalesTrendChart />
-                </div>
-                <div className="lg:col-span-1">
-                    <TopAtRiskList onSelectItem={onSelectItem} />
-                </div>
-            </div>
+            <SalesTrendChart />
+            <TopAtRiskList onSelectItem={onSelectItem} />
         </div>
     );
 }
