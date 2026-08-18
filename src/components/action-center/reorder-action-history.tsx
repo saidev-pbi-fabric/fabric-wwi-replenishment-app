@@ -84,7 +84,7 @@ export function ReorderActionHistory({ stockItemKey, refreshKey }: ReorderAction
     }
 
     return (
-        <div className="flex flex-col gap-200 rounded-lg border border-border bg-card p-400">
+        <div className="flex flex-col gap-200 rounded-lg border border-border bg-card p-400 shadow-sm">
             <h3 className="font-heading text-400 font-semibold text-foreground">Reorder Action History</h3>
             {updateError ? (
                 <p role="alert" className="font-base text-300 text-destructive">

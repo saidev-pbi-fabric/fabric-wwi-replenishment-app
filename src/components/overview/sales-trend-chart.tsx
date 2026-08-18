@@ -5,6 +5,7 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
+import { TrendingUp } from "lucide-react";
 import { VegaVisual, useCssTheme } from "@microsoft/fabric-visuals";
 import { toDataTable } from "@/lib/to-data-table";
 import { salesTrend } from "@/queries/overview/sales-trend";
@@ -50,8 +51,9 @@ export function SalesTrendChart() {
     if (!table) return null;
 
     return (
-        <div className="h-full min-h-[320px] rounded-lg border border-border bg-card p-400">
-            <h2 className="font-heading text-400 font-semibold text-foreground">
+        <div className="h-full min-h-[320px] rounded-lg border border-border bg-card p-400 shadow-sm">
+            <h2 className="flex items-center gap-200 font-heading text-400 font-semibold text-foreground">
+                <TrendingUp className="icon-size-300 text-muted-foreground" />
                 Daily Sales Trend — Top At-Risk Items
             </h2>
             {usingDevFixture ? (

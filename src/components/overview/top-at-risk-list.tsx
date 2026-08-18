@@ -5,6 +5,7 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
+import { AlertTriangle } from "lucide-react";
 import { VegaVisual, useCssTheme } from "@microsoft/fabric-visuals";
 import type { VegaLiteConfig } from "@microsoft/fabric-visuals";
 import type { InteractionEventCallback } from "@microsoft/fabric-visuals-core";
@@ -92,9 +93,31 @@ export function TopAtRiskList({ onSelectItem }: TopAtRiskListProps) {
         }
     };
 
+    const legendColors = SEVERITY_RANGE[isDark ? "dark" : "light"];
+
     return (
-        <div className="h-full min-h-[320px] rounded-lg border border-border bg-card p-400">
-            <h2 className="font-heading text-400 font-semibold text-foreground">Top At-Risk Items</h2>
+        <div className="h-full min-h-[320px] rounded-lg border border-border bg-card p-400 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-200">
+                <h2 className="flex items-center gap-200 font-heading text-400 font-semibold text-foreground">
+                    <AlertTriangle className="icon-size-300 text-muted-foreground" />
+                    Top At-Risk Items
+                </h2>
+                {/* Custom legend, not Vega's built-in one: fabric-visuals' disableLegendTruncation
+                    capability didn't reliably show all 3 swatches at typical card widths, so this
+                    renders every label explicitly instead of fighting the auto-layout. */}
+                <ul className="flex items-center gap-300 font-base text-200 text-muted-foreground">
+                    {(["Short", "Medium", "Long"] as const).map((label, i) => (
+                        <li key={label} className="flex items-center gap-100">
+                            <span
+                                className="icon-size-100 inline-block rounded-full"
+                                style={{ backgroundColor: legendColors[i] }}
+                                aria-hidden="true"
+                            />
+                            {label}
+                        </li>
+                    ))}
+                </ul>
+            </div>
             {usingDevFixture ? (
                 <p className="text-200 text-muted-foreground">Sample data — dev preview (no Fabric embed)</p>
             ) : null}
@@ -103,7 +126,6 @@ export function TopAtRiskList({ onSelectItem }: TopAtRiskListProps) {
                 data={toDataTable(table, columnMetadata)}
                 theme={theme}
                 configVegaLite={configVegaLite}
-                capabilities={{ disableLegendTruncation: true }}
                 onInteraction={handleInteraction}
                 style={{ height: 400 }}
             />

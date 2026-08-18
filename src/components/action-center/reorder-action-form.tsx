@@ -129,7 +129,7 @@ function ReorderActionFormFields({
     }
 
     return (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-300 rounded-lg border border-border bg-card p-400">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-300 rounded-lg border border-border bg-card p-400 shadow-sm">
             <h3 className="font-heading text-400 font-semibold text-foreground">Record a Reorder Action</h3>
 
             <div className="grid grid-cols-2 gap-300">

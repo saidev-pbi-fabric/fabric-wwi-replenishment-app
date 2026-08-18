@@ -5,6 +5,7 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
+import { Package, Clock, AlertTriangle, TrendingUp } from "lucide-react";
 import { useQueryPanel } from "@/hooks/use-query-panel";
 import { kpiStrip } from "@/queries/overview/kpi-strip";
 import { cn } from "@/lib/utils";
@@ -16,6 +17,7 @@ type Severity = "critical" | "at-risk" | "on-track" | "neutral";
 interface Tile {
     key: string;
     label: string;
+    icon: React.ComponentType<{ className?: string }>;
     format: (value: unknown) => string;
     context: string;
     severity: (value: unknown) => Severity;
@@ -25,6 +27,7 @@ const TILES: Tile[] = [
     {
         key: "[Items Tracked]",
         label: "Items Tracked",
+        icon: Package,
         format: (v) => String(v ?? "—"),
         context: "Distinct stock items in the model",
         severity: () => "neutral",
@@ -32,6 +35,7 @@ const TILES: Tile[] = [
     {
         key: "[Avg Lead Time Days]",
         label: "Avg Lead Time (Days)",
+        icon: Clock,
         format: (v) => String(v ?? "—"),
         context: "Average supplier lead time across all items",
         severity: () => "neutral",
@@ -39,6 +43,7 @@ const TILES: Tile[] = [
     {
         key: "[Top At Risk Items]",
         label: "Top At-Risk Items",
+        icon: AlertTriangle,
         format: (v) => String(v ?? "—"),
         context: "Ranked in the top 20 by demand-vs-lead-time risk",
         severity: () => "critical",
@@ -46,6 +51,7 @@ const TILES: Tile[] = [
     {
         key: "[Accelerating Demand Items]",
         label: "Accelerating Demand",
+        icon: TrendingUp,
         format: (v) => String(v ?? "—"),
         context: "Items with a positive 30-day demand trend",
         severity: (v) => (Number(v) > 0 ? "at-risk" : "on-track"),
@@ -57,6 +63,13 @@ const RAIL_CLASS: Record<Severity, string> = {
     "at-risk": "border-l-at-risk",
     "on-track": "border-l-on-track",
     neutral: "border-l-transparent",
+};
+
+const ICON_CLASS: Record<Severity, string> = {
+    critical: "text-critical",
+    "at-risk": "text-at-risk",
+    "on-track": "text-on-track",
+    neutral: "text-muted-foreground",
 };
 
 export function KpiStrip() {
@@ -99,7 +112,7 @@ export function KpiStrip() {
 
     if (!usingDevFixture && panel.status === "empty") {
         return (
-            <div className="rounded-lg border border-border bg-card px-400 py-600 text-center text-300 text-muted-foreground">
+            <div className="rounded-lg border border-border bg-card px-400 py-600 text-center text-300 text-muted-foreground shadow-sm">
                 No KPI data available yet.
             </div>
         );
@@ -118,16 +131,20 @@ export function KpiStrip() {
             {TILES.map((tile) => {
                 const raw = scalarByColumnName(table, tile.key);
                 const severity = tile.severity(raw);
+                const Icon = tile.icon;
                 return (
                     <div
                         key={tile.key}
                         className={cn(
-                            "rounded-lg border border-border border-l-4 bg-card p-400",
+                            "rounded-lg border border-border border-l-4 bg-card p-400 shadow-sm",
                             RAIL_CLASS[severity],
                         )}
                     >
-                        <div className="font-base text-200 uppercase tracking-wide text-muted-foreground">
-                            {tile.label}
+                        <div className="flex items-center justify-between gap-200">
+                            <div className="font-base text-200 uppercase tracking-wide text-muted-foreground">
+                                {tile.label}
+                            </div>
+                            <Icon className={cn("icon-size-300 shrink-0", ICON_CLASS[severity])} />
                         </div>
                         <div className="mt-200 font-numeric text-hero-800 font-semibold text-foreground">
                             {tile.format(raw)}

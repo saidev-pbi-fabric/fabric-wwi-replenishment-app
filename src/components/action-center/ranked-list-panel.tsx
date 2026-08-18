@@ -116,7 +116,7 @@ export function RankedListPanel({
     const rows = rowsFromTable(loadedTable).filter((row) => tierFilter === "All" || row.tier === tierFilter);
 
     return (
-        <div className="flex h-full min-h-[480px] flex-col rounded-lg border border-border bg-card">
+        <div className="flex h-full min-h-[480px] flex-col rounded-lg border border-border bg-card shadow-sm">
             <div className="flex items-center justify-between gap-300 border-b border-border p-400">
                 <h2 className="font-heading text-400 font-semibold text-foreground">At-Risk Items</h2>
                 <label className="flex items-center gap-200 font-base text-200 text-muted-foreground">

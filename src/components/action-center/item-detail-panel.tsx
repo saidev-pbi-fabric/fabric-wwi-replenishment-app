@@ -90,7 +90,7 @@ export function ItemDetailPanel({ stockItemKey }: ItemDetailPanelProps) {
     const atRiskRank = String(scalarByColumnName(table, "[At Risk Rank]") ?? "—");
 
     return (
-        <div className="flex h-full min-h-[480px] flex-col rounded-lg border border-border bg-card">
+        <div className="flex h-full min-h-[480px] flex-col rounded-lg border border-border bg-card shadow-sm">
             <div
                 className={cn(
                     "flex items-start justify-between gap-300 border-b border-l-4 border-border p-400",
