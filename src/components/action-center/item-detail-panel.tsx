@@ -9,7 +9,7 @@ import { Loader2 } from "lucide-react";
 import { useQueryPanel } from "@/hooks/use-query-panel";
 import { itemDetail } from "@/queries/action-center/item-detail";
 import { itemSalesTrend } from "@/queries/action-center/item-sales-trend";
-import { cn } from "@/lib/utils";
+import { cn, formatShortDate } from "@/lib/utils";
 import { scalarByColumnName } from "@/lib/to-data-table";
 import { ITEM_DETAIL_FIXTURE, ITEM_SALES_TREND_FIXTURE } from "@/lib/dev-preview-fixtures";
 import { LEAD_TIME_RAIL_CLASS, LEAD_TIME_TEXT_CLASS } from "@/lib/severity";
@@ -120,6 +120,12 @@ export function ItemDetailPanel({ stockItemKey }: ItemDetailPanelProps) {
               return trendTable.rows.map((row) => Number(row[qtyIdx] ?? 0));
           })()
         : [];
+    const salesTrendDates = trendTable
+        ? (() => {
+              const dateIdx = trendTable.columns.findIndex((col) => col.name === "Date[Date]");
+              return trendTable.rows.map((row) => formatShortDate(String(row[dateIdx])));
+          })()
+        : [];
     const leadDaysNumeric = Number(leadTimeDays);
     const forecastDays = Number.isFinite(leadDaysNumeric) ? Math.min(leadDaysNumeric, 30) : 0;
 
@@ -132,7 +138,7 @@ export function ItemDetailPanel({ stockItemKey }: ItemDetailPanelProps) {
         >
             <div
                 className={cn(
-                    "flex items-start justify-between gap-300 border-b border-l-4 border-border p-400",
+                    "flex items-start justify-between gap-300 border-b border-l-4 border-border bg-muted/40 p-400",
                     LEAD_TIME_RAIL_CLASS[tier] ?? "border-l-transparent",
                 )}
             >
@@ -192,6 +198,7 @@ export function ItemDetailPanel({ stockItemKey }: ItemDetailPanelProps) {
                             ariaLabel={`Daily units sold, last 60 days, projected ${forecastDays} days forward`}
                             showMinMax
                             showLatestValue
+                            labels={salesTrendDates}
                         />
                     ) : (
                         <p className="text-200 text-muted-foreground">No recent sales history for this item.</p>

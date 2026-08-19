@@ -11,11 +11,15 @@ import { AlertTriangle, Loader2 } from "lucide-react";
 import type { QueryTable } from "@microsoft/fabric-app-data";
 import { useQueryPanel } from "@/hooks/use-query-panel";
 import { rankedAtRiskList } from "@/queries/action-center/ranked-at-risk-list";
-import { cn } from "@/lib/utils";
+import { itemSalesTrend } from "@/queries/action-center/item-sales-trend";
+import { getFabricClient } from "@/lib/fabric-client";
+import { cn, formatShortDate } from "@/lib/utils";
 import { fadeInUp, staggerContainer } from "@/lib/motion";
-import { RANKED_AT_RISK_LIST_FIXTURE } from "@/lib/dev-preview-fixtures";
+import { RANKED_AT_RISK_LIST_FIXTURE, ITEM_SALES_TREND_FIXTURE } from "@/lib/dev-preview-fixtures";
+import { Sparkline } from "@/components/shared/sparkline";
 import {
     LEAD_TIME_RAIL_CLASS,
+    LEAD_TIME_TEXT_CLASS,
     TIER_FILTERS,
     tierDistributionCaption,
     tierFilterLabel,
@@ -87,6 +91,57 @@ export function RankedListPanel({
     // swap was flagged directly by the user ("the transition ... goes blank").
     const isRefreshing = !usingDevFixture && panel.status === "refreshing";
 
+    // Per-row sparklines: reuses itemSalesTrend (already proven in ItemDetailPanel) fired once
+    // per visible row instead of one new composite item×date DAX query — N small, independently
+    // cacheable calls beat one query that's harder to get right and can't be spot-checked per
+    // item. Fetched directly via the Fabric client (not useQueryPanel, which is one-query-per-
+    // component) so all rows' requests fire in parallel and each fills in as it resolves rather
+    // than blocking the whole list on the slowest row.
+    const [sparklineData, setSparklineData] = useState<Record<number, { qty: number[]; dates: string[] }>>({});
+
+    useEffect(() => {
+        if (!loadedTable) return;
+        const keys = rowsFromTable(loadedTable).map((row) => row.key);
+        let cancelled = false;
+
+        if (usingDevFixture) {
+            const qtyIdx = ITEM_SALES_TREND_FIXTURE.columns.findIndex((col) => col.name === "[Quantity]");
+            const dateIdx = ITEM_SALES_TREND_FIXTURE.columns.findIndex((col) => col.name === "Date[Date]");
+            const fixtureQty = ITEM_SALES_TREND_FIXTURE.rows.map((row) => Number(row[qtyIdx] ?? 0));
+            const fixtureDates = ITEM_SALES_TREND_FIXTURE.rows.map((row) => formatShortDate(String(row[dateIdx])));
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- dev-only fixture fill, mirrors the real fetch branch below which is necessarily async
+            setSparklineData(
+                Object.fromEntries(keys.map((key) => [key, { qty: fixtureQty, dates: fixtureDates }])),
+            );
+            return;
+        }
+
+        keys.forEach((key) => {
+            if (sparklineData[key]) return; // already fetched (e.g. still cached from a prior tier view)
+            const { connection, query } = itemSalesTrend(key);
+            getFabricClient()
+                .semanticModel(connection)
+                .query(query)
+                .then((result) => {
+                    if (cancelled || result.status !== "success") return;
+                    const qtyIdx = result.table.columns.findIndex((col) => col.name === "[Quantity]");
+                    const dateIdx = result.table.columns.findIndex((col) => col.name === "Date[Date]");
+                    const qty = result.table.rows.map((row) => Number(row[qtyIdx] ?? 0));
+                    const dates = result.table.rows.map((row) => formatShortDate(String(row[dateIdx])));
+                    setSparklineData((prev) => ({ ...prev, [key]: { qty, dates } }));
+                })
+                .catch(() => {
+                    // A missing sparkline for one row isn't worth surfacing as a panel-level error —
+                    // the row still shows its name/rank/qty fine without it.
+                });
+        });
+
+        return () => {
+            cancelled = true;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- sparklineData deliberately excluded: this only skips re-fetching rows already cached, it's not the effect's trigger
+    }, [loadedTable, usingDevFixture]);
+
     useEffect(() => {
         if (autoSelectedRef.current || !initialSelectedItemName || !loadedTable) return;
         const match = rowsFromTable(loadedTable).find((row) => row.name === initialSelectedItemName);
@@ -133,7 +188,7 @@ export function RankedListPanel({
                         aria-label="Filter by lead time"
                         value={tierFilter}
                         onChange={(e) => setTierFilter(e.target.value as (typeof TIER_FILTERS)[number])}
-                        className="rounded-md border border-border bg-background px-200 py-100-nudge text-200 text-foreground"
+                        className="rounded-md border border-border bg-background px-200 py-100-nudge text-200 text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     >
                         {TIER_FILTERS.map((tier) => (
                             <option key={tier} value={tier}>
@@ -150,7 +205,7 @@ export function RankedListPanel({
                 </label>
             </div>
             <p className="px-400 pt-200 font-base text-100 text-muted-foreground">
-                {tierDistributionCaption()}
+                {tierDistributionCaption(tierFilter)}
             </p>
             {usingDevFixture ? (
                 <p className="px-400 pt-200 text-200 text-muted-foreground">
@@ -184,7 +239,7 @@ export function RankedListPanel({
                                     onClick={() => onSelectItem(row.key, row.name, row.tier)}
                                     aria-current={row.key === selectedStockItemKey ? "true" : undefined}
                                     className={cn(
-                                        "flex w-full items-center justify-between gap-300 border-b border-l-4 border-border px-400 py-300 text-left transition-all hover:-translate-y-px hover:bg-accent hover:shadow-sm",
+                                        "flex w-full items-center justify-between gap-300 border-b border-l-4 border-border px-400 py-300 text-left transition-all hover:-translate-y-px hover:bg-accent hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
                                         LEAD_TIME_RAIL_CLASS[row.tier] ?? "border-l-transparent",
                                         row.key === selectedStockItemKey ? "bg-accent" : undefined,
                                     )}
@@ -200,6 +255,27 @@ export function RankedListPanel({
                                             Rank #{row.atRiskRank} · Suggested reorder {row.suggestedReorderQty}
                                         </span>
                                     </span>
+                                    {sparklineData[row.key] ? (
+                                        // Sparkline's <svg> sets width="100%" internally (fills whatever box it's
+                                        // given) -- without this fixed-size wrapper, that 100% resolves against
+                                        // the flex row itself and the sparkline claims nearly all the row's width,
+                                        // squeezing the name span next to it down to ~0.
+                                        <span className="block h-[28px] w-[72px] shrink-0">
+                                            <Sparkline
+                                                data={sparklineData[row.key].qty}
+                                                labels={sparklineData[row.key].dates}
+                                                width={72}
+                                                height={28}
+                                                className={LEAD_TIME_TEXT_CLASS[row.tier] ?? "text-muted-foreground"}
+                                                ariaLabel={`${row.name}: daily units sold, last 60 days`}
+                                            />
+                                        </span>
+                                    ) : (
+                                        <span
+                                            aria-hidden="true"
+                                            className="block h-[28px] w-[72px] shrink-0 animate-pulse rounded-md bg-muted"
+                                        />
+                                    )}
                                 </button>
                             </motion.li>
                         ))}

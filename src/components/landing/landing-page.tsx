@@ -12,6 +12,7 @@ import { topAtRiskItems } from "@/queries/overview/top-at-risk-items";
 import { TOP_AT_RISK_ITEMS_FIXTURE } from "@/lib/dev-preview-fixtures";
 import { LEAD_TIME_DOT_CLASS } from "@/lib/severity";
 import { fadeInUp, staggerContainer } from "@/lib/motion";
+import { cn } from "@/lib/utils";
 
 interface LandingPageProps {
     onOpenDashboard: () => void;
@@ -145,19 +146,39 @@ export function LandingPage({ onOpenDashboard }: LandingPageProps) {
 
             <motion.section
                 variants={staggerContainer}
-                className="grid grid-cols-1 gap-400 md:grid-cols-3"
+                className="grid grid-cols-1 gap-none md:grid-cols-[1.4fr_1fr_1fr]"
             >
-                {STEPS.map((step) => {
+                {STEPS.map((step, index) => {
                     const Icon = step.icon;
+                    const isFirst = index === 0;
                     return (
                         <motion.div
                             key={step.title}
                             variants={fadeInUp}
-                            whileHover={{ y: -3 }}
-                            className="flex flex-col gap-200 rounded-lg border border-border bg-card p-400 shadow-sm transition-shadow hover:shadow-md"
+                            className={cn(
+                                "relative flex flex-col gap-200 py-400 pr-500",
+                                isFirst ? "rounded-lg bg-muted p-400" : "pl-500 md:pl-0",
+                                index > 0 &&
+                                    "before:absolute before:left-0 before:top-500 before:hidden before:w-400 before:border-t before:border-dashed before:border-border md:before:block md:before:-translate-x-full",
+                            )}
                         >
-                            <Icon className="icon-size-400 text-muted-foreground" />
-                            <h3 className="font-heading text-400 font-semibold text-foreground">
+                            <div className="flex items-center gap-200">
+                                <span className="font-numeric text-200 font-semibold text-primary">
+                                    {String(index + 1).padStart(2, "0")}
+                                </span>
+                                <Icon
+                                    className={cn(
+                                        "text-muted-foreground",
+                                        isFirst ? "icon-size-500" : "icon-size-400",
+                                    )}
+                                />
+                            </div>
+                            <h3
+                                className={cn(
+                                    "font-heading font-semibold text-foreground",
+                                    isFirst ? "text-500" : "text-400",
+                                )}
+                            >
                                 {step.title}
                             </h3>
                             <p className="font-base text-200 text-muted-foreground">{step.description}</p>

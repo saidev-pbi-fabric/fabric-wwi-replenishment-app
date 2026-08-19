@@ -86,7 +86,8 @@ function NavTab({
             onClick={onClick}
             aria-current={active ? "page" : undefined}
             className={cn(
-                "rounded-md px-300 py-100-nudge font-base text-300 transition-all active:scale-95",
+                "rounded-md px-300 py-100-nudge font-base text-300 transition-colors active:scale-95",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                 active
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
@@ -104,7 +105,7 @@ function ThemeToggle() {
             type="button"
             onClick={toggleTheme}
             aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
-            className="flex icon-size-600 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            className="flex icon-size-600 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
             {isDark ? <Sun className="icon-size-300" /> : <Moon className="icon-size-300" />}
         </button>

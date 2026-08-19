@@ -15,8 +15,10 @@ import { cn } from "@/lib/utils";
 import { scalarByColumnName } from "@/lib/to-data-table";
 import { KPI_STRIP_FIXTURE } from "@/lib/dev-preview-fixtures";
 import { TopAtRiskDrillThrough } from "@/components/overview/top-at-risk-drill-through";
+import { TopContributorsDrillThrough } from "@/components/overview/top-contributors-drill-through";
 
 type Severity = "critical" | "at-risk" | "on-track" | "neutral";
+type DrillKind = "risk" | "contributors";
 
 interface Tile {
     key: string;
@@ -25,8 +27,8 @@ interface Tile {
     format: (value: unknown) => string;
     context: string;
     severity: (value: unknown) => Severity;
-    /** Opens the full-list drill-through table when the tile is clicked. */
-    drillThrough?: boolean;
+    /** Which full-list drill-through table opens when the tile is clicked, if any. */
+    drillThrough?: DrillKind;
 }
 
 /** "$98.8M" / "$640K" / "$420" — this app's numbers run large (aggregated over the full ~11-month
@@ -63,7 +65,7 @@ const TILES: Tile[] = [
         format: (v) => String(v ?? "—"),
         context: "Ranked in the top 20 by demand-vs-lead-time risk",
         severity: () => "critical",
-        drillThrough: true,
+        drillThrough: "risk",
     },
     {
         key: "[Accelerating Demand Items]",
@@ -80,6 +82,7 @@ const TILES: Tile[] = [
         format: (v) => formatCompactCurrency(Number(v ?? 0)),
         context: "Unit Price × Suggested Reorder Qty, same top 20 at-risk items as the tile above",
         severity: () => "critical",
+        drillThrough: "contributors",
     },
 ];
 
@@ -133,7 +136,7 @@ const ICON_CLASS: Record<Severity, string> = {
 
 export function KpiStrip() {
     const panel = useQueryPanel(kpiStrip());
-    const [drillOpen, setDrillOpen] = useState(false);
+    const [drillOpen, setDrillOpen] = useState<DrillKind | null>(null);
     const prefersReducedMotion = useReducedMotion();
 
     // Dev-only fallback so `npm run dev` can render the ready state without
@@ -204,12 +207,16 @@ export function KpiStrip() {
                         <Tag
                             key={tile.key}
                             type={tile.drillThrough ? "button" : undefined}
-                            onClick={tile.drillThrough ? () => setDrillOpen(true) : undefined}
+                            onClick={tile.drillThrough ? () => setDrillOpen(tile.drillThrough ?? null) : undefined}
                             variants={fadeInUp}
-                            whileHover={{ y: -2 }}
+                            // Hover lift is a real-action affordance — only tiles with a drill-through
+                            // get it. Animating a static tile on hover suggests it's clickable when it
+                            // isn't (same reasoning as the icon wiggle below).
+                            {...(tile.drillThrough ? { whileHover: { y: -2 } } : {})}
                             className={cn(
-                                "rounded-lg border border-border border-l-4 bg-card p-400 text-left shadow-sm transition-shadow hover:shadow-md",
-                                tile.drillThrough && "cursor-pointer",
+                                "rounded-lg border border-border border-l-4 bg-card p-400 text-left shadow-sm transition-shadow",
+                                tile.drillThrough &&
+                                    "cursor-pointer hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                                 RAIL_CLASS[severity],
                             )}
                         >
@@ -254,7 +261,11 @@ export function KpiStrip() {
                 })}
             </motion.div>
 
-            <TopAtRiskDrillThrough open={drillOpen} onClose={() => setDrillOpen(false)} />
+            <TopAtRiskDrillThrough open={drillOpen === "risk"} onClose={() => setDrillOpen(null)} />
+            <TopContributorsDrillThrough
+                open={drillOpen === "contributors"}
+                onClose={() => setDrillOpen(null)}
+            />
         </>
     );
 }
