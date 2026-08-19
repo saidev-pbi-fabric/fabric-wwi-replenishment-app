@@ -344,3 +344,73 @@ dependency; a second team member can start T5.1 in parallel with T3.2/T3.3 if Pa
   - Acceptance: BPA violations list reviewed; only trivial/high-value fixes applied if time allows.
     This is a sanity check, not a gate — do not let it block the demo.
   - Files: none required in-repo; optionally `tools/BPARules.json` if the rules file is saved.
+
+- [x] **T6.5** — `gsd-ui-auditor` retroactive audit + fixes (done 8/19)
+  - Ran a code-only 6-pillar audit (no Fabric-embedded screenshots available) against
+    `docs/wireframe-design-brief.md` + `global.css` tokens. Score: 19/24 (Copy 3/4, Visuals 4/4,
+    Color 2/4, Typography 3/4, Spacing 3/4, Experience Design 4/4). Full detail: `docs/UI-REVIEW.md`.
+  - Fixed the 3 priority findings: (1) light-mode neutral ramp widened
+    (`background/secondary/muted/border`: `#fff/#fafafa/#f0f0f0/#e0e0e0` →
+    `#fff/#f7f7f8/#eef0f2/#d6d9dd`) — severity hex left untouched (already Fluent AA-vetted, risk
+    of breaking contrast outweighs the vividness gain); (2) `ErrorFallback.tsx` +
+    `auth-gate.component.tsx`'s unauthenticated screen migrated off raw Tailwind defaults onto the
+    `font-heading`/`font-base`/`spacing-*`/`text-*` token system, copy reworded off the generic
+    "Something went wrong"/"Try Again" pattern; (3) `title={row.name}` tooltip fallback added for
+    truncated stock-item names (`ranked-list-panel.tsx`, `landing-page.tsx`).
+  - Two flagged risks from the prior session's resume-prompt were checked against source and found
+    to be non-issues, no fix needed: KPI-tile icon-animation asymmetry is deliberate (avoids false
+    clickability on 3 non-actionable tiles); Action Center has not fallen behind Overview on
+    states/interaction polish (both share `useQueryPanel`).
+  - Also fixed, user-flagged separately (not from the audit): Action Center's "Record a Reorder
+    Action" panel rendered far below the fold — root cause was `ItemDetailPanel`'s `h-full`
+    stretching to match the ranked-list column's `max-h-[640px]` under CSS grid's default
+    row-stretch; fixed with `items-start` on the parent grid (`action-center.tsx`). And: the
+    "All" lead-time filter showing almost entirely Medium-tier rows is real data (582 of 672 stock
+    items are Medium tier — live-verified via DAX `SUMMARIZECOLUMNS` query), not a filter bug; added
+    a `tierDistributionCaption()` ("672 items tracked · 582 Medium · 78 Short · 12 Long") under the
+    filter on both Page 1's chart and Page 2's ranked list so the skew reads as a disclosed fact.
+  - Verify: 107/107 tests pass, `tsc --noEmit` clean (one pre-existing unrelated failure in
+    `use-query-panel.spec.ts`, not touched by this task).
+  - Files: `src/global.css`, `src/ErrorFallback.tsx`, `src/components/auth-gate.component.tsx`,
+    `src/components/action-center/action-center.tsx`, `src/components/action-center/ranked-list-panel.tsx`,
+    `src/components/overview/top-at-risk-list.tsx`, `src/components/landing/landing-page.tsx`,
+    `src/lib/severity.ts`, `docs/UI-REVIEW.md`.
+
+- [ ] **T6.6 (scoped, not started)** — Per-item sales-trend visual (replaces/augments the plain
+      "Demand Trend %" number with an actual chart)
+  - Why: user asked (1) whether Suggested Reorder Qty is a forecast (it isn't — it's the reorder-
+    point formula `Recent Daily Sales Rate × LeadTimeDays × 1.2`, see
+    `docs/wwi-schema-reference.md:92`) and whether a forecast visual would add value, and (2)
+    whether the current bar/percent treatment of demand trend is the right chart choice, referencing
+    https://data-goblins.com/power-bi/bar-charts (saved to `docs/design-reference-bank.md`) — its
+    core caution is against "Macguyvering" a bespoke visual instead of using a well-understood one,
+    which argues for a plain, recognizable sparkline over something fancier.
+  - Scope (MVP): a small inline **sparkline** (last ~30-60 days of real daily `Quantity` from the
+    `Sale` table, per stock item) replacing/sitting beside the current "Demand Trend: X%" text in
+    `ranked-list-panel.tsx` rows and the KPI-strip drill-through table
+    (`top-at-risk-drill-through.tsx`). Shows the actual shape of recent demand at a glance —
+    accelerating/flat/declining — which a single trailing-window percentage can't convey.
+  - Scope (stretch, only if MVP lands with time to spare): expand the sparkline into the existing
+    drill-through modal pattern (reuse `TopAtRiskDrillThrough`'s approach) on row click, showing the
+    full actual-sales line plus the Suggested Reorder Qty and LeadTimeDays as reference context —
+    NOT a statistical forecast line (none exists), just actual history laid out clearly enough that
+    "why this item ranks where it does" is visually obvious.
+  - New work required: (1) a new DAX query (daily `Sale[Quantity]` by `Date` for one
+    `Stock Item Key`, bounded to the real ~11-month data window per `docs/wwi-schema-reference.md`)
+    + query factory file, following the existing pattern in `src/queries/`; (2) a sparkline
+    component — reuse `VegaVisual`/`@microsoft/fabric-visuals` (already the app's charting library,
+    avoids adding a new dependency) with a minimal line spec (no axes/gridlines, matches the
+    "recognizable, not bespoke" guidance above); (3) wiring into the ranked list row + drill-through
+    table + tests.
+  - Effort estimate: MVP ~1-1.5 hrs (query + component + wiring + tests); stretch modal +~1 hr.
+    Fits the Thu 8/20 "wire write-back, start polish" slot per `CLAUDE.md`'s day-by-day plan — do
+    not start until T5.x write-back and T6.1 validation are confirmed solid, per that plan's own
+    ordering.
+  - Acceptance (MVP): sparkline renders real per-item daily sales shape, no fabricated forecast
+    line, passes the `dataviz` skill's CVD/contrast check if color is used, tested against live
+    semantic model data (not just dev fixtures) per the project's own "don't trust fixtures alone"
+    lesson (`CLAUDE.md` Process lesson, 8/18).
+  - Files (planned, not yet created): `src/queries/action-center/item-sales-trend.ts` (+`.dax`),
+    a new `sparkline.tsx` component (location TBD — likely `src/components/shared/`), edits to
+    `src/components/action-center/ranked-list-panel.tsx` and
+    `src/components/overview/top-at-risk-drill-through.tsx`.

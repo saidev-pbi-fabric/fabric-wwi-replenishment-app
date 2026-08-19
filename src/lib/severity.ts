@@ -40,6 +40,25 @@ export function tierFilterLabel(tier: (typeof TIER_FILTERS)[number]): string {
 }
 
 /**
+ * Real Stock Item[Lead Time Priority Tier] distribution, verified live against
+ * the semantic model 2026-08-19 (`SUMMARIZECOLUMNS('Stock Item'[Lead Time
+ * Priority Tier], "Count", COUNTROWS('Stock Item'))`). Medium dominates the
+ * catalog (582 of 672 items) — this is why an unfiltered "All" view is mostly
+ * Medium-tier rows, not a filter bug. Shown as a caption so the skew reads as
+ * a disclosed data fact instead of looking broken.
+ */
+export const TIER_COUNTS: Record<Exclude<(typeof TIER_FILTERS)[number], "All">, number> = {
+    "Short Lead Time": 78,
+    "Medium Lead Time": 582,
+    "Long Lead Time": 12,
+};
+
+export function tierDistributionCaption(): string {
+    const total = Object.values(TIER_COUNTS).reduce((sum, n) => sum + n, 0);
+    return `${total} items tracked · ${TIER_COUNTS["Medium Lead Time"]} Medium · ${TIER_COUNTS["Short Lead Time"]} Short · ${TIER_COUNTS["Long Lead Time"]} Long`;
+}
+
+/**
  * DAX SUMMARIZECOLUMNS filter-table argument for a lead-time tier, substituted
  * into the `{{TIER_FILTER}}` placeholder in ranked-at-risk-list.dax and
  * top-at-risk-items.dax. Safe to interpolate directly: `tier` only ever comes

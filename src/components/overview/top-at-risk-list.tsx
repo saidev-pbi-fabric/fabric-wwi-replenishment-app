@@ -16,7 +16,7 @@ import { topAtRiskItems } from "@/queries/overview/top-at-risk-items";
 import { useQueryPanel } from "@/hooks/use-query-panel";
 import { useThemeContext } from "@/hooks/theme.context";
 import { TOP_AT_RISK_ITEMS_FIXTURE } from "@/lib/dev-preview-fixtures";
-import { TIER_FILTERS, tierFilterLabel } from "@/lib/severity";
+import { TIER_FILTERS, tierDistributionCaption, tierFilterLabel } from "@/lib/severity";
 
 // Vega renders to SVG and can't resolve `var(--color-*)`, so the severity
 // scale is duplicated here as literal hex, matching global.css exactly.
@@ -152,6 +152,7 @@ export function TopAtRiskList({ onSelectItem }: TopAtRiskListProps) {
                     ) : null}
                 </div>
             </div>
+            <p className="pt-200 font-base text-100 text-muted-foreground">{tierDistributionCaption()}</p>
             {usingDevFixture ? (
                 <p className="text-200 text-muted-foreground">Sample data — dev preview (no Fabric embed)</p>
             ) : null}

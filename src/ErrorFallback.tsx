@@ -13,17 +13,19 @@ export const ErrorFallback = ({ error, resetErrorBoundary }: { error: unknown; r
     if (import.meta.env.DEV) console.error("[ErrorBoundary]", error);
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-background p-4">
+        <div className="flex min-h-screen items-center justify-center bg-background p-400">
             <div className="w-full max-w-md text-center">
-                <h2 className="mb-2 text-lg font-semibold text-foreground">Something went wrong</h2>
-                <pre className="mb-4 max-h-32 overflow-auto rounded border border-border bg-muted p-3 text-left text-sm text-muted-foreground">
+                <h2 className="mb-100 font-heading text-400 font-semibold text-foreground">
+                    Something broke while loading the dashboard
+                </h2>
+                <pre className="mb-400 max-h-32 overflow-auto rounded border border-border bg-muted p-300 text-left font-base text-200 text-muted-foreground">
                     {message}
                 </pre>
                 <button
                     onClick={resetErrorBoundary}
-                    className="rounded border border-border px-4 py-2 text-sm text-foreground hover:bg-accent"
+                    className="rounded border border-border px-400 py-200 font-base text-200 text-foreground hover:bg-accent"
                 >
-                    Try Again
+                    Reload
                 </button>
             </div>
         </div>

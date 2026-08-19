@@ -14,7 +14,12 @@ import { rankedAtRiskList } from "@/queries/action-center/ranked-at-risk-list";
 import { cn } from "@/lib/utils";
 import { fadeInUp, staggerContainer } from "@/lib/motion";
 import { RANKED_AT_RISK_LIST_FIXTURE } from "@/lib/dev-preview-fixtures";
-import { LEAD_TIME_RAIL_CLASS, TIER_FILTERS, tierFilterLabel } from "@/lib/severity";
+import {
+    LEAD_TIME_RAIL_CLASS,
+    TIER_FILTERS,
+    tierDistributionCaption,
+    tierFilterLabel,
+} from "@/lib/severity";
 
 interface Row {
     key: number;
@@ -144,6 +149,9 @@ export function RankedListPanel({
                     ) : null}
                 </label>
             </div>
+            <p className="px-400 pt-200 font-base text-100 text-muted-foreground">
+                {tierDistributionCaption()}
+            </p>
             {usingDevFixture ? (
                 <p className="px-400 pt-200 text-200 text-muted-foreground">
                     Sample data — dev preview (no Fabric embed)
@@ -182,7 +190,10 @@ export function RankedListPanel({
                                     )}
                                 >
                                     <span className="min-w-0 flex-1">
-                                        <span className="block truncate font-base text-300 text-foreground">
+                                        <span
+                                            className="block truncate font-base text-300 text-foreground"
+                                            title={row.name}
+                                        >
                                             {row.name}
                                         </span>
                                         <span className="block font-base text-200 text-muted-foreground">

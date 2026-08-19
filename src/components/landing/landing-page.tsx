@@ -118,7 +118,10 @@ export function LandingPage({ onOpenDashboard }: LandingPageProps) {
                                     }`}
                                     aria-hidden="true"
                                 />
-                                <span className="min-w-0 flex-1 truncate font-base text-300 text-foreground">
+                                <span
+                                    className="min-w-0 flex-1 truncate font-base text-300 text-foreground"
+                                    title={row.name}
+                                >
                                     {row.name}
                                 </span>
                                 <span className="shrink-0 font-numeric text-200 text-muted-foreground">

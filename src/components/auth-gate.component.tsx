@@ -43,12 +43,12 @@ export function AuthGate({ children }: AuthGateProps) {
 
     if (!isAuthenticated) {
         return (
-            <div className="flex min-h-screen items-center justify-center bg-background p-4">
+            <div className="flex min-h-screen items-center justify-center bg-background p-400">
                 <div className="w-full max-w-md text-center">
-                    <h2 className="mb-2 text-lg font-semibold text-foreground">
+                    <h2 className="mb-100 font-heading text-400 font-semibold text-foreground">
                         Can't open this app outside Fabric
                     </h2>
-                    <p className="mb-4 text-sm text-muted-foreground">
+                    <p className="mb-400 font-base text-200 text-muted-foreground">
                         Opening apps connected to semantic models outside of the Fabric portal is not supported at this time.
                     </p>
                 </div>

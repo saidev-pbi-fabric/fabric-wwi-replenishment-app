@@ -76,6 +76,15 @@ checking against `docs/wireframe-design-brief.md`), `minimalist-ui`, `motion-pri
 marketplace install (which needed one), these are loose skill files picked up mid-session; all
 26 showed up in the available-skills listing immediately after install.
 
+## Chart/dataviz-specific references
+
+- **Data Goblins — Bar Charts** — https://data-goblins.com/power-bi/bar-charts
+  Power BI bar-chart variant catalog (bullet, divergent, stacked) plus a caution against
+  "Macguyvering" — over-customizing a visual into a report-specific one-off that's hard to
+  maintain. Relevant to the Overview/Action Center bar chart and ranked-list rows: prefer a
+  well-known variant over a bespoke one. Referenced 2026-08-19 when scoping the ranked-list
+  sparkline idea (see `tasks/todo.md` for the scoped task).
+
 ## Not yet evaluated in depth
 
 - User referenced "amazing designs" at `zanwei/design-dna`'s linked showcase — the repo itself is

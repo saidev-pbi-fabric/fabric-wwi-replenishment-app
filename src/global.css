@@ -29,20 +29,20 @@
   --color-primary: #0f6cbd;                                          /* primary actions & buttons */
   --color-primary-foreground: #ffffff;
 
-  --color-secondary: #fafafa;                                        /* secondary actions */
+  --color-secondary: #f7f7f8;                                        /* secondary actions */
   --color-secondary-foreground: #242424;
 
-  --color-muted: #f0f0f0;                                            /* subtle backgrounds */
+  --color-muted: #eef0f2;                                            /* subtle backgrounds */
   --color-muted-foreground: #616161;                                 /* subdued text */
 
-  --color-accent: #f5f5f5;                                           /* accent highlights */
+  --color-accent: #eef1f4;                                           /* accent highlights */
   --color-accent-foreground: #242424;
 
   --color-destructive: #c50f1f;                                      /* errors & destructive actions */
   --color-destructive-foreground: #ffffff;
 
-  --color-border: #e0e0e0;                                           /* default border */
-  --color-input: #e0e0e0;                                            /* input field borders */
+  --color-border: #d6d9dd;                                           /* default border */
+  --color-input: #d6d9dd;                                            /* input field borders */
   --color-ring: #0f6cbd;                                             /* focus rings */
 
   /* Severity scale — domain signal, additive to the theme above.

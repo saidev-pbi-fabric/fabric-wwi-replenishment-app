@@ -27,7 +27,7 @@ export function ActionCenter({ initialSelectedItemName }: ActionCenterProps) {
     const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
 
     return (
-        <div className="grid grid-cols-1 gap-500 lg:grid-cols-3">
+        <div className="grid grid-cols-1 items-start gap-500 lg:grid-cols-3">
             <div className="lg:col-span-1">
                 <RankedListPanel
                     selectedStockItemKey={selected?.key ?? null}
