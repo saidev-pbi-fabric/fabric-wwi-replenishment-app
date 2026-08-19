@@ -68,7 +68,7 @@ export function ReorderActionForm({ stockItemKey, stockItemName, onSubmitted }: 
     return (
         <div className="flex flex-col gap-200">
             {usingDevFixture ? (
-                <p className="text-200 text-muted-foreground">Sample data — dev preview (no Fabric embed)</p>
+                <p className="text-200 text-muted-foreground">Sample data · dev preview (no Fabric embed)</p>
             ) : null}
             {/* key forces a full remount on item change, resetting the uncontrolled
                 submit/field state below rather than carrying it over from the

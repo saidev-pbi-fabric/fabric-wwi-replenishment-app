@@ -50,7 +50,7 @@ export function TopAtRiskList({ onSelectItem }: TopAtRiskListProps) {
         return (
             <div
                 role="alert"
-                className="flex h-full min-h-[320px] items-center justify-center rounded-lg border border-destructive bg-destructive/10 px-400 py-300 text-300 text-destructive"
+                className="flex min-h-[320px] items-center justify-center rounded-lg border border-destructive bg-destructive/10 px-400 py-300 text-300 text-destructive"
             >
                 Couldn't load top at-risk items: {panel.message}
             </div>
@@ -59,7 +59,7 @@ export function TopAtRiskList({ onSelectItem }: TopAtRiskListProps) {
 
     if (!usingDevFixture && panel.status === "loading") {
         return (
-            <div className="h-full min-h-[320px] animate-pulse rounded-lg border border-border bg-card" />
+            <div className="min-h-[320px] animate-pulse rounded-lg border border-border bg-card" />
         );
     }
 
@@ -107,7 +107,7 @@ export function TopAtRiskList({ onSelectItem }: TopAtRiskListProps) {
     const legendColors = SEVERITY_RANGE[isDark ? "dark" : "light"];
 
     return (
-        <div className="h-full min-h-[320px] rounded-lg border border-border bg-card p-400 shadow-sm">
+        <div className="min-h-[320px] rounded-lg border border-border bg-card p-400 shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-200">
                 <h2 className="flex items-center gap-200 font-heading text-400 font-semibold text-foreground">
                     <AlertTriangle className="icon-size-300 text-muted-foreground" />
@@ -152,9 +152,9 @@ export function TopAtRiskList({ onSelectItem }: TopAtRiskListProps) {
                     ) : null}
                 </div>
             </div>
-            <p className="pt-200 font-base text-100 text-muted-foreground">{tierDistributionCaption()}</p>
+            <p className="pt-200 font-base text-100 text-muted-foreground">{tierDistributionCaption(tierFilter)}</p>
             {usingDevFixture ? (
-                <p className="text-200 text-muted-foreground">Sample data — dev preview (no Fabric embed)</p>
+                <p className="text-200 text-muted-foreground">Sample data · dev preview (no Fabric embed)</p>
             ) : null}
             <div className={cn("transition-opacity duration-200", isRefreshing ? "opacity-50" : "opacity-100")}>
                 {displayTable.rows.length === 0 ? (
@@ -170,7 +170,14 @@ export function TopAtRiskList({ onSelectItem }: TopAtRiskListProps) {
                         theme={theme}
                         configVegaLite={configVegaLite}
                         onInteraction={handleInteraction}
-                        style={{ height: 400 }}
+                        // fabric-visuals can't autosize height for a bar chart with a categorical
+                        // y-axis (it drops "fit-y" for any discrete-height spec, warning in console),
+                        // so the container needs an explicit height matching the chart's real row
+                        // count -- a fixed value here either clips the axis (too short) or leaves
+                        // dead space below the bars (too tall, the original bug). 32px/row matches
+                        // the "step" set on the y-axis band scale in top-at-risk-items.json; +60
+                        // covers the x-axis ticks and title below the plot area.
+                        style={{ height: displayTable.rows.length * 32 + 60 }}
                     />
                 )}
             </div>

@@ -209,7 +209,7 @@ export function RankedListPanel({
             </p>
             {usingDevFixture ? (
                 <p className="px-400 pt-200 text-200 text-muted-foreground">
-                    Sample data — dev preview (no Fabric embed)
+                    Sample data · dev preview (no Fabric embed)
                 </p>
             ) : null}
             <div

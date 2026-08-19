@@ -29,13 +29,13 @@ const STEPS: Step[] = [
         icon: AlertTriangle,
         title: "Surface the risk",
         description:
-            "Every stock item ranked by demand trend vs. lead time — no guessing which SKUs need attention first.",
+            "Every stock item ranked by demand trend vs. lead time, no guessing which SKUs need attention first.",
     },
     {
         icon: PackagePlus,
         title: "Record the action",
         description:
-            "Log a reorder decision — quantity, status, note — directly against the item. No spreadsheet or email hop.",
+            "Log a reorder decision (quantity, status, note) directly against the item. No spreadsheet or email hop.",
     },
     {
         icon: History,
@@ -81,7 +81,7 @@ export function LandingPage({ onOpenDashboard }: LandingPageProps) {
                 </h1>
 
                 <p className="max-w-[720px] font-base text-400 text-muted-foreground">
-                    Demand-driven reorder attention for a wholesale distributor — ranks stock items by
+                    Demand-driven reorder attention for a wholesale distributor. Ranks stock items by
                     sales velocity vs. supplier lead time, and lets you log and track the reorder decision,
                     without leaving the app.
                 </p>
@@ -137,7 +137,7 @@ export function LandingPage({ onOpenDashboard }: LandingPageProps) {
             <motion.section variants={fadeInUp} className="flex flex-col gap-300">
                 <h2 className="font-heading text-500 font-semibold text-foreground">The problem</h2>
                 <p className="max-w-[820px] font-base text-300 text-muted-foreground">
-                    Sales dashboards show what happened. They don't say what to do about it — that step
+                    Sales dashboards show what happened. They don't say what to do about it, that step
                     still lives in a spreadsheet or an email, outside the report. This app closes that
                     loop: see what's at risk of stocking out, then record and track the reorder action for
                     it, in the same place.
@@ -193,8 +193,8 @@ export function LandingPage({ onOpenDashboard }: LandingPageProps) {
                 <p>
                     Built on the Wide World Importers retail sample data (Fabric Warehouse Copy Job, ~50M sales
                     rows). This sample has no real purchasing or backorder data, so "risk" here is a{" "}
-                    <strong className="text-foreground">disclosed proxy</strong> — sales velocity trend vs.
-                    lead time, ranked — not a literal stock count.
+                    <strong className="text-foreground">disclosed proxy</strong>: sales velocity trend vs.
+                    lead time, ranked, not a literal stock count.
                 </p>
             </motion.section>
 

@@ -195,7 +195,7 @@ export function KpiStrip() {
             >
                 {usingDevFixture ? (
                     <div className="col-span-2 -mb-200 text-200 text-muted-foreground sm:col-span-3 lg:col-span-5">
-                        Sample data — dev preview (no Fabric embed)
+                        Sample data · dev preview (no Fabric embed)
                     </div>
                 ) : null}
                 {TILES.map((tile) => {

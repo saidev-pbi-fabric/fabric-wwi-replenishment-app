@@ -56,6 +56,15 @@ interface SparklineProps {
     showLatestValue?: boolean;
     /** How to render the min/max/latest values — defaults to a rounded integer. */
     formatValue?: (value: number) => string;
+    /**
+     * One label per real (non-forecast) `data` point, same order/length — typically a date.
+     * When provided, each point gets an invisible, larger hit-target with a native SVG `<title>`
+     * so hovering any point (not just the always-visible min/max/latest dots) shows its exact
+     * label + value as a plain browser tooltip. No hover-state JS, no popover positioning to get
+     * wrong — matches this component's "hand-rolled, minimal" brief. Omit to skip per-point
+     * tooltips entirely (e.g. when no date data is available).
+     */
+    labels?: string[];
 }
 
 /**
@@ -76,6 +85,7 @@ export function Sparkline({
     showMinMax = false,
     showLatestValue = false,
     formatValue = (v) => Math.round(v).toLocaleString(),
+    labels,
 }: SparklineProps) {
     const padX = 3;
     // Value labels need clear room above/below the line, or they clip against the chart edge.
@@ -192,6 +202,22 @@ export function Sparkline({
                     {formatValue(data[data.length - 1])}
                 </text>
             ) : null}
+            {labels
+                ? actualPoints.map((p, i) =>
+                      labels[i] === undefined ? null : (
+                          <circle
+                              key={i}
+                              cx={p.x}
+                              cy={p.y}
+                              r="6"
+                              fill="transparent"
+                              className="cursor-default"
+                          >
+                              <title>{`${labels[i]}: ${formatValue(data[i])}`}</title>
+                          </circle>
+                      ),
+                  )
+                : null}
         </svg>
     );
 }

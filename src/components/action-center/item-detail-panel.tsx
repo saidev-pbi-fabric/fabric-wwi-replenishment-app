@@ -106,7 +106,7 @@ export function ItemDetailPanel({ stockItemKey }: ItemDetailPanelProps) {
     // Composed client-side from fields already on screen — not a new metric, just a plain-English
     // read of them, so the "why" behind the rank doesn't require mentally parsing 5 separate cells.
     const trendWord = demandTrend > 0.03 ? "accelerating" : demandTrend < -0.03 ? "declining" : "steady";
-    const rationale = `Sells ${recentDailySales.toFixed(1)}/day, restocks in ${leadTimeDays} days, demand ${trendWord} (${demandTrend >= 0 ? "+" : ""}${(demandTrend * 100).toFixed(0)}%) — ranked #${atRiskRank} of 672.`;
+    const rationale = `Sells ${recentDailySales.toFixed(1)}/day, restocks in ${leadTimeDays} days, demand ${trendWord} (${demandTrend >= 0 ? "+" : ""}${(demandTrend * 100).toFixed(0)}%), ranked #${atRiskRank} of 672.`;
 
     const usingTrendFixture = import.meta.env.DEV && !import.meta.env.VITEST && trendPanel.status === "error";
     const trendTable = usingTrendFixture
@@ -161,7 +161,7 @@ export function ItemDetailPanel({ stockItemKey }: ItemDetailPanelProps) {
                     />
                 ) : usingDevFixture ? (
                     <span className="shrink-0 font-base text-200 text-muted-foreground">
-                        Sample data — dev preview
+                        Sample data · dev preview
                     </span>
                 ) : null}
             </div>
@@ -177,7 +177,7 @@ export function ItemDetailPanel({ stockItemKey }: ItemDetailPanelProps) {
             <div className="border-t border-border px-400 py-300">
                 <div className="flex flex-wrap items-baseline justify-between gap-200">
                     <p className="font-base text-200 uppercase tracking-wide text-muted-foreground">
-                        Sales Trend — 60 Days
+                        Sales Trend · 60 Days
                     </p>
                     {salesTrendData.length > 0 && forecastDays > 0 ? (
                         <p className="font-base text-100 text-muted-foreground">

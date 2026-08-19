@@ -54,10 +54,10 @@ export function SalesTrendChart() {
         <div className="h-full min-h-[320px] rounded-lg border border-border bg-card p-400 shadow-sm">
             <h2 className="flex items-center gap-200 font-heading text-400 font-semibold text-foreground">
                 <TrendingUp className="icon-size-300 text-muted-foreground" />
-                Daily Sales Trend — Top At-Risk Items
+                Daily Sales Trend · Top At-Risk Items
             </h2>
             {usingDevFixture ? (
-                <p className="text-200 text-muted-foreground">Sample data — dev preview (no Fabric embed)</p>
+                <p className="text-200 text-muted-foreground">Sample data · dev preview (no Fabric embed)</p>
             ) : null}
             <VegaVisual
                 spec={JSON.stringify(vegaLiteSpec)}

@@ -2,13 +2,17 @@
   "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
   "description": "Top 10 stock items ranked by Suggested Reorder Qty (a sales-velocity-vs-lead-time proxy, not a real inventory level — see docs/wwi-schema-reference.md). Colored by Lead Time Priority Tier.",
   "mark": "bar",
+  "height": { "step": 32 },
   "encoding": {
     "y": {
       "field": "StockItem",
       "type": "nominal",
       "sort": "-x",
       "title": null,
-      "axis": { "labelLimit": 220 }
+      "axis": {
+        "labelLimit": 280,
+        "labelExpr": "length(datum.value) > 38 ? slice(datum.value, 0, 22) + '…' + slice(datum.value, length(datum.value) - 13, length(datum.value)) : datum.value"
+      }
     },
     "x": {
       "field": "SuggestedReorderQty",

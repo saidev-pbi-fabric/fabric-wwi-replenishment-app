@@ -96,10 +96,25 @@ describe("RankedListPanel", () => {
     // transition ... goes blank"). It should keep the previous rows visible
     // (dimmed, with an "Updating" spinner) instead of going blank.
     it("keeps showing the previous rows (dimmed) instead of a blank skeleton while a new tier query is in flight", async () => {
+        // Per-row sparkline fetches share this same mock, and fire (2 of them, one per TABLE row)
+        // right after the list loads -- routing them past the list-query sequencing below by
+        // query shape (itemSalesTrend.dax's distinguishing "'Sale'[Stock Item Key] =" filter)
+        // instead of positional .mockResolvedValueOnce/.mockImplementationOnce, which would
+        // otherwise get consumed by the sparkline calls instead of the real re-query.
         let resolveSecond: (value: unknown) => void = () => {};
-        mockQuery
-            .mockResolvedValueOnce({ status: "success", table: TABLE, fromCache: false })
-            .mockImplementationOnce(() => new Promise((resolve) => (resolveSecond = resolve)));
+        let listCallCount = 0;
+        mockQuery.mockImplementation((query: string) => {
+            if (query.includes("'Sale'[Stock Item Key]")) {
+                return Promise.resolve({
+                    status: "success",
+                    table: { columns: [{ name: "Date[Date]" }, { name: "[Quantity]" }], rows: [] },
+                    fromCache: false,
+                });
+            }
+            listCallCount += 1;
+            if (listCallCount === 1) return Promise.resolve({ status: "success", table: TABLE, fromCache: false });
+            return new Promise((resolve) => (resolveSecond = resolve));
+        });
         render(<RankedListPanel selectedStockItemKey={null} onSelectItem={vi.fn()} />);
 
         await screen.findByText("Shipping carton (Brown)");

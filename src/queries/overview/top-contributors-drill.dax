@@ -1,0 +1,15 @@
+EVALUATE
+TOPN(
+    10,
+    SELECTCOLUMNS(
+        FILTER(ALL('Stock Item'), [At Risk Rank] <= 20),
+        'Stock Item'[Stock Item],
+        'Stock Item'[Lead Time Priority Tier],
+        "Unit Price", 'Stock Item'[Unit Price],
+        "Suggested Reorder Qty", [Suggested Reorder Qty],
+        "Reorder Value", [Suggested Reorder Qty] * 'Stock Item'[Unit Price],
+        "At Risk Rank", [At Risk Rank]
+    ),
+    [Reorder Value], DESC
+)
+ORDER BY [Reorder Value] DESC

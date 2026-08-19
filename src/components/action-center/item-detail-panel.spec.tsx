@@ -87,7 +87,7 @@ describe("ItemDetailPanel", () => {
         render(<ItemDetailPanel stockItemKey={17} />);
 
         expect(
-            await screen.findByText(/Sells 62\.4\/day, restocks in 18 days, demand accelerating \(\+34%\) — ranked #1 of 672\./),
+            await screen.findByText(/Sells 62\.4\/day, restocks in 18 days, demand accelerating \(\+34%\), ranked #1 of 672\./),
         ).toBeInTheDocument();
     });
 

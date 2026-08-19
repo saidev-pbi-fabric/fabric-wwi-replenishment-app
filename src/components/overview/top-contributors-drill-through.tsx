@@ -9,48 +9,48 @@ import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useQueryPanel } from "@/hooks/use-query-panel";
-import { topAtRiskDrill } from "@/queries/overview/top-at-risk-drill";
-import { TOP_AT_RISK_DRILL_FIXTURE } from "@/lib/dev-preview-fixtures";
+import { topContributorsDrill } from "@/queries/overview/top-contributors-drill";
+import { TOP_CONTRIBUTORS_DRILL_FIXTURE } from "@/lib/dev-preview-fixtures";
 import { LEAD_TIME_RAIL_CLASS } from "@/lib/severity";
 import { cn } from "@/lib/utils";
 
-interface TopAtRiskDrillThroughProps {
+interface TopContributorsDrillThroughProps {
     open: boolean;
     onClose: () => void;
 }
 
-interface DrillRow {
+interface ContributorRow {
     name: string;
     tier: string;
-    leadTimeDays: number;
+    unitPrice: number;
     suggestedReorderQty: number;
-    demandTrend: number;
+    reorderValue: number;
     rank: number;
 }
 
-function rowsFromTable(table: { columns: { name: string }[]; rows: unknown[][] }): DrillRow[] {
+function rowsFromTable(table: { columns: { name: string }[]; rows: unknown[][] }): ContributorRow[] {
     const idx = (name: string) => table.columns.findIndex((col) => col.name === name);
     const nameIdx = idx("Stock Item[Stock Item]");
     const tierIdx = idx("Stock Item[Lead Time Priority Tier]");
-    const leadTimeIdx = idx("Stock Item[Lead Time Days]");
+    const priceIdx = idx("[Unit Price]");
     const qtyIdx = idx("[Suggested Reorder Qty]");
-    const trendIdx = idx("[Demand Trend]");
+    const valueIdx = idx("[Reorder Value]");
     const rankIdx = idx("[At Risk Rank]");
 
     return table.rows.map((row) => ({
         name: String(row[nameIdx]),
         tier: String(row[tierIdx]),
-        leadTimeDays: Number(row[leadTimeIdx]),
+        unitPrice: Number(row[priceIdx]),
         suggestedReorderQty: Number(row[qtyIdx]),
-        demandTrend: Number(row[trendIdx]),
+        reorderValue: Number(row[valueIdx]),
         rank: Number(row[rankIdx]),
     }));
 }
 
-export function TopAtRiskDrillThrough({ open, onClose }: TopAtRiskDrillThroughProps) {
-    // Skip the query entirely until opened — matches ItemDetailPanel's
-    // empty-connection/query "skip" convention (see use-semantic-model-query.ts's canExecute).
-    const options = open ? topAtRiskDrill() : { connection: "", query: "" };
+export function TopContributorsDrillThrough({ open, onClose }: TopContributorsDrillThroughProps) {
+    // Skip the query entirely until opened — matches TopAtRiskDrillThrough's
+    // empty-connection/query "skip" convention.
+    const options = open ? topContributorsDrill() : { connection: "", query: "" };
     const panel = useQueryPanel(options);
 
     useEffect(() => {
@@ -68,7 +68,7 @@ export function TopAtRiskDrillThrough({ open, onClose }: TopAtRiskDrillThroughPr
     const usingDevFixture = import.meta.env.DEV && !import.meta.env.VITEST && panel.status === "error";
 
     const table = usingDevFixture
-        ? TOP_AT_RISK_DRILL_FIXTURE
+        ? TOP_CONTRIBUTORS_DRILL_FIXTURE
         : panel.status === "ready" || panel.status === "refreshing"
           ? panel.table
           : undefined;
@@ -81,7 +81,7 @@ export function TopAtRiskDrillThrough({ open, onClose }: TopAtRiskDrillThroughPr
                 <motion.div
                     role="dialog"
                     aria-modal="true"
-                    aria-label="Top At-Risk Items, full list"
+                    aria-label="Top $ Contributors, at-risk reorder value"
                     className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 p-500"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -99,10 +99,11 @@ export function TopAtRiskDrillThrough({ open, onClose }: TopAtRiskDrillThroughPr
                         <div className="flex items-center justify-between gap-300 border-b border-border p-400">
                             <div>
                                 <h2 className="font-heading text-400 font-semibold text-foreground">
-                                    Top At-Risk Items
+                                    Top $ Contributors
                                 </h2>
                                 <p className="text-200 text-muted-foreground">
-                                    All 20 items ranked in this tile's count, by At Risk Rank.
+                                    Top 10 by Reorder Value (Unit Price × Suggested Reorder Qty), within the
+                                    same top-20 at-risk items this tile's total sums.
                                 </p>
                             </div>
                             <button
@@ -123,7 +124,7 @@ export function TopAtRiskDrillThrough({ open, onClose }: TopAtRiskDrillThroughPr
 
                         {panel.status === "error" && !usingDevFixture ? (
                             <div role="alert" className="p-400 text-300 text-destructive">
-                                Couldn't load the full list: {panel.message}
+                                Couldn't load top contributors: {panel.message}
                             </div>
                         ) : panel.status === "loading" && !usingDevFixture ? (
                             <div className="p-400 text-300 text-muted-foreground">Loading…</div>
@@ -142,13 +143,13 @@ export function TopAtRiskDrillThrough({ open, onClose }: TopAtRiskDrillThroughPr
                                                 Lead Time
                                             </th>
                                             <th className="px-400 py-200 text-right font-base text-200 uppercase tracking-wide text-muted-foreground">
-                                                Days
+                                                Unit Price
                                             </th>
                                             <th className="px-400 py-200 text-right font-base text-200 uppercase tracking-wide text-muted-foreground">
                                                 Suggested Reorder Qty
                                             </th>
                                             <th className="px-400 py-200 text-right font-base text-200 uppercase tracking-wide text-muted-foreground">
-                                                Demand Trend
+                                                Reorder Value
                                             </th>
                                         </tr>
                                     </thead>
@@ -171,13 +172,13 @@ export function TopAtRiskDrillThrough({ open, onClose }: TopAtRiskDrillThroughPr
                                                     {row.tier}
                                                 </td>
                                                 <td className="px-400 py-200 text-right font-numeric text-200 text-muted-foreground">
-                                                    {row.leadTimeDays}
-                                                </td>
-                                                <td className="px-400 py-200 text-right font-numeric text-200 text-foreground">
-                                                    {row.suggestedReorderQty.toLocaleString()}
+                                                    ${row.unitPrice.toFixed(2)}
                                                 </td>
                                                 <td className="px-400 py-200 text-right font-numeric text-200 text-muted-foreground">
-                                                    {(row.demandTrend * 100).toFixed(0)}%
+                                                    {row.suggestedReorderQty.toLocaleString()}
+                                                </td>
+                                                <td className="px-400 py-200 text-right font-numeric text-200 text-foreground">
+                                                    ${row.reorderValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                                 </td>
                                             </tr>
                                         ))}

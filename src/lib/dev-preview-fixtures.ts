@@ -88,6 +88,29 @@ export const TOP_AT_RISK_DRILL_FIXTURE: QueryTable = {
     ],
 };
 
+export const TOP_CONTRIBUTORS_DRILL_FIXTURE: QueryTable = {
+    columns: [
+        { name: "Stock Item[Stock Item]", dataType: "String" },
+        { name: "Stock Item[Lead Time Priority Tier]", dataType: "String" },
+        { name: "[Unit Price]", dataType: "Double" },
+        { name: "[Suggested Reorder Qty]", dataType: "Double" },
+        { name: "[Reorder Value]", dataType: "Double" },
+        { name: "[At Risk Rank]", dataType: "Int64" },
+    ],
+    rows: [
+        ["Black and yellow heavy-duty despatch tape 48mmx100m", "Medium Lead Time", 4.85, 1620, 7857, 2],
+        ["Black and orange fragile despatch tape 48mmx75m", "Medium Lead Time", 4.6, 1620, 7452, 4],
+        ["Red and white urgent despatch tape 48mmx75m", "Medium Lead Time", 4.6, 1345, 6187, 6],
+        ["Black and orange this way up despatch tape 48mmx75m", "Medium Lead Time", 4.6, 1310, 6026, 7],
+        ["Black and orange handle with care despatch tape 48mmx100m", "Medium Lead Time", 4.85, 1105, 5359, 9],
+        ["Shipping carton (Brown) 413x285x187mm", "Long Lead Time", 2.1, 1840, 3864, 1],
+        ["Bubble wrap 500mm x 10m", "Long Lead Time", 2.35, 1620, 3807, 3],
+        ["Corrugated void fill 1m3 bag", "Medium Lead Time", 3.1, 1105, 3426, 5],
+        ["Pallet wrap 500mm x 300m", "Short Lead Time", 3.4, 940, 3196, 8],
+        ["Address label roll 100x150mm", "Short Lead Time", 3.9, 780, 3042, 10],
+    ],
+};
+
 // 61 days, mild upward drift + noise — illustrative shape for local dev preview only, not
 // derived from the live model (see item-sales-trend.ts for the real query).
 export const ITEM_SALES_TREND_FIXTURE: QueryTable = {

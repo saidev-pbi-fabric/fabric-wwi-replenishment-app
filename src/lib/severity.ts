@@ -64,9 +64,12 @@ export const TIER_COUNTS: Record<Exclude<(typeof TIER_FILTERS)[number], "All">, 
     "Long Lead Time": 12,
 };
 
-export function tierDistributionCaption(): string {
+export function tierDistributionCaption(tier: (typeof TIER_FILTERS)[number]): string {
     const total = Object.values(TIER_COUNTS).reduce((sum, n) => sum + n, 0);
-    return `${total} items tracked · ${TIER_COUNTS["Medium Lead Time"]} Medium · ${TIER_COUNTS["Short Lead Time"]} Short · ${TIER_COUNTS["Long Lead Time"]} Long`;
+    if (tier === "All") {
+        return `${total} items tracked · ${TIER_COUNTS["Medium Lead Time"]} Medium · ${TIER_COUNTS["Short Lead Time"]} Short · ${TIER_COUNTS["Long Lead Time"]} Long`;
+    }
+    return `${TIER_COUNTS[tier]} of ${total} items are ${tierFilterLabel(tier)} lead time`;
 }
 
 /**

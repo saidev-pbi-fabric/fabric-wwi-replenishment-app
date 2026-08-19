@@ -31,11 +31,35 @@ describe("topAtRiskItems", () => {
     });
 
     it("caps y-axis label width so long WWI item names truncate with an ellipsis instead of crowding the chart", () => {
-        // Narrowed back from 420 to 220 (2026-08-19, user feedback): at full width, long real WWI
-        // names were eating most of the plot area, leaving every bar looking the same length.
-        // Ellipsis-truncated labels rely on the tooltip encoding (added same change) for the full
-        // name and other fields on hover.
-        expect(result.vegaLiteSpec.encoding.y.axis.labelLimit).toBe(220);
+        // Widened from 220 to 280 (2026-08-19, user feedback: names were unreadable). Paired with
+        // labelExpr below, which truncates from the middle instead of the end, so this only needs
+        // to fit ~35 characters, not a whole name — still well short of 420, which the original
+        // 2026-08-19 change found ate most of the plot area.
+        expect(result.vegaLiteSpec.encoding.y.axis.labelLimit).toBe(280);
+    });
+
+    it("truncates long labels from the middle (keeps the item type prefix and the distinguishing size/color suffix) instead of the end", () => {
+        // A plain end-ellipsis (Vega's default) keeps the generic prefix ("Black and yellow
+        // heavy-duty despatch tape...") and drops exactly the part that distinguishes one item
+        // from a near-identical one (the size/color suffix) -- most real WWI item names differ
+        // only at the end. labelExpr rewrites the *displayed* text only; the underlying field
+        // stays "StockItem" so sort/selection/interaction are untouched. Full name still shows
+        // via the tooltip encoding above.
+        const labelExpr = result.vegaLiteSpec.encoding.y.axis.labelExpr as string;
+        const shortName = "Bubble wrap 500mm x 10m"; // 23 chars, under the 38-char truncation threshold
+        const longName = "Black and yellow heavy-duty despatch tape 48mm"; // 48 chars
+        // `length`/`slice` are Vega expression built-ins (same semantics as the JS string methods,
+        // just called as free functions), not globals -- supply them so the expression string
+        // evaluates the same way Vega's own expression compiler would run it.
+        const evalLabel = (value: string) =>
+            new Function(
+                "datum",
+                "length",
+                "slice",
+                `return ${labelExpr};`,
+            )({ value }, (s: string) => s.length, (s: string, a: number, b: number) => s.slice(a, b));
+        expect(evalLabel(shortName)).toBe(shortName);
+        expect(evalLabel(longName)).toBe("Black and yellow heavy…tch tape 48mm");
     });
 
     it("omits the redundant y-axis title (item names are self-explanatory as a ranked list)", () => {

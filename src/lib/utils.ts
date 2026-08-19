@@ -16,3 +16,14 @@ import { twMerge } from "tailwind-merge";
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
 }
+
+/**
+ * "2000-11-05" -> "Nov 5, 2000" — every date in this app's DAX results comes back as an ISO
+ * date string, not a JS Date, and the sample data is a single historical 2000 window rather
+ * than recent dates, so the year stays in the label instead of being assumed/dropped.
+ */
+export function formatShortDate(isoDate: string): string {
+    const date = new Date(`${isoDate}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return isoDate;
+    return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
