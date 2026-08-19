@@ -59,6 +59,49 @@ Microsoft Fabric Hackathon 2026 entry (Hyderabad Data & AI Community + India Fab
 
 **Schedule-critical day: Monday (SM build)** - everything downstream depends on it, no slack.
 
+## Status (as of 2026-08-20, end of session)
+- [DONE] Backlog items 1, 2, 3 (of the "1, 2, 3, 5" set the user asked for autonomously, one after
+  another) — all built, verified locally, deployed. (1) **Top Contributors drill-through**: new
+  modal on the At-Risk Reorder Value $ KPI tile (`top-contributors-drill-through.tsx` +
+  `top-contributors-drill.dax/.ts`), same pattern as the existing Top At-Risk drill-through — DAX
+  not live-verified, XMLA connection to the semantic model was unresponsive both times it was
+  tried (documented flaky-credential issue, see 8/17 log). (2) **Per-row sparklines** in the
+  Action Center ranked list — hit and fixed a real bug where the sparkline's own `width="100%"`
+  SVG was squeezing item names to zero width in the flex row; fixed with a fixed-size wrapper span.
+  (3) **Sparkline hover tooltips** (exact date + value) via native SVG `<title>` elements, added to
+  both the compact row sparklines and the existing big detail-panel one; `formatShortDate()` added
+  to `src/lib/utils.ts` for the label text.
+- [DONE] The empty-space bug in the Overview "Top At-Risk Items" card — user-confirmed fixed.
+  Root cause was not the originally-suspected `h-full` ambient stretch; `fabric-visuals` drops
+  Vega's "fit-y" autosize for any bar chart with a categorical y-axis, so the hardcoded
+  `style={{height: 400}}` wrapper left dead space below shorter charts. Fixed with `height:
+  {step: 32}` in the Vega spec plus a JS-computed `style={{height: rows.length * 32 + 60}}`.
+- [DONE] Item name middle-truncation (`labelExpr` on the y-axis, not a separate computed field —
+  a first attempt using a `transform.calculate` field broke Vega's internal sort/selection domain
+  unioning, caught and reverted before shipping) and the tier-filter caption mismatch
+  (`tierDistributionCaption()` now takes the active tier instead of always showing the "All"
+  summary) — both built and included in this session's deploy, but **not yet user-confirmed** ("I
+  am not able to scroll through... same issue nothing seems fixed" was about the height bug, which
+  is separately confirmed fixed; the user then said "This change one issue the height issue is
+  resolved other is still pending need mroe clarity so i will park it for now" — so these two stay
+  parked, no further work on them without more direction).
+- [BLOCKED] Backlog item 5 (TE2 Best Practice Analyzer pass) — Tabular Editor 2 CLI
+  (`TabularEditor.exe`) is not installed on this laptop (checked `where.exe` + both `Program
+  Files` dirs). Per [[project_tabular_editor_decision]] this is TE2-CLI-only (free), but installing
+  new desktop software unattended isn't something to do without confirmation — flagged to the user
+  rather than silently installing or silently skipping. It was already documented as an optional
+  Friday 8/21 buffer-day item, never a gate, so nothing else is blocked on it.
+- [PROCESS] User gave an explicit standing instruction this session: when blocked or iterating
+  without success, stop and say so rather than keep burning turns/tokens — ship what's believed
+  working, let the user validate live and report back, instead of continuing to self-verify in a
+  loop. Also confirmed: work backlog items one at a time in sequence, not batched (given earlier as
+  general feedback, re-confirmed here in practice).
+- Verify: 125/125 tests pass, `tsc --noEmit` clean vs. the known `use-query-panel.spec.ts`
+  baseline, `npm run lint` clean vs. the known `main.tsx` baseline (one new warning from this
+  session's own test, an unused `eslint-disable` directive, found and removed during closing
+  checks), `npm run build` clean, all changes committed + pushed to `main`, live app matches HEAD
+  (`3f84cc5`) — confirmed via `rayfin up` immediately before the commit.
+
 ## Status (as of 2026-08-19, end of session)
 - [DONE] `gsd-ui-auditor` retroactive 6-pillar audit run (T6.5) — 19/24 (`docs/UI-REVIEW.md`).
   Fixed the 3 priority findings (light-mode neutral ramp, `ErrorFallback`/auth-gate off raw
