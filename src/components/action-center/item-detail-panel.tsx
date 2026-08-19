@@ -175,7 +175,7 @@ export function ItemDetailPanel({ stockItemKey }: ItemDetailPanelProps) {
                     </p>
                     {salesTrendData.length > 0 && forecastDays > 0 ? (
                         <p className="font-base text-100 text-muted-foreground">
-                            Dashed = {forecastDays}-day projection (linear trend, not a forecast model)
+                            Shaded/dashed = {forecastDays}-day projection (linear trend, not a forecast model)
                         </p>
                     ) : null}
                 </div>
@@ -191,6 +191,7 @@ export function ItemDetailPanel({ stockItemKey }: ItemDetailPanelProps) {
                             className={LEAD_TIME_TEXT_CLASS[tier] ?? "text-muted-foreground"}
                             ariaLabel={`Daily units sold, last 60 days, projected ${forecastDays} days forward`}
                             showMinMax
+                            showLatestValue
                         />
                     ) : (
                         <p className="text-200 text-muted-foreground">No recent sales history for this item.</p>

@@ -51,7 +51,10 @@ interface SparklineProps {
      * unreadable on its own; this is the minimum context to keep it honest without adding a full
      * axis (which would defeat the point of a sparkline). */
     showMinMax?: boolean;
-    /** How to render the min/max values — defaults to a rounded integer. */
+    /** Labels the last real data point too ("Label Latest Data Point" — the value the rest of the
+     * panel is already keyed off, so it's worth calling out even though it's also the plain dot). */
+    showLatestValue?: boolean;
+    /** How to render the min/max/latest values — defaults to a rounded integer. */
     formatValue?: (value: number) => string;
 }
 
@@ -71,11 +74,12 @@ export function Sparkline({
     className,
     ariaLabel,
     showMinMax = false,
+    showLatestValue = false,
     formatValue = (v) => Math.round(v).toLocaleString(),
 }: SparklineProps) {
     const padX = 3;
-    // Min/max labels need clear room above/below the line, or they clip against the chart edge.
-    const padY = showMinMax ? 15 : 3;
+    // Value labels need clear room above/below the line, or they clip against the chart edge.
+    const padY = showMinMax || showLatestValue ? 15 : 3;
     if (data.length === 0) return null;
 
     const { slope, intercept } = linearRegression(data);
@@ -125,6 +129,16 @@ export function Sparkline({
             aria-label={ariaLabel}
             className={cn("block", className)}
         >
+            {forecastPoints.length > 0 ? (
+                <rect
+                    x={last.x}
+                    y="0"
+                    width={Math.max(0, width - last.x)}
+                    height={height}
+                    fill="currentColor"
+                    opacity="0.06"
+                />
+            ) : null}
             <path d={areaPath} fill="currentColor" opacity="0.12" />
             <path d={toPath(actualPoints)} fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round" />
             {forecastPoints.length > 0 ? (
@@ -166,6 +180,18 @@ export function Sparkline({
                 </>
             ) : null}
             <circle cx={last.x} cy={last.y} r="2.4" fill="currentColor" />
+            {showLatestValue ? (
+                <text
+                    x={last.x}
+                    y={last.y - 6}
+                    textAnchor="end"
+                    fontSize="8"
+                    fontWeight="600"
+                    fill="currentColor"
+                >
+                    {formatValue(data[data.length - 1])}
+                </text>
+            ) : null}
         </svg>
     );
 }

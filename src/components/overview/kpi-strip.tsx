@@ -5,8 +5,8 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-import { useEffect, useState } from "react";
-import { animate, motion, useReducedMotion } from "framer-motion";
+import { useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { Package, Clock, AlertTriangle, TrendingUp, ArrowUpRight, DollarSign } from "lucide-react";
 import { fadeInUp, staggerContainer } from "@/lib/motion";
 import { useQueryPanel } from "@/hooks/use-query-panel";
@@ -84,9 +84,12 @@ const TILES: Tile[] = [
 ];
 
 /**
- * Every tile's number counts up on load, not just the drill-through tile's icon wiggle on hover —
- * a universal, non-clickable motion touch so the strip doesn't read as "one tile animates, four
- * are static." Falls straight to the final value under `prefers-reduced-motion`.
+ * Every tile's number fades/scales in on load, not just the drill-through tile's icon wiggle on
+ * hover — a universal, non-clickable motion touch so the strip doesn't read as "one tile
+ * animates, four are static." Deliberately NOT a numeric count-up: for a value like $98.8M that
+ * meant ticking through big, jumpy intermediate numbers ($4.2M, $61.8M, ...) in under a second —
+ * reads as jank, not polish, especially for a large, already-compact-formatted figure. A plain
+ * reveal keeps the "alive on load" feel without the flicker.
  */
 function AnimatedTileValue({
     raw,
@@ -97,28 +100,16 @@ function AnimatedTileValue({
     format: (value: unknown) => string;
     prefersReducedMotion: boolean | null;
 }) {
-    const target = Number(raw);
-    const animatable = Number.isFinite(target);
-    // Also skipped under Vitest — jsdom doesn't reliably drive requestAnimationFrame, so a real
-    // tween would leave the value stuck mid-count and time out `findByText`/`waitFor` assertions.
-    const skipAnimation = prefersReducedMotion || !animatable || import.meta.env.VITEST;
-    const [display, setDisplay] = useState(skipAnimation ? target : 0);
-
-    useEffect(() => {
-        if (skipAnimation) {
-            setDisplay(target);
-            return;
-        }
-        const controls = animate(0, target, {
-            duration: 0.9,
-            delay: 0.1,
-            ease: "easeOut",
-            onUpdate: setDisplay,
-        });
-        return () => controls.stop();
-    }, [target, skipAnimation]);
-
-    return <>{animatable ? format(display) : format(raw)}</>;
+    return (
+        <motion.span
+            initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.35, delay: 0.1, ease: "easeOut" }}
+            className="inline-block"
+        >
+            {format(raw)}
+        </motion.span>
+    );
 }
 
 const RAIL_CLASS: Record<Severity, string> = {
