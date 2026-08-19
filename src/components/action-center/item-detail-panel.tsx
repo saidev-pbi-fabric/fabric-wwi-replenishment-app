@@ -187,9 +187,10 @@ export function ItemDetailPanel({ stockItemKey }: ItemDetailPanelProps) {
                             data={salesTrendData}
                             forecastDays={forecastDays}
                             width={640}
-                            height={56}
+                            height={64}
                             className={LEAD_TIME_TEXT_CLASS[tier] ?? "text-muted-foreground"}
                             ariaLabel={`Daily units sold, last 60 days, projected ${forecastDays} days forward`}
+                            showMinMax
                         />
                     ) : (
                         <p className="text-200 text-muted-foreground">No recent sales history for this item.</p>

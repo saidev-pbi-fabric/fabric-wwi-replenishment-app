@@ -113,7 +113,7 @@ function ThemeToggle() {
 
 function OverviewPage({ onSelectItem }: { onSelectItem: (stockItemName: string) => void }) {
     return (
-        <div className="flex flex-col gap-500">
+        <div className="flex flex-col gap-400">
             <div>
                 <h1 className="font-heading text-600 font-semibold text-foreground">
                     Replenishment Overview
@@ -131,7 +131,7 @@ function OverviewPage({ onSelectItem }: { onSelectItem: (stockItemName: string) 
 
 function ActionCenterPage({ initialSelectedItemName }: { initialSelectedItemName: string | null }) {
     return (
-        <div className="flex flex-col gap-500">
+        <div className="flex flex-col gap-300">
             <div>
                 <h1 className="font-heading text-600 font-semibold text-foreground">Action Center</h1>
                 <p className="mt-100 font-base text-300 text-muted-foreground">

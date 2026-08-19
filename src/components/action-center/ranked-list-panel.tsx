@@ -121,7 +121,7 @@ export function RankedListPanel({
     const rows = rowsFromTable(loadedTable);
 
     return (
-        <div className="flex max-h-[640px] min-h-[480px] flex-col rounded-lg border border-border bg-card shadow-sm">
+        <div className="flex max-h-[640px] min-h-[480px] flex-col overflow-hidden rounded-lg border border-border bg-card shadow-sm">
             <div className="flex items-center justify-between gap-300 border-b border-border p-400">
                 <h2 className="flex items-center gap-200 font-heading text-400 font-semibold text-foreground">
                     <AlertTriangle className="icon-size-300 text-muted-foreground" />

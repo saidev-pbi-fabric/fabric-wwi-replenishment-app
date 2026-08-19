@@ -5,8 +5,8 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-import { useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { useEffect, useState } from "react";
+import { animate, motion, useReducedMotion } from "framer-motion";
 import { Package, Clock, AlertTriangle, TrendingUp, ArrowUpRight, DollarSign } from "lucide-react";
 import { fadeInUp, staggerContainer } from "@/lib/motion";
 import { useQueryPanel } from "@/hooks/use-query-panel";
@@ -27,8 +27,6 @@ interface Tile {
     severity: (value: unknown) => Severity;
     /** Opens the full-list drill-through table when the tile is clicked. */
     drillThrough?: boolean;
-    /** Spans the full row on large screens — for the one tile meant to read as a headline, not a peer stat. */
-    fullWidth?: boolean;
 }
 
 /** "$98.8M" / "$640K" / "$420" — this app's numbers run large (aggregated over the full ~11-month
@@ -73,18 +71,55 @@ const TILES: Tile[] = [
         icon: TrendingUp,
         format: (v) => String(v ?? "—"),
         context: "Items with a positive 30-day demand trend",
-        severity: (v) => (Number(v) > 0 ? "at-risk" : "on-track"),
+        severity: () => "neutral",
     },
     {
         key: "[At Risk Reorder Value]",
         label: "At-Risk Reorder Value",
         icon: DollarSign,
         format: (v) => formatCompactCurrency(Number(v ?? 0)),
-        context: "Unit Price × Suggested Reorder Qty, top 20 at-risk items (disclosed proxy, not literal stock value)",
+        context: "Unit Price × Suggested Reorder Qty, same top 20 at-risk items as the tile above",
         severity: () => "critical",
-        fullWidth: true,
     },
 ];
+
+/**
+ * Every tile's number counts up on load, not just the drill-through tile's icon wiggle on hover —
+ * a universal, non-clickable motion touch so the strip doesn't read as "one tile animates, four
+ * are static." Falls straight to the final value under `prefers-reduced-motion`.
+ */
+function AnimatedTileValue({
+    raw,
+    format,
+    prefersReducedMotion,
+}: {
+    raw: unknown;
+    format: (value: unknown) => string;
+    prefersReducedMotion: boolean | null;
+}) {
+    const target = Number(raw);
+    const animatable = Number.isFinite(target);
+    // Also skipped under Vitest — jsdom doesn't reliably drive requestAnimationFrame, so a real
+    // tween would leave the value stuck mid-count and time out `findByText`/`waitFor` assertions.
+    const skipAnimation = prefersReducedMotion || !animatable || import.meta.env.VITEST;
+    const [display, setDisplay] = useState(skipAnimation ? target : 0);
+
+    useEffect(() => {
+        if (skipAnimation) {
+            setDisplay(target);
+            return;
+        }
+        const controls = animate(0, target, {
+            duration: 0.9,
+            delay: 0.1,
+            ease: "easeOut",
+            onUpdate: setDisplay,
+        });
+        return () => controls.stop();
+    }, [target, skipAnimation]);
+
+    return <>{animatable ? format(display) : format(raw)}</>;
+}
 
 const RAIL_CLASS: Record<Severity, string> = {
     critical: "border-l-critical",
@@ -130,14 +165,11 @@ export function KpiStrip() {
 
     if (!usingDevFixture && panel.status === "loading") {
         return (
-            <div className="grid grid-cols-2 gap-400 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-400 sm:grid-cols-3 lg:grid-cols-5">
                 {TILES.map((tile) => (
                     <div
                         key={tile.key}
-                        className={cn(
-                            "rounded-lg border border-border border-l-4 border-l-transparent bg-card p-400",
-                            tile.fullWidth && "col-span-2 lg:col-span-4",
-                        )}
+                        className="rounded-lg border border-border border-l-4 border-l-transparent bg-card p-400"
                     >
                         <div className="h-200 w-3/4 animate-pulse rounded-md bg-muted" />
                         <div className="mt-300 h-600 w-1/2 animate-pulse rounded-md bg-muted" />
@@ -162,13 +194,13 @@ export function KpiStrip() {
     return (
         <>
             <motion.div
-                className="grid grid-cols-2 gap-400 lg:grid-cols-4"
+                className="grid grid-cols-2 gap-400 sm:grid-cols-3 lg:grid-cols-5"
                 initial="hidden"
                 animate="visible"
                 variants={staggerContainer}
             >
                 {usingDevFixture ? (
-                    <div className="col-span-2 -mb-200 text-200 text-muted-foreground lg:col-span-4">
+                    <div className="col-span-2 -mb-200 text-200 text-muted-foreground sm:col-span-3 lg:col-span-5">
                         Sample data — dev preview (no Fabric embed)
                     </div>
                 ) : null}
@@ -187,7 +219,6 @@ export function KpiStrip() {
                             className={cn(
                                 "rounded-lg border border-border border-l-4 bg-card p-400 text-left shadow-sm transition-shadow hover:shadow-md",
                                 tile.drillThrough && "cursor-pointer",
-                                tile.fullWidth && "col-span-2 lg:col-span-4",
                                 RAIL_CLASS[severity],
                             )}
                         >
@@ -216,7 +247,7 @@ export function KpiStrip() {
                                 </motion.span>
                             </div>
                             <div className="mt-200 font-numeric text-hero-800 font-semibold text-foreground">
-                                {tile.format(raw)}
+                                <AnimatedTileValue raw={raw} format={tile.format} prefersReducedMotion={prefersReducedMotion} />
                             </div>
                             <div className="mt-200 flex items-center justify-between gap-200 text-200 text-muted-foreground">
                                 <span>{tile.context}</span>

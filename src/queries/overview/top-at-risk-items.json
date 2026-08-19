@@ -7,8 +7,8 @@
       "field": "StockItem",
       "type": "nominal",
       "sort": "-x",
-      "title": "Item",
-      "axis": { "labelLimit": 420 }
+      "title": null,
+      "axis": { "labelLimit": 220 }
     },
     "x": {
       "field": "SuggestedReorderQty",
@@ -22,6 +22,13 @@
       "title": "Lead Time",
       "scale": { "domain": ["Short Lead Time", "Medium Lead Time", "Long Lead Time"] },
       "legend": null
-    }
+    },
+    "tooltip": [
+      { "field": "StockItem", "type": "nominal", "title": "Item" },
+      { "field": "LeadTimePriorityTier", "type": "nominal", "title": "Lead Time" },
+      { "field": "SuggestedReorderQty", "type": "quantitative", "title": "Suggested Reorder Qty", "format": "," },
+      { "field": "DemandTrend", "type": "quantitative", "title": "Demand Trend", "format": "+.0%" },
+      { "field": "AtRiskRank", "type": "ordinal", "title": "Rank" }
+    ]
   }
 }

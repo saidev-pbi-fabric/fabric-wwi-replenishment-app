@@ -89,7 +89,7 @@ export function TopAtRiskDrillThrough({ open, onClose }: TopAtRiskDrillThroughPr
                     onClick={onClose}
                 >
                     <motion.div
-                        className="flex max-h-[80vh] w-full max-w-[900px] flex-col rounded-lg border border-border bg-card shadow-sm"
+                        className="flex max-h-[80vh] w-full max-w-[900px] flex-col overflow-hidden rounded-lg border border-border bg-card shadow-sm"
                         initial={{ opacity: 0, y: 16, scale: 0.98 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 16, scale: 0.98 }}

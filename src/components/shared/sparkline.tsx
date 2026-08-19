@@ -47,6 +47,12 @@ interface SparklineProps {
     /** Tailwind text-color class (e.g. "text-critical") — stroke/fill use currentColor. */
     className?: string;
     ariaLabel: string;
+    /** Labels the highest/lowest real (non-forecast) points — a sparkline with no scale at all is
+     * unreadable on its own; this is the minimum context to keep it honest without adding a full
+     * axis (which would defeat the point of a sparkline). */
+    showMinMax?: boolean;
+    /** How to render the min/max values — defaults to a rounded integer. */
+    formatValue?: (value: number) => string;
 }
 
 /**
@@ -57,8 +63,19 @@ interface SparklineProps {
  * classes directly (Vega's internal renderer can't resolve `var(--color-*)`, see
  * top-at-risk-list.tsx) — no light/dark hex duplication needed here.
  */
-export function Sparkline({ data, forecastDays = 0, width = 96, height = 32, className, ariaLabel }: SparklineProps) {
-    const pad = 3;
+export function Sparkline({
+    data,
+    forecastDays = 0,
+    width = 96,
+    height = 32,
+    className,
+    ariaLabel,
+    showMinMax = false,
+    formatValue = (v) => Math.round(v).toLocaleString(),
+}: SparklineProps) {
+    const padX = 3;
+    // Min/max labels need clear room above/below the line, or they clip against the chart edge.
+    const padY = showMinMax ? 15 : 3;
     if (data.length === 0) return null;
 
     const { slope, intercept } = linearRegression(data);
@@ -71,23 +88,32 @@ export function Sparkline({ data, forecastDays = 0, width = 96, height = 32, cla
     const min = Math.min(...all);
     const max = Math.max(...all);
     const range = Math.max(1, max - min);
-    const stepX = (width - pad * 2) / Math.max(1, all.length - 1);
+    const stepX = (width - padX * 2) / Math.max(1, all.length - 1);
 
     const toPoint = (v: number, i: number): Point => ({
-        x: pad + i * stepX,
-        y: pad + (1 - (v - min) / range) * (height - pad * 2),
+        x: padX + i * stepX,
+        y: padY + (1 - (v - min) / range) * (height - padY * 2),
     });
 
     const actualPoints = data.map((v, i) => toPoint(v, i));
     const last = actualPoints[actualPoints.length - 1];
     const areaPath =
         toPath(actualPoints) +
-        ` L${last.x.toFixed(1)},${(height - pad).toFixed(1)} L${actualPoints[0].x.toFixed(1)},${(height - pad).toFixed(1)} Z`;
+        ` L${last.x.toFixed(1)},${(height - padY).toFixed(1)} L${actualPoints[0].x.toFixed(1)},${(height - padY).toFixed(1)} Z`;
 
     const forecastPoints =
         projected.length > 0
             ? [last, ...projected.map((v, i) => toPoint(v, data.length + i))]
             : [];
+
+    let maxIndex = 0;
+    let minIndex = 0;
+    for (let i = 1; i < data.length; i++) {
+        if (data[i] > data[maxIndex]) maxIndex = i;
+        if (data[i] < data[minIndex]) minIndex = i;
+    }
+    const maxPoint = actualPoints[maxIndex];
+    const minPoint = actualPoints[minIndex];
 
     return (
         <svg
@@ -112,6 +138,32 @@ export function Sparkline({ data, forecastDays = 0, width = 96, height = 32, cla
                     strokeLinecap="round"
                     opacity="0.55"
                 />
+            ) : null}
+            {showMinMax && maxIndex !== minIndex ? (
+                <>
+                    <circle cx={maxPoint.x} cy={maxPoint.y} r="1.8" fill="currentColor" opacity="0.7" />
+                    <text
+                        x={maxPoint.x}
+                        y={maxPoint.y - 5}
+                        textAnchor={maxIndex < data.length / 2 ? "start" : "end"}
+                        fontSize="8"
+                        fill="currentColor"
+                        opacity="0.75"
+                    >
+                        {formatValue(data[maxIndex])}
+                    </text>
+                    <circle cx={minPoint.x} cy={minPoint.y} r="1.8" fill="currentColor" opacity="0.7" />
+                    <text
+                        x={minPoint.x}
+                        y={minPoint.y + 11}
+                        textAnchor={minIndex < data.length / 2 ? "start" : "end"}
+                        fontSize="8"
+                        fill="currentColor"
+                        opacity="0.75"
+                    >
+                        {formatValue(data[minIndex])}
+                    </text>
+                </>
             ) : null}
             <circle cx={last.x} cy={last.y} r="2.4" fill="currentColor" />
         </svg>

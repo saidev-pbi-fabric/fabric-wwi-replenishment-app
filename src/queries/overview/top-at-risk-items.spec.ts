@@ -31,10 +31,26 @@ describe("topAtRiskItems", () => {
     });
 
     it("caps y-axis label width so long WWI item names truncate with an ellipsis instead of crowding the chart", () => {
-        // Widened from the original 160 once the chart went full-width (App.tsx
-        // stacked it under the trend chart instead of squeezing it into a 1/3
-        // column) — most real item names now fit without truncating at all.
-        expect(result.vegaLiteSpec.encoding.y.axis.labelLimit).toBe(420);
+        // Narrowed back from 420 to 220 (2026-08-19, user feedback): at full width, long real WWI
+        // names were eating most of the plot area, leaving every bar looking the same length.
+        // Ellipsis-truncated labels rely on the tooltip encoding (added same change) for the full
+        // name and other fields on hover.
+        expect(result.vegaLiteSpec.encoding.y.axis.labelLimit).toBe(220);
+    });
+
+    it("omits the redundant y-axis title (item names are self-explanatory as a ranked list)", () => {
+        expect(result.vegaLiteSpec.encoding.y.title).toBeNull();
+    });
+
+    it("provides a rich tooltip with item, tier, qty, trend, and rank", () => {
+        const tooltipFields = result.vegaLiteSpec.encoding.tooltip.map((t: { field: string }) => t.field);
+        expect(tooltipFields).toEqual([
+            "StockItem",
+            "LeadTimePriorityTier",
+            "SuggestedReorderQty",
+            "DemandTrend",
+            "AtRiskRank",
+        ]);
     });
 
     it("colors the ranked bar chart by Lead Time Priority Tier", () => {
