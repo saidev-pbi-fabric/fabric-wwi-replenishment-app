@@ -146,7 +146,7 @@ export function LandingPage({ onOpenDashboard }: LandingPageProps) {
 
             <motion.section
                 variants={staggerContainer}
-                className="grid grid-cols-1 gap-none md:grid-cols-[1.4fr_1fr_1fr]"
+                className="grid grid-cols-1 gap-400 md:grid-cols-[1.4fr_1fr_1fr]"
             >
                 {STEPS.map((step, index) => {
                     const Icon = step.icon;
@@ -156,10 +156,8 @@ export function LandingPage({ onOpenDashboard }: LandingPageProps) {
                             key={step.title}
                             variants={fadeInUp}
                             className={cn(
-                                "relative flex flex-col gap-200 py-400 pr-500",
-                                isFirst ? "rounded-lg bg-muted p-400" : "pl-500 md:pl-0",
-                                index > 0 &&
-                                    "before:absolute before:left-0 before:top-500 before:hidden before:w-400 before:border-t before:border-dashed before:border-border md:before:block md:before:-translate-x-full",
+                                "relative flex flex-col gap-200 rounded-lg border border-border p-400",
+                                isFirst ? "bg-muted" : "bg-card",
                             )}
                         >
                             <div className="flex items-center gap-200">
