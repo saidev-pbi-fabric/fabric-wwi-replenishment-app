@@ -59,6 +59,58 @@ Microsoft Fabric Hackathon 2026 entry (Hyderabad Data & AI Community + India Fab
 
 **Schedule-critical day: Monday (SM build)** - everything downstream depends on it, no slack.
 
+## Status (as of 2026-08-19, end of session)
+- [DONE] `gsd-ui-auditor` retroactive 6-pillar audit run (T6.5) — 19/24 (`docs/UI-REVIEW.md`).
+  Fixed the 3 priority findings (light-mode neutral ramp, `ErrorFallback`/auth-gate off raw
+  Tailwind onto the token system, truncated-name tooltips), plus user-flagged issues found the
+  same session: Action Center's `ItemDetailPanel` was stretching to match the ranked list's
+  `max-h-[640px]` under CSS grid's default row-stretch (fixed with `items-start`), and the "All"
+  lead-time filter showing almost entirely Medium-tier rows is real data (582 of 672 stock items
+  are Medium tier, live-verified) — added a `tierDistributionCaption()` so it reads as a
+  disclosed fact, not a bug.
+- [DONE] T6.6 — per-item sales-trend sparkline (`src/components/shared/sparkline.tsx`, hand-rolled
+  SVG using `currentColor` + Tailwind severity classes, not Vega — avoids the hex-duplication
+  Vega's renderer forces elsewhere) with a naive linear-trend forecast extension (client-side,
+  zero new DAX). T6.6b — a 5th KPI tile, "At-Risk Reorder Value" ($98.8M, live-verified, computed
+  inline in `kpi-strip.dax`, no new model measure). Also a plain-English rationale sentence in the
+  item detail panel, composed client-side from fields already on screen. Direction for the
+  sparkline was approved via an Artifact mockup before any real DAX/component work, per an
+  explicit "don't build and revoke" instruction.
+- [DONE] `docs/talk-track.md` drafted — timed sections covering all 3 pages and the live
+  write-back demo moment. Not yet rehearsed against the live app (T6.2, do on 8/21).
+- [DONE] A second round of live-app feedback (screenshots against the deployed portal) fixed:
+  a rounded-card border-clip bug (missing `overflow-hidden` on cards with an internal
+  `overflow-y-auto` scroll region — ranked list + KPI drill-through modal both had it), KPI strip
+  now 5-across in one row instead of a orphaned full-width 5th tile, simplified KPI rail colors
+  (dropped the arbitrary amber/green on "Accelerating Demand" — color now reserved for the two
+  tiles genuinely inside the at-risk narrative), the Vega bar chart's overlapping "Item" axis
+  title removed + a proper multi-field tooltip added + `labelLimit` narrowed from 420 to 220 so
+  labels stop eating the plot area, sparkline min/max + latest-value labels + a shaded
+  forecast-region band (data-goblins line-chart-variant picks: Area Chart + Label Latest Data
+  Point + Vertical Area-of-Interest). Also replaced a KPI number count-up animation (added then
+  same session) with a plain fade-in after the user flagged it as "unpleasant" — ticking through
+  big jumpy intermediate values for a number like $98.8M read as jank, not polish.
+- [KNOWN, deliberately not changed] Item names have no clean splittable "dimension" column —
+  `Brand`/`Color` are `N/A` for almost every real item, the descriptive text is baked into one
+  string with no consistent regex-safe pattern. Decided against a parsed "short name" — relying on
+  the Vega tooltip + narrower `labelLimit` instead.
+- [OPEN, next session] User has more feedback queued, not yet reviewed. Known backlog items
+  already discussed but not built: (1) a "Top Contributors" drill-through on the $ KPI tile
+  (same modal pattern as `TopAtRiskDrillThrough`) — verified feasible live, top-5 contributors are
+  all despatch-tape variants; (2) same sparkline pattern in `ranked-list-panel.tsx` rows and the
+  KPI drill-through table (currently only in the Action Center detail panel); (3) sparkline hover
+  tooltip (exact date+value) — the earlier Artifact mockup had this, the real component doesn't
+  yet. T6.2 talk-track rehearsal and T6.3 (optional TE2 BPA pass) still open for 8/21.
+- [PROCESS] Learned this session, saved to memory: every code change must be built + `npx rayfin
+  up`-deployed before calling it done — local edits are invisible to the user, who only sees the
+  live Fabric portal embed. Also: build small, potentially-controversial visual changes (e.g. a
+  chart redesign) as an Artifact mockup first and get a yes before wiring real DAX/components —
+  established explicitly this session for the sparkline, worth repeating for future visual asks.
+- Verify: 120/120 tests pass, `tsc --noEmit` clean (one pre-existing unrelated failure in
+  `use-query-panel.spec.ts`, not touched this session), `npm run lint` clean (one pre-existing
+  unrelated warning in `main.tsx`), all changes committed + pushed to `main`, live app matches
+  HEAD (`d823c2a`) — confirmed via `rayfin up` immediately before each commit, not after.
+
 ## Status (as of 2026-08-18)
 - [DONE] Phase 3 (Page 1 UI) fully complete — T3.1 (severity-scale + IBM Plex design tokens),
   T3.2 (KPI strip + `App.tsx` header/nav shell, template `EmptyStatePreview` deleted), T3.3
