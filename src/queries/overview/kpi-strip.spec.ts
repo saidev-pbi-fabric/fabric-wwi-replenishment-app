@@ -15,11 +15,12 @@ describe("kpiStrip", () => {
         expect(result.connection).toBe("wwiRetail");
     });
 
-    it("queries all four KPI measures", () => {
+    it("queries all five KPI measures", () => {
         expect(result.query).toContain("Items Tracked");
         expect(result.query).toContain("Avg Lead Time Days");
         expect(result.query).toContain("Top At Risk Items");
         expect(result.query).toContain("Accelerating Demand Items");
+        expect(result.query).toContain("At Risk Reorder Value");
     });
 
     it("maps every DAX result column to friendly metadata", () => {
@@ -28,6 +29,7 @@ describe("kpiStrip", () => {
             "[Avg Lead Time Days]",
             "[Top At Risk Items]",
             "[Accelerating Demand Items]",
+            "[At Risk Reorder Value]",
         ]);
     });
 });

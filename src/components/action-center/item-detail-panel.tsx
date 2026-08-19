@@ -8,10 +8,12 @@
 import { Loader2 } from "lucide-react";
 import { useQueryPanel } from "@/hooks/use-query-panel";
 import { itemDetail } from "@/queries/action-center/item-detail";
+import { itemSalesTrend } from "@/queries/action-center/item-sales-trend";
 import { cn } from "@/lib/utils";
 import { scalarByColumnName } from "@/lib/to-data-table";
-import { ITEM_DETAIL_FIXTURE } from "@/lib/dev-preview-fixtures";
-import { LEAD_TIME_RAIL_CLASS } from "@/lib/severity";
+import { ITEM_DETAIL_FIXTURE, ITEM_SALES_TREND_FIXTURE } from "@/lib/dev-preview-fixtures";
+import { LEAD_TIME_RAIL_CLASS, LEAD_TIME_TEXT_CLASS } from "@/lib/severity";
+import { Sparkline } from "@/components/shared/sparkline";
 
 interface ItemDetailPanelProps {
     stockItemKey: number | null;
@@ -23,6 +25,11 @@ export function ItemDetailPanel({ stockItemKey }: ItemDetailPanelProps) {
     // stays a no-op query until a key is actually selected.
     const options = stockItemKey !== null ? itemDetail(stockItemKey) : { connection: "", query: "" };
     const panel = useQueryPanel(options);
+
+    // Independent of the fields query above — a slower/failed trend fetch shouldn't block the
+    // core detail fields from rendering. Rendered as its own small loading/empty block below.
+    const trendOptions = stockItemKey !== null ? itemSalesTrend(stockItemKey) : { connection: "", query: "" };
+    const trendPanel = useQueryPanel(trendOptions);
 
     if (stockItemKey === null) {
         return (
@@ -96,6 +103,26 @@ export function ItemDetailPanel({ stockItemKey }: ItemDetailPanelProps) {
     const suggestedReorderQty = Number(scalarByColumnName(table, "[Suggested Reorder Qty]") ?? 0);
     const atRiskRank = String(scalarByColumnName(table, "[At Risk Rank]") ?? "—");
 
+    // Composed client-side from fields already on screen — not a new metric, just a plain-English
+    // read of them, so the "why" behind the rank doesn't require mentally parsing 5 separate cells.
+    const trendWord = demandTrend > 0.03 ? "accelerating" : demandTrend < -0.03 ? "declining" : "steady";
+    const rationale = `Sells ${recentDailySales.toFixed(1)}/day, restocks in ${leadTimeDays} days, demand ${trendWord} (${demandTrend >= 0 ? "+" : ""}${(demandTrend * 100).toFixed(0)}%) — ranked #${atRiskRank} of 672.`;
+
+    const usingTrendFixture = import.meta.env.DEV && !import.meta.env.VITEST && trendPanel.status === "error";
+    const trendTable = usingTrendFixture
+        ? ITEM_SALES_TREND_FIXTURE
+        : trendPanel.status === "ready" || trendPanel.status === "refreshing"
+          ? trendPanel.table
+          : undefined;
+    const salesTrendData = trendTable
+        ? (() => {
+              const qtyIdx = trendTable.columns.findIndex((col) => col.name === "[Quantity]");
+              return trendTable.rows.map((row) => Number(row[qtyIdx] ?? 0));
+          })()
+        : [];
+    const leadDaysNumeric = Number(leadTimeDays);
+    const forecastDays = Number.isFinite(leadDaysNumeric) ? Math.min(leadDaysNumeric, 30) : 0;
+
     return (
         <div
             className={cn(
@@ -119,6 +146,7 @@ export function ItemDetailPanel({ stockItemKey }: ItemDetailPanelProps) {
                         ) : null}
                         Rank #{atRiskRank}
                     </p>
+                    <p className="mt-100 font-base text-200 text-muted-foreground">{rationale}</p>
                 </div>
                 {isRefreshing ? (
                     <Loader2
@@ -140,6 +168,34 @@ export function ItemDetailPanel({ stockItemKey }: ItemDetailPanelProps) {
                 <DetailField label="Demand Trend" value={`${(demandTrend * 100).toFixed(0)}%`} />
                 <DetailField label="Suggested Reorder Qty" value={suggestedReorderQty.toLocaleString()} />
             </dl>
+            <div className="border-t border-border px-400 py-300">
+                <div className="flex flex-wrap items-baseline justify-between gap-200">
+                    <p className="font-base text-200 uppercase tracking-wide text-muted-foreground">
+                        Sales Trend — 60 Days
+                    </p>
+                    {salesTrendData.length > 0 && forecastDays > 0 ? (
+                        <p className="font-base text-100 text-muted-foreground">
+                            Dashed = {forecastDays}-day projection (linear trend, not a forecast model)
+                        </p>
+                    ) : null}
+                </div>
+                <div className="mt-200">
+                    {!usingTrendFixture && (trendPanel.status === "loading" || trendPanel.status === "refreshing") && salesTrendData.length === 0 ? (
+                        <div className="h-[56px] w-full animate-pulse rounded-md bg-muted" />
+                    ) : salesTrendData.length > 0 ? (
+                        <Sparkline
+                            data={salesTrendData}
+                            forecastDays={forecastDays}
+                            width={640}
+                            height={56}
+                            className={LEAD_TIME_TEXT_CLASS[tier] ?? "text-muted-foreground"}
+                            ariaLabel={`Daily units sold, last 60 days, projected ${forecastDays} days forward`}
+                        />
+                    ) : (
+                        <p className="text-200 text-muted-foreground">No recent sales history for this item.</p>
+                    )}
+                </div>
+            </div>
         </div>
     );
 }

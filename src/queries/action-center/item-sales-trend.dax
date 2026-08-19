@@ -1,0 +1,8 @@
+EVALUATE
+VAR CutoffDate = [Max Sale Date] - 60
+RETURN
+ADDCOLUMNS(
+    FILTER(ALL('Date'[Date]), 'Date'[Date] > CutoffDate && 'Date'[Date] <= [Max Sale Date]),
+    "Quantity", CALCULATE([Total Quantity Sold], 'Sale'[Stock Item Key] = {{STOCK_ITEM_KEY}})
+)
+ORDER BY [Date] ASC

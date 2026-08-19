@@ -11,6 +11,10 @@ const columnMetadata: ColumnMetadataMap = {
     name: "AcceleratingDemandItems",
     displayName: "Accelerating Demand",
   },
+  "[At Risk Reorder Value]": {
+    name: "AtRiskReorderValue",
+    displayName: "At-Risk Reorder Value",
+  },
 };
 
 export function kpiStrip() {

@@ -32,7 +32,7 @@ describe("KpiStrip", () => {
         expect(screen.queryByText("Items Tracked")).not.toBeInTheDocument();
     });
 
-    it("renders all four KPI values on success", async () => {
+    it("renders all five KPI values on success", async () => {
         mockQuery.mockResolvedValue({
             status: "success",
             table: {
@@ -41,8 +41,9 @@ describe("KpiStrip", () => {
                     { name: "[Avg Lead Time Days]" },
                     { name: "[Top At Risk Items]" },
                     { name: "[Accelerating Demand Items]" },
+                    { name: "[At Risk Reorder Value]" },
                 ],
-                rows: [[672, 12.3, 20, 15]],
+                rows: [[672, 12.3, 20, 15, 98842975.92]],
             },
             fromCache: false,
         });
@@ -53,6 +54,7 @@ describe("KpiStrip", () => {
         expect(screen.getByText("12.3")).toBeInTheDocument();
         expect(screen.getByText("20")).toBeInTheDocument();
         expect(screen.getByText("15")).toBeInTheDocument();
+        expect(screen.getByText("$98.8M")).toBeInTheDocument();
     });
 
     it("opens the drill-through table when the Top At-Risk Items tile is clicked", async () => {
@@ -64,8 +66,9 @@ describe("KpiStrip", () => {
                     { name: "[Avg Lead Time Days]" },
                     { name: "[Top At Risk Items]" },
                     { name: "[Accelerating Demand Items]" },
+                    { name: "[At Risk Reorder Value]" },
                 ],
-                rows: [[672, 12.3, 20, 15]],
+                rows: [[672, 12.3, 20, 15, 98842975.92]],
             },
             fromCache: false,
         });

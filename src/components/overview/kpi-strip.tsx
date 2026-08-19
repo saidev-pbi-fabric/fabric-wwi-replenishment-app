@@ -7,7 +7,7 @@
 
 import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { Package, Clock, AlertTriangle, TrendingUp, ArrowUpRight } from "lucide-react";
+import { Package, Clock, AlertTriangle, TrendingUp, ArrowUpRight, DollarSign } from "lucide-react";
 import { fadeInUp, staggerContainer } from "@/lib/motion";
 import { useQueryPanel } from "@/hooks/use-query-panel";
 import { kpiStrip } from "@/queries/overview/kpi-strip";
@@ -27,6 +27,18 @@ interface Tile {
     severity: (value: unknown) => Severity;
     /** Opens the full-list drill-through table when the tile is clicked. */
     drillThrough?: boolean;
+    /** Spans the full row on large screens — for the one tile meant to read as a headline, not a peer stat. */
+    fullWidth?: boolean;
+}
+
+/** "$98.8M" / "$640K" / "$420" — this app's numbers run large (aggregated over the full ~11-month
+ * sample), so a raw `toLocaleString()` dollar figure would be unreadably long in a KPI tile. */
+function formatCompactCurrency(value: number): string {
+    if (!Number.isFinite(value)) return "—";
+    const abs = Math.abs(value);
+    if (abs >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
+    if (abs >= 1_000) return `$${(value / 1_000).toFixed(1)}K`;
+    return `$${value.toFixed(0)}`;
 }
 
 const TILES: Tile[] = [
@@ -62,6 +74,15 @@ const TILES: Tile[] = [
         format: (v) => String(v ?? "—"),
         context: "Items with a positive 30-day demand trend",
         severity: (v) => (Number(v) > 0 ? "at-risk" : "on-track"),
+    },
+    {
+        key: "[At Risk Reorder Value]",
+        label: "At-Risk Reorder Value",
+        icon: DollarSign,
+        format: (v) => formatCompactCurrency(Number(v ?? 0)),
+        context: "Unit Price × Suggested Reorder Qty, top 20 at-risk items (disclosed proxy, not literal stock value)",
+        severity: () => "critical",
+        fullWidth: true,
     },
 ];
 
@@ -113,7 +134,10 @@ export function KpiStrip() {
                 {TILES.map((tile) => (
                     <div
                         key={tile.key}
-                        className="rounded-lg border border-border border-l-4 border-l-transparent bg-card p-400"
+                        className={cn(
+                            "rounded-lg border border-border border-l-4 border-l-transparent bg-card p-400",
+                            tile.fullWidth && "col-span-2 lg:col-span-4",
+                        )}
                     >
                         <div className="h-200 w-3/4 animate-pulse rounded-md bg-muted" />
                         <div className="mt-300 h-600 w-1/2 animate-pulse rounded-md bg-muted" />
@@ -163,6 +187,7 @@ export function KpiStrip() {
                             className={cn(
                                 "rounded-lg border border-border border-l-4 bg-card p-400 text-left shadow-sm transition-shadow hover:shadow-md",
                                 tile.drillThrough && "cursor-pointer",
+                                tile.fullWidth && "col-span-2 lg:col-span-4",
                                 RAIL_CLASS[severity],
                             )}
                         >

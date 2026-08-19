@@ -22,8 +22,9 @@ export const KPI_STRIP_FIXTURE: QueryTable = {
         { name: "[Avg Lead Time Days]", dataType: "Double" },
         { name: "[Top At Risk Items]", dataType: "Int64" },
         { name: "[Accelerating Demand Items]", dataType: "Int64" },
+        { name: "[At Risk Reorder Value]", dataType: "Double" },
     ],
-    rows: [[672, 12.3, 20, 15]],
+    rows: [[672, 12.3, 20, 15, 98842975.92]],
 };
 
 // Values in the real ~2.0M-2.3M range for the top-20-at-risk-items scope
@@ -85,6 +86,20 @@ export const TOP_AT_RISK_DRILL_FIXTURE: QueryTable = {
         ["Courier satchel 375x480mm", "Medium Lead Time", 9, 705, 0.09, 7],
         ["Foam corner protector 4-pack", "Long Lead Time", 19, 640, 0.07, 8],
     ],
+};
+
+// 61 days, mild upward drift + noise — illustrative shape for local dev preview only, not
+// derived from the live model (see item-sales-trend.ts for the real query).
+export const ITEM_SALES_TREND_FIXTURE: QueryTable = {
+    columns: [
+        { name: "Date[Date]", dataType: "DateTime" },
+        { name: "[Quantity]", dataType: "Int64" },
+    ],
+    rows: Array.from({ length: 61 }, (_, i) => {
+        const date = new Date(2000, 8, 1 + i);
+        const quantity = Math.round(60 + i * 0.6 + Math.sin(i / 3) * 8);
+        return [date.toISOString().slice(0, 10), quantity];
+    }),
 };
 
 export const RANKED_AT_RISK_LIST_FIXTURE: QueryTable = {

@@ -36,6 +36,26 @@ const TABLE = {
     rows: [[17, "Shipping carton (Brown)", "Contoso", "Brown", 18, "Long Lead Time", 4.25, 6.5, 62.4, 0.34, 1840, 1]],
 };
 
+const TREND_TABLE = {
+    columns: [{ name: "Date[Date]" }, { name: "[Quantity]" }],
+    rows: [
+        ["2000-11-01", 55],
+        ["2000-11-02", 58],
+        ["2000-11-03", 61],
+    ],
+};
+
+/** Routes the shared mockQuery by query text — item-sales-trend.dax is the only query with "Quantity". */
+function mockBothQueries() {
+    mockQuery.mockImplementation((query: string) =>
+        Promise.resolve(
+            query.includes("Quantity")
+                ? { status: "success", table: TREND_TABLE, fromCache: false }
+                : { status: "success", table: TABLE, fromCache: false },
+        ),
+    );
+}
+
 describe("ItemDetailPanel", () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -53,13 +73,30 @@ describe("ItemDetailPanel", () => {
     });
 
     it("renders the item's name, tier, and key fields once loaded", async () => {
-        mockQuery.mockResolvedValue({ status: "success", table: TABLE, fromCache: false });
+        mockBothQueries();
         render(<ItemDetailPanel stockItemKey={17} />);
 
         expect(await screen.findByText("Shipping carton (Brown)")).toBeInTheDocument();
         expect(screen.getByText("Long Lead Time")).toBeInTheDocument();
         expect(screen.getByText("18")).toBeInTheDocument();
         expect(screen.getByText("1,840")).toBeInTheDocument();
+    });
+
+    it("renders a plain-English rationale sentence composed from the same fields", async () => {
+        mockBothQueries();
+        render(<ItemDetailPanel stockItemKey={17} />);
+
+        expect(
+            await screen.findByText(/Sells 62\.4\/day, restocks in 18 days, demand accelerating \(\+34%\) — ranked #1 of 672\./),
+        ).toBeInTheDocument();
+    });
+
+    it("renders the sales-trend sparkline once the trend query loads", async () => {
+        mockBothQueries();
+        render(<ItemDetailPanel stockItemKey={17} />);
+
+        await screen.findByText("Shipping carton (Brown)");
+        expect(await screen.findByRole("img", { name: /daily units sold/i })).toBeInTheDocument();
     });
 
     it("shows an error banner when the query fails", async () => {
@@ -69,14 +106,15 @@ describe("ItemDetailPanel", () => {
         expect(await screen.findByRole("alert")).toHaveTextContent("401 Unauthorized");
     });
 
-    it("re-queries when the selected key changes", async () => {
-        mockQuery.mockResolvedValue({ status: "success", table: TABLE, fromCache: false });
+    it("re-queries both the detail and trend data when the selected key changes", async () => {
+        mockBothQueries();
         const { rerender } = render(<ItemDetailPanel stockItemKey={17} />);
         await screen.findByText("Shipping carton (Brown)");
 
         rerender(<ItemDetailPanel stockItemKey={126} />);
 
-        expect(mockQuery).toHaveBeenCalledTimes(2);
+        // One call each for item-detail and item-sales-trend, per key.
+        await waitFor(() => expect(mockQuery).toHaveBeenCalledTimes(4));
     });
 
     // Regression: switching the selected item used to swap the whole panel
@@ -84,10 +122,18 @@ describe("ItemDetailPanel", () => {
     // transition ... goes blank"). It should keep the previous item's detail
     // visible (dimmed, with an "Updating" spinner) instead of going blank.
     it("keeps showing the previous item's detail (dimmed) instead of a blank skeleton while re-querying", async () => {
-        let resolveSecond: (value: unknown) => void = () => {};
-        mockQuery
-            .mockResolvedValueOnce({ status: "success", table: TABLE, fromCache: false })
-            .mockImplementationOnce(() => new Promise((resolve) => (resolveSecond = resolve)));
+        let resolveSecondDetail: (value: unknown) => void = () => {};
+        let detailCallCount = 0;
+        mockQuery.mockImplementation((query: string) => {
+            if (query.includes("Quantity")) {
+                return Promise.resolve({ status: "success", table: TREND_TABLE, fromCache: false });
+            }
+            detailCallCount += 1;
+            if (detailCallCount === 1) {
+                return Promise.resolve({ status: "success", table: TABLE, fromCache: false });
+            }
+            return new Promise((resolve) => (resolveSecondDetail = resolve));
+        });
         const { rerender } = render(<ItemDetailPanel stockItemKey={17} />);
 
         await screen.findByText("Shipping carton (Brown)");
@@ -97,7 +143,7 @@ describe("ItemDetailPanel", () => {
         expect(screen.getByText("Shipping carton (Brown)")).toBeInTheDocument();
         expect(screen.queryByTestId("item-detail-loading")).not.toBeInTheDocument();
 
-        resolveSecond({ status: "success", table: TABLE, fromCache: false });
+        resolveSecondDetail({ status: "success", table: TABLE, fromCache: false });
         await waitFor(() => expect(screen.queryByLabelText("Updating")).not.toBeInTheDocument());
     });
 
@@ -106,7 +152,13 @@ describe("ItemDetailPanel", () => {
             columns: TABLE.columns,
             rows: [[17, "Shipping carton (Brown)", "N/A", "N/A", 18, "Long Lead Time", 4.25, 6.5, 62.4, 0.34, 1840, 1]],
         };
-        mockQuery.mockResolvedValue({ status: "success", table: tableWithoutBrandColor, fromCache: false });
+        mockQuery.mockImplementation((query: string) =>
+            Promise.resolve(
+                query.includes("Quantity")
+                    ? { status: "success", table: TREND_TABLE, fromCache: false }
+                    : { status: "success", table: tableWithoutBrandColor, fromCache: false },
+            ),
+        );
         render(<ItemDetailPanel stockItemKey={17} />);
 
         await screen.findByText("Shipping carton (Brown)");

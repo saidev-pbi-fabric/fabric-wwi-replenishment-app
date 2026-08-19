@@ -300,11 +300,18 @@ dependency; a second team member can start T5.1 in parallel with T3.2/T3.3 if Pa
     `src/components/action-center/reorder-action-form.tsx`, `src/components/action-center/reorder-action-history.tsx`,
     `src/components/overview/top-at-risk-list.tsx` + specs for each.
 
-- [ ] **T6.2** — Talk-track outline + buffer for bug fixes (Fri 8/21)
-  - Acceptance: a short talk-track exists covering the scenario, the two pages, and the write-back
-    demo moment.
-  - Verify: dry-run the talk track against the running app.
-  - Files: `docs/talk-track.md` (optional, not blocking).
+- [~] **T6.2** — Talk-track (drafted 8/19, not yet rehearsed) + buffer for bug fixes (Fri 8/21)
+  - Drafted `docs/talk-track.md`: timed sections (hook, dataset honesty, Overview walkthrough incl.
+    the new $ KPI, Action Center walkthrough incl. the rationale sentence + sparkline + live
+    write-back submit/reload moment, close, Q&A prep). Written against the already-locked scope
+    (dataset, 3 pages, write-back), so it didn't need to wait for the finished build — only the
+    bracketed cue about the "Accelerating Demand" drill-through (still an open decision) is a
+    placeholder pending that call.
+  - Acceptance: a short talk-track exists covering the scenario, all 3 pages, and the write-back
+    demo moment — met. Full timed rehearsal against the live deployed app — not yet done.
+  - Verify (remaining): dry-run with a stopwatch against the actual deployed app on 8/21, not from
+    memory of an earlier session — checklist is in the doc itself.
+  - Files: `docs/talk-track.md`.
 
 - [x] **T6.4** — Landing page (built 8/18, ahead of the Fri 8/21 slot; decided 2026-08-17, see
       `CLAUDE.md` locked scope)
@@ -376,41 +383,56 @@ dependency; a second team member can start T5.1 in parallel with T3.2/T3.3 if Pa
     `src/components/overview/top-at-risk-list.tsx`, `src/components/landing/landing-page.tsx`,
     `src/lib/severity.ts`, `docs/UI-REVIEW.md`.
 
-- [ ] **T6.6 (scoped, not started)** — Per-item sales-trend visual (replaces/augments the plain
-      "Demand Trend %" number with an actual chart)
+- [x] **T6.6** — Per-item sales-trend sparkline + naive forecast, done 8/19, deployed via `rayfin up`
   - Why: user asked (1) whether Suggested Reorder Qty is a forecast (it isn't — it's the reorder-
-    point formula `Recent Daily Sales Rate × LeadTimeDays × 1.2`, see
-    `docs/wwi-schema-reference.md:92`) and whether a forecast visual would add value, and (2)
-    whether the current bar/percent treatment of demand trend is the right chart choice, referencing
-    https://data-goblins.com/power-bi/bar-charts (saved to `docs/design-reference-bank.md`) — its
-    core caution is against "Macguyvering" a bespoke visual instead of using a well-understood one,
-    which argues for a plain, recognizable sparkline over something fancier.
-  - Scope (MVP): a small inline **sparkline** (last ~30-60 days of real daily `Quantity` from the
-    `Sale` table, per stock item) replacing/sitting beside the current "Demand Trend: X%" text in
-    `ranked-list-panel.tsx` rows and the KPI-strip drill-through table
-    (`top-at-risk-drill-through.tsx`). Shows the actual shape of recent demand at a glance —
-    accelerating/flat/declining — which a single trailing-window percentage can't convey.
-  - Scope (stretch, only if MVP lands with time to spare): expand the sparkline into the existing
-    drill-through modal pattern (reuse `TopAtRiskDrillThrough`'s approach) on row click, showing the
-    full actual-sales line plus the Suggested Reorder Qty and LeadTimeDays as reference context —
-    NOT a statistical forecast line (none exists), just actual history laid out clearly enough that
-    "why this item ranks where it does" is visually obvious.
-  - New work required: (1) a new DAX query (daily `Sale[Quantity]` by `Date` for one
-    `Stock Item Key`, bounded to the real ~11-month data window per `docs/wwi-schema-reference.md`)
-    + query factory file, following the existing pattern in `src/queries/`; (2) a sparkline
-    component — reuse `VegaVisual`/`@microsoft/fabric-visuals` (already the app's charting library,
-    avoids adding a new dependency) with a minimal line spec (no axes/gridlines, matches the
-    "recognizable, not bespoke" guidance above); (3) wiring into the ranked list row + drill-through
-    table + tests.
-  - Effort estimate: MVP ~1-1.5 hrs (query + component + wiring + tests); stretch modal +~1 hr.
-    Fits the Thu 8/20 "wire write-back, start polish" slot per `CLAUDE.md`'s day-by-day plan — do
-    not start until T5.x write-back and T6.1 validation are confirmed solid, per that plan's own
-    ordering.
-  - Acceptance (MVP): sparkline renders real per-item daily sales shape, no fabricated forecast
-    line, passes the `dataviz` skill's CVD/contrast check if color is used, tested against live
-    semantic model data (not just dev fixtures) per the project's own "don't trust fixtures alone"
-    lesson (`CLAUDE.md` Process lesson, 8/18).
-  - Files (planned, not yet created): `src/queries/action-center/item-sales-trend.ts` (+`.dax`),
-    a new `sparkline.tsx` component (location TBD — likely `src/components/shared/`), edits to
-    `src/components/action-center/ranked-list-panel.tsx` and
-    `src/components/overview/top-at-risk-drill-through.tsx`.
+    point formula `Recent Daily Sales Rate × LeadTimeDays × 1.2`) and whether a forecast visual
+    would add value, and (2) whether the current percent-only treatment of demand trend is the
+    right choice, referencing https://data-goblins.com/power-bi/bar-charts (saved to
+    `docs/design-reference-bank.md`) — its core caution against "Macguyvering" a bespoke visual
+    argued for a plain, recognizable sparkline over something fancier.
+  - Approved via an Artifact mockup first (before touching real DAX/components) — built with the
+    app's own tokens (IBM Plex, severity colors, dark/light) and 3 real item names, comparing
+    current-vs-proposed row and detail-panel treatments. User confirmed the direction before build.
+  - Built: (1) `item-sales-trend.dax`/`.ts` — real daily `Sale[Quantity]` for one stock item, one
+    row per calendar day (including zero-sale days, via `ADDCOLUMNS` over `ALL('Date'[Date])`, not
+    a plain filter — otherwise no-sale days would silently disappear instead of showing as 0),
+    bounded to `[Max Sale Date] - 60` (this dataset is historical Jan-Nov 2000, `TODAY()` would
+    return an empty window — same reason the `Max Sale Date` measure exists). (2) `Sparkline`
+    component (`src/components/shared/sparkline.tsx`) — hand-rolled SVG, not `VegaVisual`: at
+    per-row/per-panel inline size Vega's chrome is overkill, and plain SVG can use
+    `stroke/fill="currentColor"` with Tailwind's `text-critical`/`text-at-risk`/`text-on-track`
+    classes directly, avoiding the light/dark hex duplication Vega's renderer forces elsewhere
+    (see `top-at-risk-list.tsx`'s `SEVERITY_RANGE` comment). (3) Forecast extension: a naive
+    linear-regression projection computed client-side from the same daily data already fetched —
+    zero new DAX, zero model changes, rendered as a dashed continuation, explicitly labeled
+    "linear trend, not a forecast model" so it's never mistaken for a real prediction. (4) Wired
+    into `item-detail-panel.tsx` as a full-width 60-day chart below the existing detail fields,
+    as its own independent query (a slow/failed trend fetch doesn't block the core fields).
+  - Also added while in this component (same user request, "1% fixes"): a plain-English
+    **rationale sentence** composed client-side from fields already on screen — no new DAX, no
+    LLM call — e.g. "Sells 62.4/day, restocks in 18 days, demand accelerating (+34%) — ranked #1
+    of 672." Renders under the item name/rank line.
+  - Follow-on (not done, smaller than the MVP above): same mini-sparkline in `ranked-list-panel.tsx`
+    rows and the KPI drill-through table, once this pattern is confirmed against the live app.
+  - Verify: 5 new tests (`sparkline.spec.tsx`, `item-sales-trend.spec.ts`, 3 new
+    `item-detail-panel.spec.tsx` cases for rationale/sparkline/re-query-count), 118/118 total pass,
+    `tsc --noEmit` clean (same pre-existing unrelated failure as T6.5), `npm run lint` clean, DAX
+    verified live against the semantic model before wiring (stock item key 43 — real ~180K/day
+    volume, confirms the "one row per calendar day, zero-filled" query shape works), `npm run
+    build` + `npx rayfin up` succeeded, deployed.
+  - Files: `src/queries/action-center/item-sales-trend.dax` (+`.ts`, `.spec.ts`),
+    `src/components/shared/sparkline.tsx` (+`.spec.tsx`),
+    `src/components/action-center/item-detail-panel.tsx` (+`.spec.tsx`).
+
+- [x] **T6.6b** — "$ at risk" KPI tile, done 8/19, deployed same pass as T6.6
+  - Why: part of the same "top 1%" ask — judges remember a dollar figure more than a ranked list.
+    `Unit Price × Suggested Reorder Qty` summed across the top-20 at-risk items, computed inline
+    in the existing `kpi-strip.dax` query (no new model measure) — verified live: $98.8M. Framed
+    with the same disclosed-proxy honesty as the rest of the app ("not literal stock value").
+  - Renders as a 5th, full-width KPI tile (`fullWidth` flag on `Tile`, spans the row on `lg`) so it
+    reads as a headline figure, not a 5th peer stat competing for the same visual weight as the
+    other 4.
+  - Verify: `kpi-strip.spec.ts` + `kpi-strip.spec.tsx` updated for the 5th column, part of the
+    118/118 total pass above.
+  - Files: `src/queries/overview/kpi-strip.dax` (+`.ts`, `.spec.ts`),
+    `src/components/overview/kpi-strip.tsx` (+`.spec.tsx`), `src/lib/dev-preview-fixtures.ts`.

@@ -28,6 +28,17 @@ export const LEAD_TIME_DOT_CLASS: Record<string, string> = {
 };
 
 /**
+ * Same tiers, as a text/currentColor class — for inline SVG (e.g. <Sparkline>) where `fill`/
+ * `stroke="currentColor"` picks up the token automatically in both themes, no hardcoded hex
+ * needed (unlike the Vega-rendered charts, which can't resolve `var(--color-*)` at all).
+ */
+export const LEAD_TIME_TEXT_CLASS: Record<string, string> = {
+    "Long Lead Time": "text-critical",
+    "Medium Lead Time": "text-at-risk",
+    "Short Lead Time": "text-on-track",
+};
+
+/**
  * Shared "Filter by lead time" dropdown values, reused by both Page 1's chart
  * and Page 2's ranked list so the two pages offer the same filter axis. Values
  * are the real Stock Item[Lead Time Priority Tier] strings, verified live
