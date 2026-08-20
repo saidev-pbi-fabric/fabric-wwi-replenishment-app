@@ -68,6 +68,21 @@ Microsoft Fabric Hackathon 2026 entry (Hyderabad Data & AI Community + India Fab
 
 **Schedule-critical day: Monday (SM build)** - everything downstream depends on it, no slack.
 
+## Status (as of 2026-08-20, autonomous rebuild session)
+Full detail in `docs/rebuild-session-2026-08-20.md` — kept short here per the user's own
+noise-reduction request. Working on branch `rebuild/pareto-thesis` (pushed), executing the
+concentration-thesis rebuild amendment in `SPEC.md`. **[DONE, tested, pushed]**: fixed 3 real
+gaps the spec itself was missing (App.tsx/kpi-strip.tsx rewiring scope, landing-page.tsx's second
+dependency on the retiring query, a `ReorderActionHistory` naming collision with an existing
+component — renamed the new entity to `ReorderActionAuditLog`); built and wired the audit-log
+entity/panel/write-hooks; removed the unbacked forecast projection project-wide and added a
+proper gridded-axis `item-trend-chart.tsx` for the item-detail panel; added search+CSV to the
+ranked list; updated landing hero copy. 141/141 tests, tsc/lint clean vs. documented baseline,
+`npm run build` clean. **[BLOCKED, needs the user]**: everything downstream of the new duplicate
+semantic model (its creation, new measures, the Pareto query/component, `App.tsx`/`kpi-strip.tsx`
+rewiring, retiring the 4 old files) — deliberately not drafted blind per this project's own
+DAX-must-be-live-validated discipline. Say "continue the rebuild" to resume at SM creation.
+
 ## Status (as of 2026-08-20, end of session)
 - [DONE] Backlog items 1, 2, 3 (of the "1, 2, 3, 5" set the user asked for autonomously, one after
   another) — all built, verified locally, deployed. (1) **Top Contributors drill-through**: new
