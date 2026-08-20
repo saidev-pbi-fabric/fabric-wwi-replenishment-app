@@ -1,10 +1,78 @@
 # Rebuild session handoff — 2026-08-20 (autonomous, while you were away)
 
-This covers only the autonomous stretch after you stepped out. Everything here is on the
-`rebuild/pareto-thesis` branch (pushed to origin), not `main` — the live deployed app is
+This covers the autonomous work after you stepped out, in two stretches. Everything here is on
+the `rebuild/pareto-thesis` branch (pushed to origin), not `main` — the live deployed app is
 completely untouched. Read this top to bottom before doing anything else with the branch.
 
-## Started and finished — tested, committed, pushed
+## Stretch 2 (after you approved SM creation and went to sleep) — DONE, tested, committed, pushed
+
+Commit `13ce4d5`. This is the real payload — everything that was blocked on the SM existing.
+
+1. **Created the duplicate SM** — `WWI Replenishment Rebuild`, via `DeployToFabric` (clones the
+   live SM's full TOM definition into a new item, same workspace). Live-verified: same 3 tables
+   (Sale/Stock Item/Date), same measure counts as the original. You rebound the Workspace Identity
+   credential and ran a sample refresh; I ran the full `RefreshWithXMLA` refresh afterward and
+   confirmed row counts match the original exactly (73,365 Sale / 672 Stock Item / 6,210 Date).
+2. **Added and live-validated the 4 new measures** (`Reorder Value Total`, `Cumulative Reorder
+   Value`, `Cumulative Reorder Value %`, `Reorder Value Share %`). Spot-checked the running-total
+   arithmetic row by row (rank 1→5), exact. **Confirms the thesis on real data: 109 of 672 items
+   (16.2%) generate 80% of reorder value** — genuine concentration, not a flat spread.
+3. **`pareto-reorder-risk.dax`/`.ts`** — the new single-source query. Found and fixed a real bug
+   during live validation: the spec's inline `[Suggested Reorder Qty] * 'Stock Item'[Unit Price]`
+   expression failed (`A single value for column 'Unit Price' ... cannot be determined` — a raw
+   column reference doesn't get context transition inside `SUMMARIZECOLUMNS`). Fixed by using the
+   `Reorder Value Total` measure directly instead (identical value, correct context transition).
+   Corrected in `SPEC.md` alongside the live-verified result. Returns all 672 rows, confirmed.
+4. **`use-pareto-dataset.ts`** — one shared fetch/parse hook, used by both `kpi-strip.tsx` and the
+   new `pareto-risk-view.tsx`, so the cutoff slider drives both without a second query (per SPEC's
+   "KPI strip — becomes hybrid" section).
+5. **`pareto-risk-view.tsx` + `pareto-chart-spec.ts`** — the new Pareto view: headline sentence,
+   combo chart (bars colored in/past cutoff, cumulative % line on an independent scale, dashed
+   cutoff rule), draggable slider (default 80%), linked table grouped/subtotaled by tier past the
+   cutoff, CSV export, bar-click highlights the matching table row. No forward projection anywhere
+   (same decision as the sparkline work in stretch 1).
+   **My own engineering call, not from the mockup**: the chart only renders bars for the in-cutoff
+   items plus a fixed window past the cutoff (up to ~200), not all 672 — full-width unreadable.
+   Worth a look when you're back.
+6. **`kpi-strip.tsx`** — drops the two drill-through tiles and their DAX subqueries entirely; the
+   two cutoff-based tiles ("Items In Cutoff", "Reorder Value In Cutoff") are now a client-side
+   reduction over the shared dataset, reactive to the slider.
+7. **`App.tsx`** — `OverviewPage` fetches the pareto dataset once, owns `cutoffPct` state, passes
+   both down to `KpiStrip` and `ParetoRiskView`.
+8. **`landing-page.tsx`** — glimpse section now reads the pareto dataset instead of the retiring
+   `topAtRiskItems` query.
+9. **`ranked-at-risk-list.dax`/`.ts` (Action Center)** — added the `Cumulative Value %` column per
+   SPEC, live-validated. **Not wired into the panel UI** — I didn't have a mockup for this and
+   didn't want to guess at a layout change blind. The data's there if you want to add it later.
+10. **Retired outright**: `sales-trend.*`, `top-at-risk-items.*`, `top-at-risk-drill.*`,
+    `top-contributors-drill.*` (dax/ts/json/spec, 15 files) and their 4 components — per SPEC's
+    "existing queries retired outright" list.
+11. **`fabric.yaml`** — added a `wwiRetailRebuild` connection alias (branch-only) pointing at the
+    duplicate SM's real item id (`8c45e855-c0eb-480c-9ea1-86498090146b`), and repointed every
+    query factory in the app at it. The duplicate SM is a superset clone of the original (all old
+    measures + the 4 new ones), so the whole branch now queries one consistent SM instead of
+    mixing two mid-branch. **At merge time**: flip `wwiRetail`'s itemId to this one (or rename the
+    items), remove the `wwiRetailRebuild` alias, redeploy, retire the old SM item.
+
+**Full verification**: 100/100 tests pass (down from 141 — the retired components' tests went with
+them), `tsc --noEmit` clean vs. the same documented pre-existing baseline, `npm run lint` clean
+(caught and fixed one real bug along the way — a hook called after an early return in
+`pareto-risk-view.tsx`, a genuine rules-of-hooks violation, not a false positive), `npm run build`
+succeeds end to end.
+
+## What to check when you're back — stretch 2
+
+1. **Local dev visual check, before anything else.** This is real UI I built without being able to
+   render it (no browser tooling available this stretch) — the Pareto chart, the slider, the
+   table's tier-subtotal rows, the KPI strip's two new tiles. Run `npm run dev`, look at it. I'd
+   treat this the same way the 8/18 session treated its first real Vega chart: code passing
+   lint/tests/build isn't sign-off for UI work.
+2. The chart's "how many bars to show past the cutoff" call above — my own judgment, not reviewed.
+3. `ranked-at-risk-list.dax` has the new column but nothing renders it yet — decide if/how.
+4. Once you're happy locally: `rayfin up` to deploy the branch (still not touching `main`), then
+   decide on the merge.
+
+## Stretch 1 (before you went to sleep) — DONE, tested, committed, pushed
 
 **1. Spec corrections, before any code was written.** Ran an independent fresh-context review of
 the `SPEC.md` amendment, then read the actual files it referenced. Found and fixed three real
@@ -52,28 +120,20 @@ documented pre-existing `use-query-panel.spec.ts` failure, untouched by this ses
 lint` clean (only the documented pre-existing `main.tsx` warning), `npm run build` succeeds
 end to end.
 
-## Not started — the real next chunk, genuinely blocked on you
+## Not started (as of end of stretch 1) — all of this is now DONE, see "Stretch 2" above
 
-Everything downstream of the new semantic model:
-- Creating the duplicate SM (`WWI Replenishment Rebuild`) in Fabric — real tenant resource, needs
-  your go-ahead.
-- The new SM measures (`Reorder Value Total`, `Cumulative Reorder Value`, `Cumulative Reorder
-  Value %`, `Reorder Value Share %`) — DAX is drafted in `SPEC.md`, not applied anywhere yet.
-- `src/queries/overview/pareto-reorder-risk.dax` — **deliberately not drafted blind.** This
-  project's own established discipline (see `tasks/todo.md` T2.2) is to validate every `.dax`
-  file live and capture its exact result-column headers before wiring it into a query factory,
-  never guess them. Can't do that until the SM exists.
-- `pareto-risk-view.tsx` (the chart + table + slider) — not started, depends on the above.
-- `kpi-strip.dax`/`kpi-strip.tsx` — the two cutoff-based tiles becoming client-computed — not
-  started.
-- `App.tsx` — swapping `SalesTrendChart`/`TopAtRiskList` for the new Pareto view — not started.
-- `landing-page.tsx`'s glimpse section — still queries the soon-to-retire `topAtRiskItems` — not
-  started.
-- `ranked-at-risk-list.dax` gaining the Tier/cumulative-% column — not started.
-- Retiring the four old query/component pairs — not started, **deliberately** — doing this before
-  the three items above would leave the branch broken.
+Kept for history — every item below was completed in stretch 2:
+- ~~Creating the duplicate SM~~ — done, `WWI Replenishment Rebuild`.
+- ~~The new SM measures~~ — done, live-validated.
+- ~~`pareto-reorder-risk.dax`~~ — done, live-validated (with a real bug found and fixed).
+- ~~`pareto-risk-view.tsx`~~ — done.
+- ~~`kpi-strip.dax`/`kpi-strip.tsx`~~ — done.
+- ~~`App.tsx`~~ — done.
+- ~~`landing-page.tsx`'s glimpse section~~ — done.
+- ~~`ranked-at-risk-list.dax` gaining the Cumulative Value % column~~ — done (not yet wired into UI).
+- ~~Retiring the four old query/component pairs~~ — done.
 
-## What to check when you're back
+## What to check when you're back — stretch 1 items (still relevant)
 
 1. Nothing here is a design decision I made unilaterally — everything is mechanical execution of
    what was already agreed in `SPEC.md`, plus the three gaps above (found and fixed, not silently
@@ -81,10 +141,8 @@ Everything downstream of the new semantic model:
 2. One real open call, flagged in `SPEC.md`, not decided: should the existing
    `reorder-action-history.tsx` be renamed (e.g. to `reorder-action-list.tsx`) now that
    `ReorderActionAuditLog` sits right next to it? Your call.
-3. Say go on creating the duplicate SM — that's the one gate the entire "not started" list is
-   waiting on.
-4. To resume, no need to re-explain anything — "continue the rebuild" picks this up at SM
-   creation.
+3. **See "Stretch 2" above for what's actually left now** — the local dev visual check is the
+   next real gate, not SM creation (that's done).
 
 ## Files touched this session
 ```
@@ -115,4 +173,38 @@ rebuild/pareto-thesis branch:
   src/components/action-center/ranked-list-panel.spec.tsx    [modified]
   src/components/landing/landing-page.tsx                    [modified]
   src/components/landing/landing-page.spec.tsx                [modified]
+
+rebuild/pareto-thesis branch (stretch 2):
+  fabric.yaml                                                 [modified — new wwiRetailRebuild alias]
+  src/queries/overview/pareto-reorder-risk.dax                [new]
+  src/queries/overview/pareto-reorder-risk.ts                 [new]
+  src/hooks/use-pareto-dataset.ts                             [new]
+  src/components/overview/pareto-chart-spec.ts                [new]
+  src/components/overview/pareto-risk-view.tsx                [new]
+  src/components/overview/kpi-strip.dax                       [modified]
+  src/components/overview/kpi-strip.ts                        [modified]
+  src/components/overview/kpi-strip.tsx                       [modified]
+  src/components/overview/kpi-strip.spec.tsx                  [modified]
+  src/queries/overview/kpi-strip.spec.ts                      [modified]
+  src/App.tsx                                                 [modified]
+  src/components/landing/landing-page.tsx                     [modified again]
+  src/lib/dev-preview-fixtures.ts                              [modified]
+  src/queries/action-center/ranked-at-risk-list.dax            [modified]
+  src/queries/action-center/ranked-at-risk-list.ts             [modified]
+  src/queries/action-center/ranked-at-risk-list.spec.ts        [modified]
+  src/queries/action-center/item-detail.ts                     [modified — connection alias only]
+  src/queries/action-center/item-detail.spec.ts                [modified — connection alias only]
+  src/queries/action-center/item-sales-trend.ts                [modified — connection alias only]
+  src/queries/action-center/item-sales-trend.spec.ts           [modified — connection alias only]
+  SPEC.md                                                       [modified — DAX correction note]
+
+  Retired (deleted):
+  src/queries/overview/sales-trend.{dax,json,ts,spec.ts}
+  src/queries/overview/top-at-risk-items.{dax,json,ts,spec.ts}
+  src/queries/overview/top-at-risk-drill.{dax,ts,spec.ts}
+  src/queries/overview/top-contributors-drill.{dax,ts,spec.ts}
+  src/components/overview/sales-trend-chart.{tsx,spec.tsx}
+  src/components/overview/top-at-risk-list.{tsx,spec.tsx}
+  src/components/overview/top-at-risk-drill-through.{tsx,spec.tsx}
+  src/components/overview/top-contributors-drill-through.tsx
 ```
