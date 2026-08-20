@@ -1,0 +1,26 @@
+table Parameter
+	lineageTag: 936e34d8-dde8-4f77-a561-4486f9200190
+
+	measure 'Pareto Value' = SELECTEDVALUE('Parameter'[Parameter], 0.8)
+		formatString: 0
+		lineageTag: 30e3dadc-34b4-44a1-ad19-c704e7e94ea2
+
+	column Parameter
+		formatString: #,0%;-#,0%;#,0%
+		lineageTag: 834beb0f-6fd7-4efd-a72c-2a1f866b5ce7
+		summarizeBy: none
+		sourceColumn: [Value]
+
+		extendedProperty ParameterMetadata =
+				{
+				  "version": 0
+				}
+
+		annotation SummarizationSetBy = User
+
+	partition Parameter = calculated
+		mode: import
+		source = GENERATESERIES(0.01, 1, 0.01)
+
+	annotation PBI_Id = 5653b33a6f2943f0be56ea45e69bcaa9
+

@@ -16,9 +16,18 @@ Microsoft Fabric Hackathon 2026 entry (Hyderabad Data & AI Community + India Fab
   stock-on-hand column anywhere. Risk rule is now a disclosed proxy: sales velocity trend
   (`fact_sale.Quantity` over time) vs `dimension_stock_item.LeadTimeDays`, ranked not
   threshold-based. See schema doc's "Replenishment risk rule" section for the full derivation.
-- **Write-back entity (one entity, not a full CRUD system):** `ReorderAction` - stockItemKey,
+  **Amended 2026-08-20:** the concentration-thesis rebuild (see `SPEC.md`'s Amendment section)
+  adds a live, user-adjustable cutoff slider (default 80%) driving the Pareto view's in-cutoff
+  vs. past-cutoff split. This is a deliberate, flagged addition, not a reversion to a fixed
+  literal threshold — the underlying ranking is still relative (`At Risk Rank`), the slider only
+  changes where the visual/table draws the line on that ranking.
+- **Write-back entities (two, not a full CRUD system):** `ReorderAction` - stockItemKey,
   stockItemName, currentStockOnHand, suggestedReorderQty, supplierKey/supplierName, status
   (Pending Review / Approved / Ordered / Received / Dismissed), note, assignedTo, createdAt/By.
+  **Amended 2026-08-20:** added `ReorderActionHistory` - an append-only audit-trail entity
+  (fieldName, oldValue, newValue, changedAt, changedBy) written on every `ReorderAction`
+  create/update. Still no hard-delete, still no full CRUD - this is traceability, not new
+  business functionality.
 - **Semantic model storage mode: Import**, not Direct Lake. At this data scale (trial capacity,
   not a live tens-of-millions-row dataset) both modes use the identical setup flow, and Import
   additionally supports calculated columns/hybrid tables/aggregations and skips Direct Lake's

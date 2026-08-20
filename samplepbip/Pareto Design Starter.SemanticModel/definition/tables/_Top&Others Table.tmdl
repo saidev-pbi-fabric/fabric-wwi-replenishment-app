@@ -1,0 +1,33 @@
+table '_Top&Others Table'
+	lineageTag: d5daa01b-d65a-4a6c-bf28-47c396855663
+
+	column Selection
+		lineageTag: 37be7984-bea6-4494-ae8e-c8b235d86ee2
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Selection]
+		sortByColumn: Index
+
+		annotation SummarizationSetBy = Automatic
+
+	column Index
+		formatString: 0
+		lineageTag: fc85e781-258d-413b-b901-9f0706508723
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Index]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition '_Top&Others Table' = calculated
+		mode: import
+		source = ```
+				
+				DATATABLE(
+				    "Selection", STRING, 
+				    "Index", INTEGER,
+				    {{"Top",1}, {"Others",2}})
+				```
+
+	annotation PBI_Id = 8e82c9b85403414fb96c498354ac8300
+

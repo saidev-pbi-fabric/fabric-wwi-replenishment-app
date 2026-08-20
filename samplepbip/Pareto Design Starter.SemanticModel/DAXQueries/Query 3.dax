@@ -1,0 +1,408 @@
+DEFINE
+	MEASURE 'Data'[_1 Rank] = IF(
+			ISINSCOPE(Data[Customer]),
+			RANKX(
+				ALLSELECTED(data[Customer]),
+				[_1 Revenue]
+			)
+		)
+	MEASURE 'Data'[_1 Cumulative Revenue] = // VAR CurrentRank = [_1 Rank]
+		// RETURN
+
+		// IF(ISINSCOPE(Data[Customer]), 
+		// CALCULATE(
+		//     SUM('Data'[Rev (mUSD)]),
+		//     FILTER(
+		//         ALLSELECTED('Data'[Customer]),
+		//         [_1 Rank] <= CurrentRank
+		//     )
+		// ),
+		// [_1 Total Revenue])
+
+		IF(
+			ISINSCOPE(Data[Customer]),
+			CALCULATE(
+				[_1 Revenue],
+				TOPN(
+					[_1 Rank],
+					ALLSELECTED('Data'[Customer]),
+					[_1 Revenue]
+				)
+			),
+			[_1 Total Revenue]
+		)
+	MEASURE 'Data'[_1 Total Revenue] = CALCULATE(
+			[_1 Revenue],
+			ALLSELECTED(data)
+		)
+	MEASURE 'Data'[_1 Revenue GT%] = DIVIDE(
+			[_1 Revenue],
+			[_1 Total Revenue],
+			0
+		)
+	MEASURE 'Data'[_1 Cumulative Revenue %] = DIVIDE(
+			[_1 Cumulative Revenue],
+			[_1 Total Revenue]
+		)
+	MEASURE 'Data'[_1 Cumulative Revenue % COPY] = [_1 Cumulative Revenue %]
+	MEASURE 'Data'[_1 Cutoff Customer] = VAR TargetPercentage = [Pareto Value]
+		VAR ClosestCustomer =
+		TOPN(
+			1,
+			ADDCOLUMNS(
+				SUMMARIZE(
+					ALLSELECTED('Data'),
+					'Data'[Customer]
+				),
+				"CumulativeRevenuePercent", [_1 Cumulative Revenue %],
+				"Difference", ABS([_1 Cumulative Revenue %] - TargetPercentage)
+			),
+			[Difference],
+			ASC
+		)
+		RETURN
+			MAXX(
+				ClosestCustomer,
+				'Data'[Customer]
+			)
+	MEASURE 'Data'[_1 Cutoff Revenue %] = VAR ClosestCustomer = [_1 Cutoff Customer]
+		RETURN
+			IF(
+				SELECTEDVALUE('Data'[Customer]) = ClosestCustomer,
+				[_1 Cumulative Revenue %],
+				BLANK()
+			)
+	MEASURE 'Data'[_1 Cutoff Revenue GT%] = VAR ClosestCustomer = [_1 Cutoff Customer]
+		RETURN
+			IF(
+				SELECTEDVALUE('Data'[Customer]) = ClosestCustomer,
+				[_1 Revenue],
+				BLANK()
+			) / 4
+	MEASURE 'Data'[_1 Cutoff Cumulative Revenue] = VAR ClosestCustomer = [_1 Cutoff Customer]
+		RETURN
+			IF(
+				SELECTEDVALUE('Data'[Customer]) = ClosestCustomer,
+				[_1 Cumulative Revenue],
+				BLANK()
+			)
+	MEASURE 'Data'[_2 Rank] = SWITCH(
+			TRUE(),
+			SELECTEDVALUE(Data[_2 Customer Group]) = "Others", CALCULATE(
+				DISTINCTCOUNTNOBLANK(data[_2 Customer Group]),
+				ALLSELECTED(data[_2 Customer Group])
+			),
+			ISINSCOPE(Data[_2 Customer Group]), RANKX(
+				FILTER(
+					ALLSELECTED(data[_2 Customer Group]),
+					data[_2 Customer Group] <> "Others"
+				),
+				CALCULATE([_1 Revenue]),
+				,
+				DESC,
+				Dense
+			)
+		)
+	MEASURE 'Data'[_2 Cumulative Revenue] = VAR CurrentRank = [_2 Rank]
+		RETURN
+
+			IF(
+				ISINSCOPE(Data[_2 Customer Group]),
+				CALCULATE(
+					[_1 Revenue],
+					FILTER(
+						ALLSELECTED('Data'[_2 Customer Group]),
+						[_2 Rank] <= CurrentRank
+					)
+				),
+
+				[_1 Total Revenue]
+			)
+	MEASURE 'Data'[_2 Cumulative Revenue %] = DIVIDE(
+			[_2 Cumulative Revenue],
+			[_1 Total Revenue]
+		)
+	MEASURE 'Data'[_3 Rank] = IF(
+			ISINSCOPE(Data[Customer]),
+			RANKX(
+				ALLSELECTED(
+					'Data'[Customer],
+					'Data'[_3 Customer Group]
+				),
+				CALCULATE([_1 Revenue]),
+				,
+				DESC,
+				Dense
+			)
+		)
+	MEASURE 'Data'[_3 Cumulative Revenue] = VAR CurrentRank = [_3 Rank]
+		VAR cgroup = SELECTEDVALUE(Data[_3 Customer Group])
+		RETURN
+
+			IF(
+				ISINSCOPE(Data[Customer]),
+				// Calculate for each customer
+				CALCULATE(
+					[_1 revenue],
+					FILTER(
+						ALLSELECTED('Data'[Customer]),
+						[_3 Rank] <= CurrentRank
+					)
+				),
+				// Calculate cumulative sum for group 2
+				CALCULATE(
+					[_1 revenue],
+					FILTER(
+						ALLSELECTED('Data'[_3 Customer Group]),
+						[_3 Customer Group] <= cgroup
+					)
+				)
+			)
+	MEASURE 'Data'[_3 Cumulative Revenue %] = DIVIDE(
+			[_3 Cumulative Revenue],
+			[_1 Total Revenue]
+		)
+	MEASURE 'Data'[_3 Selected customer] = SWITCH(
+			TRUE(),
+			ISINSCOPE(Data[Customer]), SELECTEDVALUE(Data[Customer]),
+			ISINSCOPE(Data[_3 Customer Group]), "Total of " & IF(
+				SELECTEDVALUE(Data[_3 Customer Group]) = " ",
+				"benchmarked 80% [",
+				"Others ["
+			) & CALCULATE(COUNT(Data[Customer])) & "]",
+			"Total [" & COUNT(Data[Customer]) & "]"
+		)
+	MEASURE 'Data'[_1 Color (Column)] = IF(
+			[_1 Rank] > [_44  Pareto Cutoff Rank],
+			"Grey",
+			" light Blue"
+		)
+	MEASURE 'Data'[_1 Color (Matrix)] = VAR Cutoff =
+		CALCULATE(
+			MAXX(
+				VALUES(data[customer]),
+				[_1 Cutoff Revenue %]
+			),
+			ALLSELECTED(data)
+		)
+		RETURN
+			IF(
+				[_1 Cumulative Revenue %] > Cutoff,
+				"#ffffff00",
+				"Blue"
+			)
+	MEASURE 'Data'[_1 Cutoff Rank] = VAR ClosestCustomer = [_1 Cutoff Customer]
+		RETURN
+			IF(
+				SELECTEDVALUE('Data'[Customer]) = ClosestCustomer,
+				[_1 Rank],
+				BLANK()
+			)
+	MEASURE 'Data'[_1 Revenue] = SUM(Data[Rev (mUSD)])
+	MEASURE 'Data'[_44 Pareto Revenue] = VAR ParetoTable =
+		TOPN(
+			[_44  Pareto Cutoff Rank],
+			ALLSELECTED('Data'[Customer]),
+			[_1 Revenue]
+		)
+
+		VAR ParetoRev =
+		CALCULATE(
+			[_1 Revenue],
+			KEEPFILTERS(ParetoTable)
+		)
+
+		VAR OtherRev =
+		[_1 Revenue] -
+		CALCULATE(
+			[_1 Revenue],
+			KEEPFILTERS(ParetoTable)
+		)
+		VAR OtherRevClean =
+		IF(
+			OtherRev = 0,
+			BLANK(),
+			OtherRev
+		)
+		RETURN
+			IF(
+				ISFILTERED('_Top&Others Table'[Selection]),
+				IF(
+					SELECTEDVALUE('_Top&Others Table'[Selection]) <> "Others",
+					ParetoRev,
+					OtherRevClean
+				),
+				[_1 Revenue]
+			)
+	MEASURE 'Data'[_44  Pareto Cutoff Rank] = CALCULATE(
+			MAXX(
+				VALUES(data[customer]),
+				[_1 Cutoff Rank]
+			),
+			ALLSELECTED(data)
+		)
+	MEASURE 'Data'[_44 Rank] = IF(
+			[_44 Pareto Revenue] <> BLANK(),
+			RANKX(
+				ALLSELECTED(Data[Customer]),
+				[_1 Revenue]
+			)
+		)
+	MEASURE 'Data'[_44 Cumulative Revenue] = VAR ParetoTable =
+		TOPN(
+			[_44  Pareto Cutoff Rank],
+			ALLSELECTED('Data'[Customer]),
+			[_1 Revenue]
+		)
+
+		VAR ParetoRev =
+		CALCULATE(
+			[_1 Cumulative Revenue],
+			KEEPFILTERS(ParetoTable)
+		)
+
+		VAR result = IF(
+			SELECTEDVALUE('_Top&Others Table'[Selection]) <> "Others",
+			ParetoRev,
+			[_1 Cumulative Revenue]
+		)
+		RETURN
+
+			IF(
+				NOT (ISINSCOPE('_Top&Others Table'[Selection])),
+				[_1 Revenue],
+				IF(
+					[_44 Pareto Revenue] <> BLANK(),
+					result
+				)
+			)
+	MEASURE 'Data'[_44 Revenue GT %] = DIVIDE(
+			[_44 Pareto Revenue],
+			[_1 Total Revenue]
+		)
+	MEASURE 'Data'[_44 Cumulative Revenue %] = DIVIDE(
+			[_44 Cumulative Revenue],
+			[_1 Total Revenue]
+		)
+	MEASURE 'Data'[_44 Selected customer] = IF(
+			[_44 Pareto Revenue] <> BLANK(),
+
+			SWITCH(
+				TRUE(),
+				ISINSCOPE(Data[Customer]), SELECTEDVALUE(Data[Customer]),
+				ISINSCOPE('_Top&Others Table'[Selection]), "Total of " &
+				IF(
+					SELECTEDVALUE('_Top&Others Table'[Selection]) = "Top",
+					"benchmarked " & [Pareto Value] * 100 & "% [" & [_44  Pareto Cutoff Rank] & "]",
+					"Others [" & CALCULATE(DISTINCTCOUNT(Data[Customer])) - [_44  Pareto Cutoff Rank] & "]"
+				),
+				"Total [" & COUNT(Data[Customer]) & "]"
+			)
+		)
+	MEASURE 'Data'[_5 Pareto Revenue] = VAR ParetoTable =
+		TOPN(
+			[_44  Pareto Cutoff Rank],
+			ALLSELECTED('_Customer&Others Table'[Customer]),
+			[_1 Revenue]
+		)
+
+		VAR ParetoRev =
+		CALCULATE(
+			[_1 Revenue],
+			KEEPFILTERS(ParetoTable)
+		)
+
+		VAR OtherRev =
+		CALCULATE(
+			[_1 Revenue],
+			ALLSELECTED('_Customer&Others Table'[Customer])
+		)
+		-
+		CALCULATE(
+			[_1 Revenue],
+			ParetoTable
+		)
+
+		VAR OtherRevClean =
+		IF(
+			OtherRev = 0,
+			BLANK(),
+			OtherRev
+		)
+		RETURN
+			IF(
+				SELECTEDVALUE('_Customer&Others Table'[Customer]) <> "Others",
+				ParetoRev,
+				OtherRevClean
+			)
+	MEASURE 'Data'[_5 Rank] = IF(
+			[_5 Pareto Revenue] <> BLANK(),
+			RANKX(
+				TOPN(
+					[_44  Pareto Cutoff Rank],
+					ALLSELECTED('_Customer&Others Table'[Customer])
+				),
+				[_1 Revenue],
+				,
+				DESC,
+				dense
+			)
+		)
+	MEASURE 'Data'[_5 Cumulative Revenue] = IF(
+			ISINSCOPE('_Customer&Others Table'[Customer]),
+			CALCULATE(
+				[_1 Revenue],
+				TOPN(
+					[_5 Rank],
+					ALLSELECTED('_Customer&Others Table'[Customer]),
+					[_1 Revenue]
+				)
+			),
+			[_1 Total Revenue]
+		)
+	MEASURE 'Data'[_5 Revenue GT%] = DIVIDE(
+			[_5 Pareto Revenue],
+			[_1 Total Revenue],
+			0
+		)
+	MEASURE 'Data'[_5 Cumulative Revenue %] = DIVIDE(
+			[_5 Cumulative Revenue],
+			[_1 Total Revenue]
+		)
+
+EVALUATE
+	SUMMARIZECOLUMNS(
+		"_1 Rank", 'Data'[_1 Rank],
+		"_1 Cumulative Revenue", 'Data'[_1 Cumulative Revenue],
+		"_1 Total Revenue", 'Data'[_1 Total Revenue],
+		"_1 Revenue GT%", 'Data'[_1 Revenue GT%],
+		"_1 Cumulative Revenue %", 'Data'[_1 Cumulative Revenue %],
+		"_1 Cumulative Revenue % COPY", 'Data'[_1 Cumulative Revenue % COPY],
+		"_1 Cutoff Customer", 'Data'[_1 Cutoff Customer],
+		"_1 Cutoff Revenue %", 'Data'[_1 Cutoff Revenue %],
+		"_1 Cutoff Revenue GT%", 'Data'[_1 Cutoff Revenue GT%],
+		"_1 Cutoff Cumulative Revenue", 'Data'[_1 Cutoff Cumulative Revenue],
+		"_2 Rank", 'Data'[_2 Rank],
+		"_2 Cumulative Revenue", 'Data'[_2 Cumulative Revenue],
+		"_2 Cumulative Revenue %", 'Data'[_2 Cumulative Revenue %],
+		"_3 Rank", 'Data'[_3 Rank],
+		"_3 Cumulative Revenue", 'Data'[_3 Cumulative Revenue],
+		"_3 Cumulative Revenue %", 'Data'[_3 Cumulative Revenue %],
+		"_3 Selected customer", 'Data'[_3 Selected customer],
+		"_1 Color (Column)", 'Data'[_1 Color (Column)],
+		"_1 Color (Matrix)", 'Data'[_1 Color (Matrix)],
+		"_1 Cutoff Rank", 'Data'[_1 Cutoff Rank],
+		"_1 Revenue", 'Data'[_1 Revenue],
+		"_44 Pareto Revenue", 'Data'[_44 Pareto Revenue],
+		"_44  Pareto Cutoff Rank", 'Data'[_44  Pareto Cutoff Rank],
+		"_44 Rank", 'Data'[_44 Rank],
+		"_44 Cumulative Revenue", 'Data'[_44 Cumulative Revenue],
+		"_44 Revenue GT %", 'Data'[_44 Revenue GT %],
+		"_44 Cumulative Revenue %", 'Data'[_44 Cumulative Revenue %],
+		"_44 Selected customer", 'Data'[_44 Selected customer],
+		"_5 Pareto Revenue", 'Data'[_5 Pareto Revenue],
+		"_5 Rank", 'Data'[_5 Rank],
+		"_5 Cumulative Revenue", 'Data'[_5 Cumulative Revenue],
+		"_5 Revenue GT%", 'Data'[_5 Revenue GT%],
+		"_5 Cumulative Revenue %", 'Data'[_5 Cumulative Revenue %]
+	)

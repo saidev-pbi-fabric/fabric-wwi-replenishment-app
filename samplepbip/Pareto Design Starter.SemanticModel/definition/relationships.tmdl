@@ -1,0 +1,5 @@
+relationship 81b36553-6575-cecd-527b-b241f8e3da63
+	crossFilteringBehavior: bothDirections
+	fromColumn: Data.Customer
+	toColumn: '_Customer&Others Table'.Customer
+

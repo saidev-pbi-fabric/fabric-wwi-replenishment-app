@@ -1,0 +1,22 @@
+table '_Customer&Others Table'
+	lineageTag: aa432b93-7bb8-4914-adf4-569a7efd841c
+
+	column Customer
+		lineageTag: 2c48dc1d-6c12-4d71-9fcd-647b214f4fef
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: Data[Customer]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition '_Customer&Others Table' = calculated
+		mode: import
+		source =
+				
+				
+				UNION(
+				    DISTINCT(Data[Customer]),
+				    DATATABLE("Product", STRING, {{"Others"}}))
+
+	annotation PBI_Id = 9ff6e917ac87455c809e73fedcb1599c
+

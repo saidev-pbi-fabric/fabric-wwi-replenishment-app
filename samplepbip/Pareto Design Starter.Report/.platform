@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Report",
+    "displayName": "Pareto Design Starter"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "6022b435-b24d-4117-abf7-b1da13d401fe"
+  }
+}

@@ -1,0 +1,210 @@
+DEFINE
+	MEASURE 'Data'[_Rank] = IF(
+			ISINSCOPE(Data[Customer]),
+			RANKX(
+				ALLSELECTED(data[Customer]),
+				CALCULATE(SUM(data[Rev (mUSD)]))
+			)
+		)
+	MEASURE 'Data'[_Cumulative Revenue] = VAR CurrentRank = [_Rank]
+		RETURN
+
+			IF(
+				ISINSCOPE(Data[Customer]),
+				CALCULATE(
+					SUM('Data'[Rev (mUSD)]),
+					FILTER(
+						ALLSELECTED('Data'[Customer]),
+						[_Rank] <= CurrentRank
+					)
+				),
+
+				CALCULATE(
+					SUM('Data'[Rev (mUSD)]),
+					ALLSELECTED('Data')
+				)
+			)
+	MEASURE 'Data'[_Total Revenue] = CALCULATE(
+			SUM(data[Rev (mUSD)]),
+			ALLSELECTED(data)
+		)
+	MEASURE 'Data'[_Revenue GT%] = DIVIDE(
+			SUM(data[Rev (mUSD)]),
+			[_Total Revenue],
+			0
+		)
+	MEASURE 'Data'[_Cumulative Revenue %] = DIVIDE(
+			[_Cumulative Revenue],
+			CALCULATE(
+				SUM('Data'[Rev (mUSD)]),
+				ALLSELECTED('Data')
+			)
+		)
+	MEASURE 'Data'[cum rev % 2] = [_Cumulative Revenue %]
+	MEASURE 'Data'[Cutoff] = VAR TargetPercentage = 0.8
+		VAR ClosestCustomer =
+		TOPN(
+			1,
+			ADDCOLUMNS(
+				SUMMARIZE(
+					ALL('Data'),
+					'Data'[Customer]
+				),
+				"CumulativeRevenuePercent", [_Cumulative Revenue %],
+				"Difference", ABS([_Cumulative Revenue %] - TargetPercentage)
+			),
+			[Difference],
+			ASC
+		)
+		RETURN
+			MAXX(
+				ClosestCustomer,
+				CALCULATE(SUM('Data'[Rev (mUSD)]))
+			)
+	MEASURE 'Data'[Blank] = 0
+	MEASURE 'Data'[Cutoff Customer] = VAR TargetPercentage = 0.8
+		VAR ClosestCustomer =
+		TOPN(
+			1,
+			ADDCOLUMNS(
+				SUMMARIZE(
+					ALL('Data'),
+					'Data'[Customer]
+				),
+				"CumulativeRevenuePercent", [_Cumulative Revenue %],
+				"Difference", ABS([_Cumulative Revenue %] - TargetPercentage)
+			),
+			[Difference],
+			ASC
+		)
+		RETURN
+			MAXX(
+				ClosestCustomer,
+				'Data'[Customer]
+			)
+	MEASURE 'Data'[_Cutoff Revenue %] = VAR ClosestCustomer = [Cutoff Customer]
+		RETURN
+			IF(
+				SELECTEDVALUE('Data'[Customer]) = ClosestCustomer,
+				[_Cumulative Revenue %],
+				BLANK()
+			)
+	MEASURE 'Data'[Cutoff Revenue GT%] = VAR ClosestCustomer = [Cutoff Customer]
+		RETURN
+			IF(
+				SELECTEDVALUE('Data'[Customer]) = ClosestCustomer,
+				SUM(Data[Rev (mUSD)]),
+				BLANK()
+			) / 4
+	MEASURE 'Data'[_Cutoff Revenue] = VAR ClosestCustomer = [Cutoff Customer]
+		RETURN
+			IF(
+				SELECTEDVALUE('Data'[Customer]) = ClosestCustomer,
+				[_Cumulative Revenue],
+				BLANK()
+			)
+	MEASURE 'Data'[_Rank 2] = SWITCH(
+			TRUE(),
+			SELECTEDVALUE(Data[Customer Group]) = "Others", CALCULATE(
+				DISTINCTCOUNTNOBLANK(data[Customer Group]),
+				ALLSELECTED(data[Customer Group])
+			),
+			ISINSCOPE(Data[Customer Group]), RANKX(
+				FILTER(
+					ALLSELECTED(data[Customer Group]),
+					data[Customer Group] <> "Others"
+				),
+				CALCULATE(SUM(data[Rev (mUSD)])),
+				,
+				DESC,
+				Dense
+			)
+		)
+	MEASURE 'Data'[_Cumulative Revenue 2] = VAR CurrentRank = [_Rank 2]
+		RETURN
+
+			IF(
+				ISINSCOPE(Data[Customer Group]),
+				CALCULATE(
+					SUM('Data'[Rev (mUSD)]),
+					FILTER(
+						ALLSELECTED('Data'[Customer Group]),
+						[_Rank 2] <= CurrentRank
+					)
+				),
+
+				CALCULATE(
+					SUM('Data'[Rev (mUSD)]),
+					ALLSELECTED('Data')
+				)
+			)
+	MEASURE 'Data'[_Cumulative Revenue % 2] = DIVIDE(
+			[_Cumulative Revenue 2],
+			CALCULATE(
+				SUM('Data'[Rev (mUSD)]),
+				ALLSELECTED('Data')
+			)
+		)
+	MEASURE 'Data'[_Rank 3] = IF(
+			ISINSCOPE(Data[Customer]),
+			RANKX(
+				ALLSELECTED(
+					'Data'[Customer],
+					'Data'[Customer Group 2]
+				),
+				CALCULATE(SUM('Data'[Rev (mUSD)])),
+				,
+				DESC,
+				Dense
+			)
+		)
+	MEASURE 'Data'[_Cumulative Revenue 3] = VAR CurrentRank = [_Rank 3]
+		RETURN
+
+			IF(
+				ISINSCOPE(Data[Customer]),
+				CALCULATE(
+					SUM('Data'[Rev (mUSD)]),
+					FILTER(
+						ALLSELECTED('Data'[Customer]),
+						[_Rank 3] <= CurrentRank
+					)
+				),
+				CALCULATE(
+					SUM('Data'[Rev (mUSD)]),
+					FILTER(
+						ALL('Data'[Customer]),
+						SUM(Data[Rev (mUSD)]) >= [Cutoff]
+					)
+				)
+			)
+	// CALCULATE(SUM('Data'[Rev (mUSD)]),  ALLSELECTED('Data'[Customer]))))))
+		MEASURE 'Data'[_Cumulative Revenue % 3] = DIVIDE(
+			[_Cumulative Revenue 3],
+			CALCULATE(
+				SUM('Data'[Rev (mUSD)]),
+				ALLSELECTED('Data')
+			)
+		)
+
+EVALUATE
+	SUMMARIZECOLUMNS(
+		"_Rank", 'Data'[_Rank],
+		"_Cumulative Revenue", 'Data'[_Cumulative Revenue],
+		"_Total Revenue", 'Data'[_Total Revenue],
+		"_Revenue GT%", 'Data'[_Revenue GT%],
+		"_Cumulative Revenue %", 'Data'[_Cumulative Revenue %],
+		"cum rev % 2", 'Data'[cum rev % 2],
+		"Cutoff", 'Data'[Cutoff],
+		"Blank", 'Data'[Blank],
+		"Cutoff Customer", 'Data'[Cutoff Customer],
+		"_Cutoff Revenue %", 'Data'[_Cutoff Revenue %],
+		"Cutoff Revenue GT%", 'Data'[Cutoff Revenue GT%],
+		"_Cutoff Revenue", 'Data'[_Cutoff Revenue],
+		"_Rank 2", 'Data'[_Rank 2],
+		"_Cumulative Revenue 2", 'Data'[_Cumulative Revenue 2],
+		"_Cumulative Revenue % 2", 'Data'[_Cumulative Revenue % 2],
+		"_Rank 3", 'Data'[_Rank 3],
+		"_Cumulative Revenue 3", 'Data'[_Cumulative Revenue 3],
+		"_Cumulative Revenue % 3", 'Data'[_Cumulative Revenue % 3]
+	)

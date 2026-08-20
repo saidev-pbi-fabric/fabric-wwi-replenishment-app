@@ -1,0 +1,589 @@
+table Data
+	lineageTag: 44100f09-0f6f-4d3f-8fa6-6d2ec45fdc3a
+
+	measure '_1 Rank' =
+			
+			
+			IF(
+			ISINSCOPE(Data[Customer]),
+			RANKX(
+			ALLSELECTED(data[Customer]),
+			[_1 Revenue]))
+		formatString: 0
+		displayFolder: _1
+		lineageTag: 69271a75-e5e1-4210-b37e-8e5dffbef638
+
+	measure '_1 Cumulative Revenue' = ```
+			
+			IF(
+			    ISINSCOPE(Data[Customer]), 
+			    CALCULATE(
+			        [_1 Revenue],
+			        TOPN([_1 Rank],
+			            ALLSELECTED('Data'[Customer]),
+			            [_1 Revenue])
+			    ),
+			    [_1 Total Revenue])
+			```
+		formatString: 0.00
+		displayFolder: _1
+		lineageTag: d04cdf8f-60c9-44ca-8d74-fb61543d171e
+
+	measure '_1 Total Revenue' = ```
+			
+			CALCULATE(
+			    [_1 Revenue],
+			    ALLSELECTED(data)
+			)
+			
+			```
+		displayFolder: _1
+		lineageTag: 2290f89b-29a8-4888-8108-e68df026982c
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '_1 Revenue GT%' =
+			
+			DIVIDE(
+			    [_1 Revenue],
+			    [_1 Total Revenue],
+			    0
+			)
+		formatString: 0%;-0%;0%
+		displayFolder: _1
+		lineageTag: 8fbc6794-ea49-4d0b-a31c-c21d5368be49
+
+	measure '_1 Cumulative Revenue %' = ```
+			
+			DIVIDE(
+			    [_1 Cumulative Revenue],
+			    [_1 Total Revenue]
+			)
+			
+			```
+		formatString: 0%;-0%;0%
+		displayFolder: _1
+		lineageTag: 99bb02a5-828f-4175-9115-eac93b1f3f59
+
+	measure '_1 Cumulative Revenue % COPY' = [_1 Cumulative Revenue %]
+		displayFolder: _1
+		lineageTag: 3ad005f2-773f-42f2-853a-3d8c68541f1a
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '_1 Cutoff Customer' = ```
+			
+			VAR TargetPercentage = [Pareto Value]
+			VAR ClosestCustomer = 
+			    TOPN(
+			        1, 
+			        ADDCOLUMNS(
+			            SUMMARIZE(
+			                ALLSELECTED('Data'),
+			                'Data'[Customer]
+			            ),
+			            "CumulativeRevenuePercent", [_1 Cumulative Revenue %],
+			            "Difference", ABS([_1 Cumulative Revenue %] - TargetPercentage)
+			        ),
+			        [Difference], ASC
+			    )
+			RETURN
+			    MAXX(
+			        ClosestCustomer,
+			        'Data'[Customer]
+			    )
+			
+			```
+		displayFolder: _1
+		lineageTag: 0a69a17a-12be-45e6-b3a2-d16a39757c04
+
+	measure '_1 Cutoff Revenue %' = ```
+			
+			VAR ClosestCustomer = [_1 Cutoff Customer]
+			RETURN
+			IF(
+			    SELECTEDVALUE('Data'[Customer]) = ClosestCustomer,
+			    [_1 Cumulative Revenue %],
+			    BLANK()
+			)
+			
+			```
+		formatString: 0%;-0%;0%
+		displayFolder: _1
+		lineageTag: 16d5fb43-1532-4c71-a6b4-6524e5f63511
+
+	measure '_1 Cutoff Revenue GT%' = ```
+			
+			VAR ClosestCustomer = [_1 Cutoff Customer]
+			RETURN
+			IF(
+			    SELECTEDVALUE('Data'[Customer]) = ClosestCustomer,
+			    [_1 Revenue],
+			    BLANK()
+			) / 4
+			
+			```
+		displayFolder: _1
+		lineageTag: 5e5778d1-01e0-4a44-9cf2-91f95ff89022
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '_1 Cutoff Cumulative Revenue' = ```
+			
+			VAR ClosestCustomer = [_1 Cutoff Customer]
+			RETURN
+			IF(
+			    SELECTEDVALUE('Data'[Customer]) = ClosestCustomer,
+			    [_1 Cumulative Revenue],
+			    BLANK()
+			)
+			
+			```
+		formatString: 0.0
+		displayFolder: _1
+		lineageTag: ebcc5a8d-633f-455e-880a-7cf472cc93e0
+
+	measure '_2 Rank' =
+			
+			SWITCH(TRUE(),
+			SELECTEDVALUE( Data[_2 Customer Group]) = "Others" , CALCULATE(DISTINCTCOUNTNOBLANK(data[_2 Customer Group]), ALLSELECTED(data[_2 Customer Group])),
+			ISINSCOPE(Data[_2 Customer Group]),
+			RANKX(
+			FILTER(ALLSELECTED(data[_2 Customer Group]),data[_2 Customer Group] <> "Others"),
+			CALCULATE([_1 Revenue]),
+			,
+			DESC,
+			Dense)
+			)
+		formatString: 0
+		displayFolder: _2
+		lineageTag: dc647a84-0ca4-4d62-9a23-13e79c536188
+
+	measure '_2 Cumulative Revenue' = ```
+			
+			VAR CurrentRank = [_2 Rank]
+			RETURN
+			
+			IF(
+			    ISINSCOPE(Data[_2 Customer Group]), 
+			    CALCULATE(
+			        [_1 Revenue],
+			        FILTER(
+			            ALLSELECTED('Data'[_2 Customer Group]),
+			            [_2 Rank] <= CurrentRank
+			        )
+			    ),
+			
+			    [_1 Total Revenue])
+			```
+		displayFolder: _2
+		lineageTag: 360ca867-e921-40e3-851f-4c9719c06fc2
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '_2 Cumulative Revenue %' = ```
+			
+			DIVIDE(
+			    [_2 Cumulative Revenue],
+			    [_1 Total Revenue]
+			)
+			
+			```
+		formatString: 0%;-0%;0%
+		displayFolder: _2
+		lineageTag: ca9203a2-84dd-49b3-8b4b-1a6eab3dfafe
+
+	measure '_3 Rank' = ```
+			
+			IF(
+			ISINSCOPE(Data[Customer]),
+			RANKX(
+			    ALLSELECTED('Data'[Customer], 'Data'[_3 Customer Group]), 
+			    CALCULATE([_1 Revenue]), 
+			    , 
+			    DESC, 
+			    Dense
+			)
+			)
+			```
+		formatString: 0
+		displayFolder: _3
+		lineageTag: 5ba7ba86-e225-4d58-b769-b6a3ff895741
+
+	measure '_3 Cumulative Revenue' = ```
+			
+			SWITCH(TRUE(),
+			    ISINSCOPE(Data[Customer]),
+			        CALCULATE(
+			            [_1 Cumulative Revenue],
+			            REMOVEFILTERS(Data[_3 Customer Group])),
+			    ISINSCOPE(Data[_3 Customer Group]),
+			        CALCULATE(
+			            [_1 Revenue],
+			            TOPN(
+			                SELECTEDVALUE(Data[_3 Customer Group]),
+			                ALL('Data'[_3 Customer Group]),
+			                [_1 Revenue])
+			        ),
+			    [_1 Revenue]    
+			)
+			```
+		displayFolder: _3
+		lineageTag: f5dcd8e8-6161-4cc3-a166-a6a53dbe61e2
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '_3 Cumulative Revenue %' = ```
+			
+			DIVIDE(
+			    [_3 Cumulative Revenue],
+			    [_1 Total Revenue]
+			)
+			
+			```
+		formatString: 0%;-0%;0%
+		displayFolder: _3
+		lineageTag: 913e0626-09b3-4c1e-b072-34cede4cdcf3
+
+	measure '_3 Selected customer' = ```
+			
+			SWITCH(TRUE(), 
+			ISINSCOPE(Data[Customer]), SELECTEDVALUE(Data[Customer]), 
+			ISINSCOPE(Data[_3 Customer Group]), "Total of " & IF(SELECTEDVALUE(Data[_3 Customer Group]) = " ", "benchmarked 80% [", "Others [") & CALCULATE(COUNT(Data[Customer])) &"]",
+			"Total [" & COUNT(Data[Customer])  &"]")
+			```
+		displayFolder: _3
+		lineageTag: 75e9b710-3be7-4b07-bd03-68aaf3cc70d3
+
+	measure '_1 Color' =
+			
+			IF( [_1 Rank] > [_4 Pareto Cutoff Rank], "#e7ecef", " #bbdefb")
+		displayFolder: _1
+		lineageTag: a873715e-9043-4209-b736-4fd7f360733e
+
+	measure '_1 Cutoff Rank' =
+			
+			VAR ClosestCustomer = [_1 Cutoff Customer]
+			RETURN
+			IF(
+			    SELECTEDVALUE('Data'[Customer]) = ClosestCustomer,
+			    [_1 Rank],
+			    BLANK()
+			)
+		formatString: 0
+		displayFolder: _1
+		lineageTag: 28cf6130-a109-4ace-9da1-ddd7fd2fbc70
+
+	measure '_1 Revenue' = sum(Data[Rev (mUSD)])
+		displayFolder: _1
+		lineageTag: 11ecefb3-a980-4312-8a7e-82652a03e4eb
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '_5 Pareto Revenue' = ```
+			
+			VAR ParetoTable = 
+			    TOPN(
+			        [_4 Pareto Cutoff Rank],
+			         ALLSELECTED('Data'[Customer]),
+			         [_1 Revenue])
+			
+			VAR ParetoRev = 
+			    CALCULATE(
+			        [_1 Revenue],
+			        KEEPFILTERS(ParetoTable))
+			
+			VAR OtherRev = 
+			[_1 Revenue] -     
+			 CALCULATE(
+			        [_1 Revenue],
+			        KEEPFILTERS(ParetoTable))
+			VAR OtherRevClean = 
+			        IF(OtherRev = 0, blank(), OtherRev)
+			RETURN
+			IF(ISFILTERED('_Top&Others Table'[Selection]), 
+			IF(SELECTEDVALUE('_Top&Others Table'[Selection]) <> "Others",  ParetoRev, OtherRevClean), [_1 Revenue])
+			```
+		displayFolder: _5
+		lineageTag: 3a70519a-5df3-46d9-b5fb-587c83f5264b
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '_4 Pareto Cutoff Rank' = ```
+			
+			CALCULATE (
+			    MAXX ( VALUES ( data[customer] ),  [_1 Cutoff Rank] ),
+			    ALLSELECTED ( data )
+			) 
+			```
+		formatString: 0
+		displayFolder: _4
+		lineageTag: 99f4efe6-fa3b-461c-9042-d3fcf191d370
+
+	measure '_5 Rank' = ```
+			
+			IF(
+			    [_5 Pareto Revenue] <> blank(),
+			   RANKX(
+			    ALLSELECTED(Data[Customer]),
+			    [_1 Revenue]))   
+			
+			```
+		formatString: 0
+		displayFolder: _5
+		lineageTag: 03c1bf15-d676-40ab-8060-133d17682a8a
+
+	measure '_5 Cumulative Revenue' = ```
+			
+			VAR ParetoTable = 
+			    TOPN(
+			        [_4 Pareto Cutoff Rank],
+			         ALLSELECTED('Data'[Customer]),
+			         [_1 Revenue])
+			
+			VAR ParetoRev = 
+			    CALCULATE(
+			        [_1 Cumulative Revenue],
+			        KEEPFILTERS(ParetoTable))
+			
+			Var result = IF(SELECTEDVALUE('_Top&Others Table'[Selection]) <> "Others",  ParetoRev, [_1 Cumulative Revenue])
+			RETURN
+			
+			IF(not(ISINSCOPE('_Top&Others Table'[Selection])), 
+			[_1 Revenue], 
+			IF([_5 Pareto Revenue] <> blank(),
+			    result
+			    )
+			)
+			```
+		displayFolder: _5
+		lineageTag: 6c5df665-c3bd-431d-89da-714f41ba421c
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '_5 Revenue GT %' = ```
+			
+			DIVIDE( 
+			    [_5 Pareto Revenue],
+			    [_1 Total Revenue])
+			```
+		formatString: 0%;-0%;0%
+		displayFolder: _5
+		lineageTag: 0fc79bd0-6e51-4edc-a01d-ed3979949009
+
+	measure '_5 Cumulative Revenue %' = ```
+			
+			DIVIDE(
+			    [_5 Cumulative Revenue],
+			    [_1 Total Revenue]
+			)
+			
+			```
+		formatString: 0%;-0%;0%
+		displayFolder: _5
+		lineageTag: 6763c688-60a8-41f7-9774-d20afaae17a3
+
+	measure '_5 Selected customer' = ```
+			
+			IF([_5 Pareto Revenue] <> blank(), 
+			
+			SWITCH(TRUE(), 
+			ISINSCOPE(Data[Customer]),          SELECTEDVALUE(Data[Customer]), 
+			ISINSCOPE('_Top&Others Table'[Selection]), 
+			    "Total of " & 
+			    IF(
+			        SELECTEDVALUE('_Top&Others Table'[Selection]) = "Top", 
+			            "benchmarked " & ROUND([Pareto Value],2)*100 &"% [" & [_4 Pareto Cutoff Rank]&"]",
+			            "Others [" & CALCULATE(DISTINCTCOUNT(Data[Customer]))- [_4 Pareto Cutoff Rank] &"]"),
+			"Total [" & COUNT(Data[Customer])  &"]"))
+			```
+		displayFolder: _5
+		lineageTag: f065d885-f4a5-48c3-9edb-1e04ccd77473
+
+	measure '_4 Pareto Revenue' = ```
+			
+			VAR ParetoTable = 
+			    TOPN(
+			        [_4 Pareto Cutoff Rank],
+			         ALLSELECTED('_Customer&Others Table'[Customer]),
+			         [_1 Revenue])
+			
+			VAR ParetoRev = 
+			    CALCULATE(
+			        [_1 Revenue],
+			        KEEPFILTERS(ParetoTable))
+			
+			VAR OtherRev = 
+			    CALCULATE(
+			        [_1 Revenue],
+			        ALLSELECTED('_Customer&Others Table'[Customer]))
+			 -           
+			 CALCULATE(
+			        [_1 Revenue],
+			        ParetoTable)
+			
+			VAR OtherRevClean = 
+			        IF(OtherRev = 0, blank(), OtherRev)
+			RETURN
+			IF(SELECTEDVALUE('_Customer&Others Table'[Customer]) <> "Others",  ParetoRev, OtherRevClean)
+			```
+		formatString: 0.0
+		displayFolder: _4
+		lineageTag: 69f385c4-2007-48ab-8cf1-c6272ac9968a
+
+	measure '_4 Rank' = ```
+			
+			IF([_4 Pareto Revenue] <> blank(), 
+			RANKX(
+			    TOPN(
+			        [_4 Pareto Cutoff Rank],
+			        ALLSELECTED('_Customer&Others Table'[Customer])),
+			        [_1 Revenue],,
+			        DESC,
+			        dense)
+			)
+			```
+		formatString: 0
+		displayFolder: _4
+		lineageTag: aec9d51d-da5b-415c-a658-451469fc3334
+
+	measure '_4 Cumulative Revenue' = ```
+			
+			IF(ISINSCOPE('_Customer&Others Table'[Customer]), 
+			CALCULATE(
+			    [_1 Revenue],
+			    TOPN([_4 Rank],
+			         ALLSELECTED('_Customer&Others Table'[Customer]),
+			         [_1 Revenue])
+			),
+			[_1 Total Revenue])
+			```
+		displayFolder: _4
+		lineageTag: 2582eefa-5462-436f-8733-69ff6d0724cb
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '_4 Revenue GT%' =
+			
+			DIVIDE(
+			    [_4 Pareto Revenue],
+			    [_1 Total Revenue],
+			    0
+			)
+		formatString: 0%;-0%;0%
+		displayFolder: _4
+		lineageTag: 0a9fb732-b2ae-4a0d-9e1f-eb3c97cb2fe3
+
+	measure '_4 Cumulative Revenue %' = ```
+			
+			DIVIDE(
+			    [_4 Cumulative Revenue],
+			    [_1 Total Revenue]
+			)
+			
+			```
+		formatString: 0%;-0%;0%
+		displayFolder: _4
+		lineageTag: 6647e0c6-7fe8-4820-b3d5-d4a83953e04e
+
+	measure _Blank = ```
+			blank() 
+			```
+		formatString: 0
+		lineageTag: a9682c30-9cc9-468a-b5bd-2643cb7a2061
+
+	measure '_2 Color (Column)' =
+			
+			IF( [_2 Rank] > [_4 Pareto Cutoff Rank], "#e7ecef", " #bbdefb")
+		displayFolder: _2
+		lineageTag: a2543e4b-557e-4486-a417-d6ee5a7c3d6f
+
+	measure _Blank2 = ```
+			blank() 
+			```
+		formatString: 0
+		lineageTag: 04b92a3f-dce2-4bda-aff8-64fc1e8d6b83
+
+	measure '_3 Rev Bar' = IF(ISFILTERED(Data[Customer]), sum(Data[Rev (mUSD)]))
+		displayFolder: _3
+		lineageTag: af39a3ca-1b2a-4376-95dd-a4bb5b565d39
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '_3 Color' =
+			
+			IF( [_3 Rank] > [_4 Pareto Cutoff Rank], "#e7ecef", " #bbdefb")
+		displayFolder: _3
+		lineageTag: 6492eb5d-040c-401b-a861-a39eaf6361d4
+
+	measure '_4 Color' =
+			
+			IF( [_4 Rank] > [_4 Pareto Cutoff Rank], "#e7ecef", " #bbdefb")
+		displayFolder: _4
+		lineageTag: bd302779-3b97-49a9-8fdb-fec581e80e78
+
+	column Customer
+		dataType: string
+		lineageTag: cf2b18ca-ca66-4041-8f86-021221bce83e
+		summarizeBy: none
+		sourceColumn: Customer
+
+		changedProperty = SortByColumn
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Rev (mUSD)'
+		dataType: double
+		lineageTag: cf7fa9ab-1443-4dc3-9071-1056568d5a50
+		summarizeBy: sum
+		sourceColumn: Rev (mUSD)
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column '_2 Customer Group' = ```
+			
+			VAR CustomerCumRevPct = 
+			    CALCULATE(
+			        [_1 Cumulative Revenue %],
+			        ALLEXCEPT('Data', 'Data'[Customer])
+			    )
+			RETURN
+			IF(CustomerCumRevPct <= [Pareto Value], 'Data'[Customer], "Others")
+			
+			```
+		lineageTag: 4db8aa17-c7e0-4f97-9736-65bca97b2b86
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column '_3 Customer Group' = ```
+			
+			VAR CustomerCumRevPct = 
+			    CALCULATE(
+			        [_1 Cumulative Revenue %],
+			        ALLEXCEPT('Data', 'Data'[Customer])
+			    )
+			RETURN
+			IF(CustomerCumRevPct <= [Pareto Value], "1", "2")
+			
+			```
+		lineageTag: bf2be179-e7c3-46c5-8628-2b2c8ca62fe0
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Data = m
+		mode: import
+		source =
+				let
+				    Source = Excel.Workbook(File.Contents("C:\Users\Injae\OneDrive\Desktop\Pareto Data.xlsx"), null, true),
+				    Sheet1_Sheet = Source{[Item="Sheet1",Kind="Sheet"]}[Data],
+				    #"Promoted Headers" = Table.PromoteHeaders(Sheet1_Sheet, [PromoteAllScalars=true]),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"Customer", type text}, {"Rev (mUSD)", type number}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_ResultType = Table
+
