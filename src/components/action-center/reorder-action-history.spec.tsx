@@ -11,12 +11,25 @@ import { ReorderActionHistory } from "@/components/action-center/reorder-action-
 
 const mockFindMany = vi.fn();
 const mockUpdate = vi.fn();
+const mockAuditCreate = vi.fn();
 
 vi.mock("@/lib/rayfin-client", () => ({
     getRayfinClient: () => ({
-        data: { ReorderAction: { findMany: mockFindMany, update: mockUpdate } },
+        data: {
+            ReorderAction: { findMany: mockFindMany, update: mockUpdate },
+            ReorderActionAuditLog: { create: mockAuditCreate },
+        },
     }),
     REORDER_ACTION_STATUSES: ["Pending Review", "Approved", "Ordered", "Received", "Dismissed"],
+}));
+
+vi.mock("@/hooks/auth.context", () => ({
+    useAuth: () => ({
+        session: { user: { email: "sai@r4k5.onmicrosoft.com" }, isAuthenticated: true, isAnonymous: false },
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+    }),
 }));
 
 const ROW = {
@@ -73,6 +86,40 @@ describe("ReorderActionHistory", () => {
 
         await waitFor(() => expect(mockUpdate).toHaveBeenCalledWith({ id: "row-1" }, { status: "Approved" }));
         expect(select).toHaveValue("Approved");
+    });
+
+    it("logs an audit entry for the status change, old value to new value", async () => {
+        mockFindMany.mockResolvedValue([ROW]);
+        mockUpdate.mockResolvedValue({ ...ROW, status: "Approved" });
+        mockAuditCreate.mockResolvedValue({ id: "audit-1" });
+        render(<ReorderActionHistory stockItemKey={17} refreshKey={0} />);
+
+        const select = await screen.findByLabelText(/status for row-1/i);
+        fireEvent.change(select, { target: { value: "Approved" } });
+
+        await waitFor(() =>
+            expect(mockAuditCreate).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    reorderActionId: "row-1",
+                    fieldName: "status",
+                    oldValue: "Pending Review",
+                    newValue: "Approved",
+                    changedBy: "sai@r4k5.onmicrosoft.com",
+                }),
+            ),
+        );
+    });
+
+    it("does not log an audit entry when the status is unchanged", async () => {
+        mockFindMany.mockResolvedValue([ROW]);
+        mockUpdate.mockResolvedValue({ ...ROW, status: "Pending Review" });
+        render(<ReorderActionHistory stockItemKey={17} refreshKey={0} />);
+
+        const select = await screen.findByLabelText(/status for row-1/i);
+        fireEvent.change(select, { target: { value: "Pending Review" } });
+
+        await waitFor(() => expect(mockUpdate).toHaveBeenCalled());
+        expect(mockAuditCreate).not.toHaveBeenCalled();
     });
 
     it("shows an inline error and keeps the list visible when an update fails", async () => {

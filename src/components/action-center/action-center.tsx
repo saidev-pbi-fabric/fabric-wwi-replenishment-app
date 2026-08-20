@@ -10,6 +10,7 @@ import { RankedListPanel } from "@/components/action-center/ranked-list-panel";
 import { ItemDetailPanel } from "@/components/action-center/item-detail-panel";
 import { ReorderActionForm } from "@/components/action-center/reorder-action-form";
 import { ReorderActionHistory } from "@/components/action-center/reorder-action-history";
+import { ReorderActionAuditLogPanel } from "@/components/action-center/reorder-action-audit-log";
 
 interface SelectedItem {
     key: number;
@@ -44,7 +45,12 @@ export function ActionCenter({ initialSelectedItemName }: ActionCenterProps) {
                             stockItemName={selected.name}
                             onSubmitted={() => setHistoryRefreshKey((n) => n + 1)}
                         />
-                        <ReorderActionHistory stockItemKey={selected.key} refreshKey={historyRefreshKey} />
+                        <ReorderActionHistory
+                            stockItemKey={selected.key}
+                            refreshKey={historyRefreshKey}
+                            onStatusChanged={() => setHistoryRefreshKey((n) => n + 1)}
+                        />
+                        <ReorderActionAuditLogPanel stockItemKey={selected.key} refreshKey={historyRefreshKey} />
                     </>
                 ) : null}
             </div>

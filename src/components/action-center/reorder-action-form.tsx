@@ -12,6 +12,7 @@ import { useQueryPanel } from "@/hooks/use-query-panel";
 import { itemDetail } from "@/queries/action-center/item-detail";
 import { useAuth } from "@/hooks/auth.context";
 import { getRayfinClient, REORDER_ACTION_STATUSES, type ReorderActionRecord } from "@/lib/rayfin-client";
+import { logReorderActionCreated } from "@/lib/reorder-action-audit";
 import { scalarByColumnName } from "@/lib/to-data-table";
 import { ITEM_DETAIL_FIXTURE } from "@/lib/dev-preview-fixtures";
 
@@ -111,7 +112,8 @@ function ReorderActionFormFields({
         setSubmitState("submitting");
         setSubmitError(null);
         try {
-            await getRayfinClient().data.ReorderAction.create({
+            const createdBy = session?.user?.email ?? "unknown";
+            const created = await getRayfinClient().data.ReorderAction.create({
                 stockItemKey,
                 stockItemName,
                 currentStockOnHand,
@@ -120,8 +122,9 @@ function ReorderActionFormFields({
                 note: note || undefined,
                 assignedTo: assignedTo || undefined,
                 createdAt: new Date().toISOString(),
-                createdBy: session?.user?.email ?? "unknown",
+                createdBy,
             });
+            void logReorderActionCreated(created.id, createdBy);
             setSubmitState("success");
             onSubmitted?.();
         } catch (err) {

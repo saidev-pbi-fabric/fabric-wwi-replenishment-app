@@ -8,14 +8,19 @@
 import { useEffect, useState } from "react";
 import { History } from "lucide-react";
 import { getRayfinClient, REORDER_ACTION_STATUSES, type ReorderActionRecord } from "@/lib/rayfin-client";
+import { logReorderActionFieldChange } from "@/lib/reorder-action-audit";
+import { useAuth } from "@/hooks/auth.context";
 
 interface ReorderActionHistoryProps {
     stockItemKey: number;
     /** Bump to force a re-fetch, e.g. after a new action is created. */
     refreshKey: number;
+    /** Called after a successful status update, so a sibling audit-log panel can refetch too. */
+    onStatusChanged?: () => void;
 }
 
-export function ReorderActionHistory({ stockItemKey, refreshKey }: ReorderActionHistoryProps) {
+export function ReorderActionHistory({ stockItemKey, refreshKey, onStatusChanged }: ReorderActionHistoryProps) {
+    const { session } = useAuth();
     const [actions, setActions] = useState<ReorderActionRecord[] | null>(null);
     const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
     const [loadError, setLoadError] = useState<string | null>(null);
@@ -44,11 +49,22 @@ export function ReorderActionHistory({ stockItemKey, refreshKey }: ReorderAction
     }, [stockItemKey, refreshKey]);
 
     async function handleStatusChange(id: string, nextStatus: ReorderActionRecord["status"]) {
+        const previous = actions?.find((a) => a.id === id);
         setUpdatingId(id);
         setUpdateError(null);
         try {
             const updated = await getRayfinClient().data.ReorderAction.update({ id }, { status: nextStatus });
             setActions((prev) => prev?.map((a) => (a.id === id ? updated : a)) ?? prev);
+            if (previous && previous.status !== nextStatus) {
+                void logReorderActionFieldChange(
+                    id,
+                    "status",
+                    previous.status,
+                    nextStatus,
+                    session?.user?.email ?? "unknown",
+                );
+                onStatusChanged?.();
+            }
         } catch (err) {
             setUpdateError(err instanceof Error ? err.message : String(err));
         } finally {

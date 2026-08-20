@@ -11,6 +11,7 @@ import { ReorderActionForm } from "@/components/action-center/reorder-action-for
 
 const mockQuery = vi.fn();
 const mockCreate = vi.fn();
+const mockAuditCreate = vi.fn();
 
 vi.mock("@/lib/fabric-client", () => ({
     getFabricClient: () => ({
@@ -21,7 +22,10 @@ vi.mock("@/lib/fabric-client", () => ({
 
 vi.mock("@/lib/rayfin-client", () => ({
     getRayfinClient: () => ({
-        data: { ReorderAction: { create: mockCreate } },
+        data: {
+            ReorderAction: { create: mockCreate },
+            ReorderActionAuditLog: { create: mockAuditCreate },
+        },
     }),
     REORDER_ACTION_STATUSES: ["Pending Review", "Approved", "Ordered", "Received", "Dismissed"],
 }));
@@ -101,6 +105,26 @@ describe("ReorderActionForm", () => {
                 assignedTo: "Priya",
                 createdBy: "sai@r4k5.onmicrosoft.com",
             }),
+        );
+    });
+
+    it("logs an audit entry against the new record's id after a successful create", async () => {
+        mockQuery.mockResolvedValue({ status: "success", table: DETAIL_TABLE, fromCache: false });
+        mockCreate.mockResolvedValue({ id: "new-id" });
+        mockAuditCreate.mockResolvedValue({ id: "audit-1" });
+        render(<ReorderActionForm stockItemKey={17} stockItemName="Shipping carton (Brown)" />);
+
+        await screen.findByLabelText(/suggested reorder qty/i);
+        fireEvent.click(screen.getByRole("button", { name: /submit reorder action/i }));
+
+        await waitFor(() =>
+            expect(mockAuditCreate).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    reorderActionId: "new-id",
+                    fieldName: "created",
+                    changedBy: "sai@r4k5.onmicrosoft.com",
+                }),
+            ),
         );
     });
 

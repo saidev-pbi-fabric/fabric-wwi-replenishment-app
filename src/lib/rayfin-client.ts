@@ -28,8 +28,26 @@ export interface ReorderActionRecord {
     createdBy: string;
 }
 
+/**
+ * Frontend-facing mirror of `rayfin/data/reorder-action-audit-log.ts`'s `ReorderActionAuditLog`
+ * entity — append-only change log, one row per field change on a `ReorderAction`. Named
+ * `AuditLog`, not `History`, to avoid colliding with `ReorderActionRecord`/the existing
+ * `ReorderActionHistory` component, which is a different concept (current records + a status
+ * editor, not an immutable log).
+ */
+export interface ReorderActionAuditLogRecord {
+    id: string;
+    reorderActionId: string;
+    fieldName: string;
+    oldValue?: string;
+    newValue?: string;
+    changedAt: string;
+    changedBy: string;
+}
+
 export interface AppDataSchema {
     ReorderAction: ReorderActionRecord;
+    ReorderActionAuditLog: ReorderActionAuditLogRecord;
 }
 
 export const REORDER_ACTION_STATUSES: ReorderActionRecord["status"][] = [
