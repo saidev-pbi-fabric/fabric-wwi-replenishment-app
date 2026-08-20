@@ -12,36 +12,16 @@ interface Point {
     y: number;
 }
 
-/** Ordinary least-squares slope/intercept over `[0..n-1] -> data[i]`. */
-function linearRegression(data: number[]): { slope: number; intercept: number } {
-    const n = data.length;
-    if (n < 2) return { slope: 0, intercept: data[0] ?? 0 };
-
-    const meanX = (n - 1) / 2;
-    const meanY = data.reduce((sum, v) => sum + v, 0) / n;
-
-    let num = 0;
-    let den = 0;
-    for (let i = 0; i < n; i++) {
-        num += (i - meanX) * (data[i] - meanY);
-        den += (i - meanX) ** 2;
-    }
-    const slope = den === 0 ? 0 : num / den;
-    return { slope, intercept: meanY - slope * meanX };
-}
-
 function toPath(points: Point[]): string {
     return points.map((p, i) => (i === 0 ? "M" : "L") + p.x.toFixed(1) + "," + p.y.toFixed(1)).join(" ");
 }
 
 interface SparklineProps {
-    /** Real daily values, chronological. */
+    /** Real daily values, chronological. No forward projection — this dataset's DAX has no
+     * forecast measure, so nothing forward-looking gets drawn here (decided 2026-08-20: a
+     * dashed forward line reads as "predicted" regardless of a disclaimer caption, so it's cut
+     * rather than kept-but-labeled — see SPEC.md Amendment). */
     data: number[];
-    /**
-     * Days to project forward as a dashed continuation, using a naive linear trend over `data`
-     * (least-squares slope) — not a statistical forecast model. Omit or 0 to show actual data only.
-     */
-    forecastDays?: number;
     width?: number;
     height?: number;
     /** Tailwind text-color class (e.g. "text-critical") — stroke/fill use currentColor. */
@@ -77,7 +57,6 @@ interface SparklineProps {
  */
 export function Sparkline({
     data,
-    forecastDays = 0,
     width = 96,
     height = 32,
     className,
@@ -92,17 +71,10 @@ export function Sparkline({
     const padY = showMinMax || showLatestValue ? 15 : 3;
     if (data.length === 0) return null;
 
-    const { slope, intercept } = linearRegression(data);
-    const projected =
-        forecastDays > 0
-            ? Array.from({ length: forecastDays }, (_, i) => intercept + slope * (data.length - 1 + i + 1))
-            : [];
-
-    const all = [...data, ...projected];
-    const min = Math.min(...all);
-    const max = Math.max(...all);
+    const min = Math.min(...data);
+    const max = Math.max(...data);
     const range = Math.max(1, max - min);
-    const stepX = (width - padX * 2) / Math.max(1, all.length - 1);
+    const stepX = (width - padX * 2) / Math.max(1, data.length - 1);
 
     const toPoint = (v: number, i: number): Point => ({
         x: padX + i * stepX,
@@ -114,11 +86,6 @@ export function Sparkline({
     const areaPath =
         toPath(actualPoints) +
         ` L${last.x.toFixed(1)},${(height - padY).toFixed(1)} L${actualPoints[0].x.toFixed(1)},${(height - padY).toFixed(1)} Z`;
-
-    const forecastPoints =
-        projected.length > 0
-            ? [last, ...projected.map((v, i) => toPoint(v, data.length + i))]
-            : [];
 
     let maxIndex = 0;
     let minIndex = 0;
@@ -139,30 +106,8 @@ export function Sparkline({
             aria-label={ariaLabel}
             className={cn("block", className)}
         >
-            {forecastPoints.length > 0 ? (
-                <rect
-                    x={last.x}
-                    y="0"
-                    width={Math.max(0, width - last.x)}
-                    height={height}
-                    fill="currentColor"
-                    opacity="0.06"
-                />
-            ) : null}
             <path d={areaPath} fill="currentColor" opacity="0.12" />
             <path d={toPath(actualPoints)} fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round" />
-            {forecastPoints.length > 0 ? (
-                <path
-                    d={toPath(forecastPoints)}
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.6"
-                    strokeDasharray="3,2.5"
-                    strokeLinejoin="round"
-                    strokeLinecap="round"
-                    opacity="0.55"
-                />
-            ) : null}
             {showMinMax && maxIndex !== minIndex ? (
                 <>
                     <circle cx={maxPoint.x} cy={maxPoint.y} r="1.8" fill="currentColor" opacity="0.7" />

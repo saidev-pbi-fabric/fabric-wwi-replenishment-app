@@ -15,20 +15,14 @@ describe("Sparkline", () => {
         expect(container.querySelector("svg")).not.toBeInTheDocument();
     });
 
-    it("renders an accessible chart with only actual data when forecastDays is omitted", () => {
+    it("renders an accessible chart with no dashed/projected segment — no forecast, ever", () => {
         render(<Sparkline data={[10, 12, 11, 15]} ariaLabel="Sales trend" />);
         const svg = screen.getByRole("img", { name: "Sales trend" });
         expect(svg.querySelectorAll("path[stroke-dasharray]")).toHaveLength(0);
     });
 
-    it("adds a dashed projected segment when forecastDays is set", () => {
-        render(<Sparkline data={[10, 12, 11, 15]} forecastDays={5} ariaLabel="Sales trend with forecast" />);
-        const svg = screen.getByRole("img", { name: "Sales trend with forecast" });
-        expect(svg.querySelectorAll("path[stroke-dasharray]")).toHaveLength(1);
-    });
-
     it("does not produce NaN path coordinates for a single-point series", () => {
-        render(<Sparkline data={[42]} forecastDays={3} ariaLabel="Single point" />);
+        render(<Sparkline data={[42]} ariaLabel="Single point" />);
         const svg = screen.getByRole("img", { name: "Single point" });
         for (const path of svg.querySelectorAll("path")) {
             expect(path.getAttribute("d")).not.toContain("NaN");

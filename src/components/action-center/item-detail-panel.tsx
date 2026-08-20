@@ -13,7 +13,7 @@ import { cn, formatShortDate } from "@/lib/utils";
 import { scalarByColumnName } from "@/lib/to-data-table";
 import { ITEM_DETAIL_FIXTURE, ITEM_SALES_TREND_FIXTURE } from "@/lib/dev-preview-fixtures";
 import { LEAD_TIME_RAIL_CLASS, LEAD_TIME_TEXT_CLASS } from "@/lib/severity";
-import { Sparkline } from "@/components/shared/sparkline";
+import { ItemTrendChart } from "@/components/action-center/item-trend-chart";
 
 interface ItemDetailPanelProps {
     stockItemKey: number | null;
@@ -126,9 +126,6 @@ export function ItemDetailPanel({ stockItemKey }: ItemDetailPanelProps) {
               return trendTable.rows.map((row) => formatShortDate(String(row[dateIdx])));
           })()
         : [];
-    const leadDaysNumeric = Number(leadTimeDays);
-    const forecastDays = Number.isFinite(leadDaysNumeric) ? Math.min(leadDaysNumeric, 30) : 0;
-
     return (
         <div
             className={cn(
@@ -175,35 +172,35 @@ export function ItemDetailPanel({ stockItemKey }: ItemDetailPanelProps) {
                 <DetailField label="Suggested Reorder Qty" value={suggestedReorderQty.toLocaleString()} />
             </dl>
             <div className="border-t border-border px-400 py-300">
-                <div className="flex flex-wrap items-baseline justify-between gap-200">
-                    <p className="font-base text-200 uppercase tracking-wide text-muted-foreground">
-                        Sales Trend · 60 Days
-                    </p>
-                    {salesTrendData.length > 0 && forecastDays > 0 ? (
-                        <p className="font-base text-100 text-muted-foreground">
-                            Shaded/dashed = {forecastDays}-day projection (linear trend, not a forecast model)
-                        </p>
-                    ) : null}
-                </div>
+                <p className="font-base text-200 uppercase tracking-wide text-muted-foreground">
+                    Sales Trend · 60 Days
+                </p>
                 <div className="mt-200">
                     {!usingTrendFixture && (trendPanel.status === "loading" || trendPanel.status === "refreshing") && salesTrendData.length === 0 ? (
-                        <div className="h-[56px] w-full animate-pulse rounded-md bg-muted" />
+                        <div className="h-[100px] w-full animate-pulse rounded-md bg-muted" />
                     ) : salesTrendData.length > 0 ? (
-                        <Sparkline
+                        <ItemTrendChart
                             data={salesTrendData}
-                            forecastDays={forecastDays}
-                            width={640}
-                            height={64}
+                            startLabel={salesTrendDates[0] ?? ""}
+                            endLabel={salesTrendDates[salesTrendDates.length - 1] ?? ""}
                             className={LEAD_TIME_TEXT_CLASS[tier] ?? "text-muted-foreground"}
-                            ariaLabel={`Daily units sold, last 60 days, projected ${forecastDays} days forward`}
-                            showMinMax
-                            showLatestValue
-                            labels={salesTrendDates}
+                            ariaLabel="Daily units sold, last 60 days"
                         />
                     ) : (
                         <p className="text-200 text-muted-foreground">No recent sales history for this item.</p>
                     )}
                 </div>
+                <p className="mt-200 font-base text-100 text-muted-foreground">
+                    Historical daily sales only — no forward projection. This dataset's DAX has no forecast
+                    measure, so we don't draw one.
+                </p>
+            </div>
+            <div className="border-t border-border px-400 py-300">
+                <p className="rounded-md border border-border bg-accent px-300 py-200 font-base text-100 text-muted-foreground">
+                    No stock-on-hand figure exists anywhere in this dataset — "days of stock left" can't be
+                    shown honestly. <strong className="text-foreground">Suggested Reorder Qty</strong> above is a
+                    formula (recent daily sales rate &times; lead time &times; safety buffer), not a prediction.
+                </p>
             </div>
         </div>
     );
