@@ -10,12 +10,17 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { RankedListPanel } from "@/components/action-center/ranked-list-panel";
 
 const mockQuery = vi.fn();
+const mockDownloadCsv = vi.fn();
 
 vi.mock("@/lib/fabric-client", () => ({
     getFabricClient: () => ({
         clearCache: vi.fn(),
         semanticModel: () => ({ query: mockQuery, clearCache: vi.fn() }),
     }),
+}));
+
+vi.mock("@/lib/csv-export", () => ({
+    downloadCsv: (...args: unknown[]) => mockDownloadCsv(...args),
 }));
 
 const TABLE = {
@@ -164,5 +169,51 @@ describe("RankedListPanel", () => {
         await screen.findByText("Shipping carton (Brown)");
 
         expect(container.firstElementChild?.className).toMatch(/max-h-/);
+    });
+
+    it("filters rows client-side by name as the user types, without a re-query", async () => {
+        mockQuery.mockResolvedValue({ status: "success", table: TABLE, fromCache: false });
+        render(<RankedListPanel selectedStockItemKey={null} onSelectItem={vi.fn()} />);
+
+        await screen.findByText("Shipping carton (Brown)");
+        const callsBeforeSearch = mockQuery.mock.calls.length;
+
+        fireEvent.change(screen.getByLabelText("Search items by name"), { target: { value: "pallet" } });
+
+        expect(screen.queryByText("Shipping carton (Brown)")).not.toBeInTheDocument();
+        expect(screen.getByText("Pallet wrap 500mm x 300m")).toBeInTheDocument();
+        expect(mockQuery.mock.calls.length).toBe(callsBeforeSearch);
+    });
+
+    it("shows a search-aware empty message when no item matches the query", async () => {
+        mockQuery.mockResolvedValue({ status: "success", table: TABLE, fromCache: false });
+        render(<RankedListPanel selectedStockItemKey={null} onSelectItem={vi.fn()} />);
+
+        await screen.findByText("Shipping carton (Brown)");
+        fireEvent.change(screen.getByLabelText("Search items by name"), { target: { value: "zzz-no-match" } });
+
+        expect(await screen.findByText(/no items match "zzz-no-match"/i)).toBeInTheDocument();
+    });
+
+    it("downloads a CSV of the currently visible (filtered) rows", async () => {
+        mockQuery.mockResolvedValue({ status: "success", table: TABLE, fromCache: false });
+        render(<RankedListPanel selectedStockItemKey={null} onSelectItem={vi.fn()} />);
+
+        await screen.findByText("Shipping carton (Brown)");
+        fireEvent.change(screen.getByLabelText("Search items by name"), { target: { value: "pallet" } });
+        fireEvent.click(screen.getByRole("button", { name: /csv/i }));
+
+        expect(mockDownloadCsv).toHaveBeenCalledWith(
+            "at-risk-items.csv",
+            ["Rank", "Item", "Lead Time Tier", "Suggested Reorder Qty"],
+            [[5, "Pallet wrap 500mm x 300m", "Short Lead Time", 940]],
+        );
+    });
+
+    it("disables the CSV button when there are no rows to export", async () => {
+        mockQuery.mockResolvedValue({ status: "success", table: { columns: TABLE.columns, rows: [] }, fromCache: false });
+        render(<RankedListPanel selectedStockItemKey={null} onSelectItem={vi.fn()} />);
+
+        expect(await screen.findByRole("button", { name: /csv/i })).toBeDisabled();
     });
 });

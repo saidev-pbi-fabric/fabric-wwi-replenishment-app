@@ -7,12 +7,13 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle, Download, Loader2 } from "lucide-react";
 import type { QueryTable } from "@microsoft/fabric-app-data";
 import { useQueryPanel } from "@/hooks/use-query-panel";
 import { rankedAtRiskList } from "@/queries/action-center/ranked-at-risk-list";
 import { itemSalesTrend } from "@/queries/action-center/item-sales-trend";
 import { getFabricClient } from "@/lib/fabric-client";
+import { downloadCsv } from "@/lib/csv-export";
 import { cn, formatShortDate } from "@/lib/utils";
 import { fadeInUp, staggerContainer } from "@/lib/motion";
 import { RANKED_AT_RISK_LIST_FIXTURE, ITEM_SALES_TREND_FIXTURE } from "@/lib/dev-preview-fixtures";
@@ -63,6 +64,7 @@ export function RankedListPanel({
     initialSelectedItemName,
 }: RankedListPanelProps) {
     const [tierFilter, setTierFilter] = useState<(typeof TIER_FILTERS)[number]>("All");
+    const [nameQuery, setNameQuery] = useState("");
     const panel = useQueryPanel(rankedAtRiskList(tierFilter));
     const autoSelectedRef = useRef(false);
 
@@ -173,7 +175,19 @@ export function RankedListPanel({
 
     if (!loadedTable) return null;
 
-    const rows = rowsFromTable(loadedTable);
+    const allRows = rowsFromTable(loadedTable);
+    const trimmedQuery = nameQuery.trim().toLowerCase();
+    const rows = trimmedQuery
+        ? allRows.filter((row) => row.name.toLowerCase().includes(trimmedQuery))
+        : allRows;
+
+    function handleDownloadCsv() {
+        downloadCsv(
+            "at-risk-items.csv",
+            ["Rank", "Item", "Lead Time Tier", "Suggested Reorder Qty"],
+            rows.map((row) => [row.atRiskRank, row.name, row.tier, row.suggestedReorderQty]),
+        );
+    }
 
     return (
         <div className="flex max-h-[640px] min-h-[480px] flex-col overflow-hidden rounded-lg border border-border bg-card shadow-sm">
@@ -182,27 +196,48 @@ export function RankedListPanel({
                     <AlertTriangle className="icon-size-300 text-muted-foreground" />
                     At-Risk Items
                 </h2>
-                <label className="flex items-center gap-200 font-base text-200 text-muted-foreground">
-                    Filter by lead time
-                    <select
-                        aria-label="Filter by lead time"
-                        value={tierFilter}
-                        onChange={(e) => setTierFilter(e.target.value as (typeof TIER_FILTERS)[number])}
-                        className="rounded-md border border-border bg-background px-200 py-100-nudge text-200 text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                <div className="flex items-center gap-300">
+                    <label className="flex items-center gap-200 font-base text-200 text-muted-foreground">
+                        Filter by lead time
+                        <select
+                            aria-label="Filter by lead time"
+                            value={tierFilter}
+                            onChange={(e) => setTierFilter(e.target.value as (typeof TIER_FILTERS)[number])}
+                            className="rounded-md border border-border bg-background px-200 py-100-nudge text-200 text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                        >
+                            {TIER_FILTERS.map((tier) => (
+                                <option key={tier} value={tier}>
+                                    {tierFilterLabel(tier)}
+                                </option>
+                            ))}
+                        </select>
+                        {isRefreshing ? (
+                            <Loader2
+                                className="icon-size-300 animate-spin text-muted-foreground"
+                                aria-label="Updating"
+                            />
+                        ) : null}
+                    </label>
+                    <button
+                        type="button"
+                        onClick={handleDownloadCsv}
+                        disabled={rows.length === 0}
+                        className="flex items-center gap-100 rounded-md border border-border bg-secondary px-200 py-100-nudge font-base text-200 text-foreground hover:bg-accent disabled:opacity-50"
                     >
-                        {TIER_FILTERS.map((tier) => (
-                            <option key={tier} value={tier}>
-                                {tierFilterLabel(tier)}
-                            </option>
-                        ))}
-                    </select>
-                    {isRefreshing ? (
-                        <Loader2
-                            className="icon-size-300 animate-spin text-muted-foreground"
-                            aria-label="Updating"
-                        />
-                    ) : null}
-                </label>
+                        <Download className="icon-size-200" />
+                        CSV
+                    </button>
+                </div>
+            </div>
+            <div className="border-b border-border px-400 py-200">
+                <input
+                    type="text"
+                    value={nameQuery}
+                    onChange={(e) => setNameQuery(e.target.value)}
+                    placeholder="Search items by name…"
+                    aria-label="Search items by name"
+                    className="w-full rounded-md border border-border bg-background px-200 py-100-nudge text-200 text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                />
             </div>
             <p className="px-400 pt-200 font-base text-100 text-muted-foreground">
                 {tierDistributionCaption(tierFilter)}
@@ -220,9 +255,11 @@ export function RankedListPanel({
             >
                 {rows.length === 0 ? (
                     <div className="flex flex-1 items-center justify-center px-400 py-300 text-300 text-muted-foreground">
-                        {tierFilter === "All"
-                            ? "No at-risk items right now."
-                            : `No at-risk items match "${tierFilterLabel(tierFilter)}" lead time.`}
+                        {trimmedQuery
+                            ? `No items match "${nameQuery}".`
+                            : tierFilter === "All"
+                              ? "No at-risk items right now."
+                              : `No at-risk items match "${tierFilterLabel(tierFilter)}" lead time.`}
                     </div>
                 ) : (
                     <motion.ul

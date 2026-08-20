@@ -48,9 +48,11 @@ describe("LandingPage", () => {
         render(<LandingPage onOpenDashboard={vi.fn()} />);
 
         expect(
-            screen.getByRole("heading", { name: /know what's at risk\. decide what to do about it\./i }),
+            screen.getByRole("heading", {
+                name: /twenty percent of your catalog is carrying eighty percent of the reorder risk\./i,
+            }),
         ).toBeInTheDocument();
-        expect(screen.getByText(/sales velocity vs\. supplier lead time/i)).toBeInTheDocument();
+        expect(screen.getByText(/sales velocity against supplier lead time/i)).toBeInTheDocument();
         expect(screen.queryByText(/items need attention/i)).not.toBeInTheDocument();
     });
 

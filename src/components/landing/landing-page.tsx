@@ -77,12 +77,12 @@ export function LandingPage({ onOpenDashboard }: LandingPageProps) {
                 </span>
 
                 <h1 className="font-heading text-800 font-semibold leading-tight text-foreground">
-                    Know what's at risk. Decide what to do about it.
+                    Twenty percent of your catalog is carrying eighty percent of the reorder risk.
                 </h1>
 
                 <p className="max-w-[720px] font-base text-400 text-muted-foreground">
-                    Demand-driven reorder attention for a wholesale distributor. Ranks stock items by
-                    sales velocity vs. supplier lead time, and lets you log and track the reorder decision,
+                    WWI Replenishment ranks stock items by sales velocity against supplier lead time,
+                    then shows exactly how concentrated that risk is &mdash; and lets you act on it,
                     without leaving the app.
                 </p>
                 <motion.button
