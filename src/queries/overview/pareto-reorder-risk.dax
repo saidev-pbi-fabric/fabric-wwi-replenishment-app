@@ -1,0 +1,11 @@
+EVALUATE
+SUMMARIZECOLUMNS(
+    'Stock Item'[Stock Item Key],
+    'Stock Item'[Stock Item],
+    'Stock Item'[Lead Time Priority Tier],
+    "Reorder Value", [Reorder Value Total],
+    "Value Share %", [Reorder Value Share %],
+    "Cumulative Value %", [Cumulative Reorder Value %],
+    "At Risk Rank", [At Risk Rank]
+)
+ORDER BY [At Risk Rank] ASC

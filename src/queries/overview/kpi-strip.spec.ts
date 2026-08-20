@@ -11,25 +11,23 @@ import { kpiStrip } from "./kpi-strip";
 describe("kpiStrip", () => {
     const result = kpiStrip();
 
-    it("targets the wwiRetail connection", () => {
-        expect(result.connection).toBe("wwiRetail");
+    it("targets the wwiRetailRebuild connection (rebuild/pareto-thesis branch only)", () => {
+        expect(result.connection).toBe("wwiRetailRebuild");
     });
 
-    it("queries all five KPI measures", () => {
+    it("queries the three DAX-backed KPI measures (the two cutoff-based tiles moved client-side)", () => {
         expect(result.query).toContain("Items Tracked");
         expect(result.query).toContain("Avg Lead Time Days");
-        expect(result.query).toContain("Top At Risk Items");
         expect(result.query).toContain("Accelerating Demand Items");
-        expect(result.query).toContain("At Risk Reorder Value");
+        expect(result.query).not.toContain("Top At Risk Items");
+        expect(result.query).not.toContain("At Risk Reorder Value");
     });
 
     it("maps every DAX result column to friendly metadata", () => {
         expect(Object.keys(result.columnMetadata)).toEqual([
             "[Items Tracked]",
             "[Avg Lead Time Days]",
-            "[Top At Risk Items]",
             "[Accelerating Demand Items]",
-            "[At Risk Reorder Value]",
         ]);
     });
 });

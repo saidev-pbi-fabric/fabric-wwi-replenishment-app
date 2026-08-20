@@ -7,7 +7,8 @@ TOPN(
         'Stock Item'[Lead Time Priority Tier]{{TIER_FILTER}},
         "Suggested Reorder Qty", [Suggested Reorder Qty],
         "Demand Trend", [Demand Trend %],
-        "At Risk Rank", [At Risk Rank]
+        "At Risk Rank", [At Risk Rank],
+        "Cumulative Value %", [Cumulative Reorder Value %]
     ),
     [At Risk Rank], ASC
 )

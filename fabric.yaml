@@ -5,3 +5,9 @@ profiles:
       wwiRetail:
         workspaceId: f9f81ba4-029f-457f-8bd9-ec273060a362
         itemId: 8023010f-ba5e-42ed-93c9-b505b6d560d8
+      # Rebuild-branch-only duplicate SM (rebuild/pareto-thesis, SPEC.md's "Rollout safety
+      # net"). At merge time: flip wwiRetail's itemId to this one (or rename items),
+      # remove this alias, redeploy, retire the old SM item.
+      wwiRetailRebuild:
+        workspaceId: f9f81ba4-029f-457f-8bd9-ec273060a362
+        itemId: 8c45e855-c0eb-480c-9ea1-86498090146b

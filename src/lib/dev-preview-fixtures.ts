@@ -20,94 +20,41 @@ export const KPI_STRIP_FIXTURE: QueryTable = {
     columns: [
         { name: "[Items Tracked]", dataType: "Int64" },
         { name: "[Avg Lead Time Days]", dataType: "Double" },
-        { name: "[Top At Risk Items]", dataType: "Int64" },
         { name: "[Accelerating Demand Items]", dataType: "Int64" },
-        { name: "[At Risk Reorder Value]", dataType: "Double" },
     ],
-    rows: [[672, 12.3, 20, 15, 98842975.92]],
+    rows: [[672, 12.3, 164]],
 };
 
-// Values in the real ~2.0M-2.3M range for the top-20-at-risk-items scope
-// (checked live against the model — see sales-trend.dax), not the earlier
-// unrealistic ~46K-63K placeholder.
-export const SALES_TREND_FIXTURE: QueryTable = {
+// Shaped like the real pareto-reorder-risk.dax result (live-verified 2026-08-20 against the
+// rebuild SM — real data puts 80% cumulative value at rank 109 of 672). This fixture is a short
+// illustrative slice, not the full 672 rows, but keeps the same monotonic-cumulative shape so the
+// slider/chart/table read correctly in dev preview.
+export const PARETO_REORDER_RISK_FIXTURE: QueryTable = {
     columns: [
-        { name: "Date[Date]", dataType: "DateTime" },
-        { name: "[Total Quantity]", dataType: "Int64" },
-    ],
-    rows: [
-        ["2000-11-01", 2160152],
-        ["2000-11-05", 2218360],
-        ["2000-11-09", 2169200],
-        ["2000-11-13", 2177672],
-        ["2000-11-17", 2161496],
-        ["2000-11-21", 2117576],
-        ["2000-11-25", 2106672],
-        ["2000-11-30", 2191560],
-    ],
-};
-
-export const TOP_AT_RISK_ITEMS_FIXTURE: QueryTable = {
-    columns: [
+        { name: "Stock Item[Stock Item Key]", dataType: "Int64" },
         { name: "Stock Item[Stock Item]", dataType: "String" },
         { name: "Stock Item[Lead Time Priority Tier]", dataType: "String" },
-        { name: "[Suggested Reorder Qty]", dataType: "Double" },
-        { name: "[Demand Trend]", dataType: "Double" },
-        { name: "[At Risk Rank]", dataType: "Int64" },
-    ],
-    rows: [
-        ["Shipping carton (Brown) 413x285x187mm", "Long Lead Time", 1840, 0.34, 1],
-        ["Bubble wrap 500mm x 10m", "Long Lead Time", 1620, 0.28, 2],
-        ["Packing tape 48mm x 100m clear", "Medium Lead Time", 1310, 0.22, 3],
-        ["Corrugated void fill 1m3 bag", "Medium Lead Time", 1105, 0.19, 4],
-        ["Pallet wrap 500mm x 300m", "Short Lead Time", 940, 0.15, 5],
-        ["Address label roll 100x150mm", "Short Lead Time", 780, 0.11, 6],
-        ["Courier satchel 375x480mm", "Medium Lead Time", 705, 0.09, 7],
-        ["Foam corner protector 4-pack", "Long Lead Time", 640, 0.07, 8],
-    ],
-};
-
-export const TOP_AT_RISK_DRILL_FIXTURE: QueryTable = {
-    columns: [
-        { name: "Stock Item[Stock Item]", dataType: "String" },
-        { name: "Stock Item[Lead Time Priority Tier]", dataType: "String" },
-        { name: "Stock Item[Lead Time Days]", dataType: "Int64" },
-        { name: "[Suggested Reorder Qty]", dataType: "Double" },
-        { name: "[Demand Trend]", dataType: "Double" },
-        { name: "[At Risk Rank]", dataType: "Int64" },
-    ],
-    rows: [
-        ["Shipping carton (Brown) 413x285x187mm", "Long Lead Time", 18, 1840, 0.34, 1],
-        ["Bubble wrap 500mm x 10m", "Long Lead Time", 21, 1620, 0.28, 2],
-        ["Packing tape 48mm x 100m clear", "Medium Lead Time", 11, 1310, 0.22, 3],
-        ["Corrugated void fill 1m3 bag", "Medium Lead Time", 10, 1105, 0.19, 4],
-        ["Pallet wrap 500mm x 300m", "Short Lead Time", 4, 940, 0.15, 5],
-        ["Address label roll 100x150mm", "Short Lead Time", 3, 780, 0.11, 6],
-        ["Courier satchel 375x480mm", "Medium Lead Time", 9, 705, 0.09, 7],
-        ["Foam corner protector 4-pack", "Long Lead Time", 19, 640, 0.07, 8],
-    ],
-};
-
-export const TOP_CONTRIBUTORS_DRILL_FIXTURE: QueryTable = {
-    columns: [
-        { name: "Stock Item[Stock Item]", dataType: "String" },
-        { name: "Stock Item[Lead Time Priority Tier]", dataType: "String" },
-        { name: "[Unit Price]", dataType: "Double" },
-        { name: "[Suggested Reorder Qty]", dataType: "Double" },
         { name: "[Reorder Value]", dataType: "Double" },
+        { name: "[Value Share %]", dataType: "Double" },
+        { name: "[Cumulative Value %]", dataType: "Double" },
         { name: "[At Risk Rank]", dataType: "Int64" },
     ],
     rows: [
-        ["Black and yellow heavy-duty despatch tape 48mmx100m", "Medium Lead Time", 4.85, 1620, 7857, 2],
-        ["Black and orange fragile despatch tape 48mmx75m", "Medium Lead Time", 4.6, 1620, 7452, 4],
-        ["Red and white urgent despatch tape 48mmx75m", "Medium Lead Time", 4.6, 1345, 6187, 6],
-        ["Black and orange this way up despatch tape 48mmx75m", "Medium Lead Time", 4.6, 1310, 6026, 7],
-        ["Black and orange handle with care despatch tape 48mmx100m", "Medium Lead Time", 4.85, 1105, 5359, 9],
-        ["Shipping carton (Brown) 413x285x187mm", "Long Lead Time", 2.1, 1840, 3864, 1],
-        ["Bubble wrap 500mm x 10m", "Long Lead Time", 2.35, 1620, 3807, 3],
-        ["Corrugated void fill 1m3 bag", "Medium Lead Time", 3.1, 1105, 3426, 5],
-        ["Pallet wrap 500mm x 300m", "Short Lead Time", 3.4, 940, 3196, 8],
-        ["Address label roll 100x150mm", "Short Lead Time", 3.9, 780, 3042, 10],
+        [43, "Shipping carton (Brown) 413x285x187mm", "Medium Lead Time", 3241644, 0.0019, 0.0019, 1],
+        [32, "3 kg Courier post bag (White) 300x190x95mm", "Medium Lead Time", 1510925, 0.0009, 0.0028, 2],
+        [20, "Black and yellow heavy despatch tape 48mmx100m", "Medium Lead Time", 9232786, 0.0054, 0.0081, 3],
+        [29, "Black and orange fragile despatch tape 48mmx75m", "Medium Lead Time", 8163347, 0.0048, 0.0129, 4],
+        [35, "Shipping carton (Brown) 356x356x279mm", "Medium Lead Time", 4444164, 0.0026, 0.0155, 5],
+        [19, "Red and white urgent despatch tape 48mmx75m", "Medium Lead Time", 7327917, 0.0043, 0.0198, 6],
+        [23, "Black and orange this way up despatch tape 48mmx75m", "Medium Lead Time", 7270633, 0.0042, 0.0240, 7],
+        [41, "Shipping carton (Brown) 229x229x229mm", "Medium Lead Time", 2036244, 0.0012, 0.0252, 8],
+        [24, "Black and orange handle with care despatch tape 48mmx100m", "Medium Lead Time", 7915579, 0.0046, 0.0298, 9],
+        [28, "Black and orange fragile despatch tape 48mmx100m", "Medium Lead Time", 7855625, 0.0046, 0.0344, 10],
+        [61, "Bubble wrap 500mm x 10m", "Long Lead Time", 1620000, 0.0009, 0.0353, 11],
+        [77, "Pallet wrap 500mm x 300m", "Short Lead Time", 940000, 0.0005, 0.0359, 12],
+        [88, "Address label roll 100x150mm", "Short Lead Time", 780000, 0.0005, 0.0363, 13],
+        [102, "Foam corner protector 4-pack", "Long Lead Time", 640000, 0.0004, 0.0367, 14],
+        [115, "Courier satchel 375x480mm", "Medium Lead Time", 705000, 0.0004, 0.0371, 15],
     ],
 };
 

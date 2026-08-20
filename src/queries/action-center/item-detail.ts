@@ -1,7 +1,7 @@
 import type { ColumnMetadataMap } from "@/lib/to-data-table";
 import queryTemplate from "./item-detail.dax?raw";
 
-const connection = "wwiRetail"; // from fabric.yaml
+const connection = "wwiRetailRebuild"; // from fabric.yaml — rebuild/pareto-thesis branch only, see SPEC.md
 
 const columnMetadata: ColumnMetadataMap = {
   "Stock Item[Stock Item Key]": { name: "StockItemKey", displayName: "Key" },

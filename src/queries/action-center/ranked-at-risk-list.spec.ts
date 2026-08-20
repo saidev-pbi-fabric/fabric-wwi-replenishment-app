@@ -9,8 +9,8 @@ import { describe, it, expect } from "vitest";
 import { rankedAtRiskList } from "./ranked-at-risk-list";
 
 describe("rankedAtRiskList", () => {
-    it("targets the wwiRetail connection", () => {
-        expect(rankedAtRiskList("All").connection).toBe("wwiRetail");
+    it("targets the wwiRetailRebuild connection (rebuild/pareto-thesis branch only)", () => {
+        expect(rankedAtRiskList("All").connection).toBe("wwiRetailRebuild");
     });
 
     it("caps to the top 25 at-risk stock items ordered by At Risk Rank", () => {

@@ -2,7 +2,7 @@ import type { ColumnMetadataMap } from "@/lib/to-data-table";
 import { TIER_FILTERS, tierFilterClause } from "@/lib/severity";
 import queryTemplate from "./ranked-at-risk-list.dax?raw";
 
-const connection = "wwiRetail"; // from fabric.yaml
+const connection = "wwiRetailRebuild"; // from fabric.yaml — rebuild/pareto-thesis branch only, see SPEC.md
 
 const columnMetadata: ColumnMetadataMap = {
   "Stock Item[Stock Item Key]": { name: "StockItemKey", displayName: "Key" },
@@ -14,6 +14,7 @@ const columnMetadata: ColumnMetadataMap = {
   "[Suggested Reorder Qty]": { name: "SuggestedReorderQty", displayName: "Suggested Reorder Qty" },
   "[Demand Trend]": { name: "DemandTrend", displayName: "Demand Trend" },
   "[At Risk Rank]": { name: "AtRiskRank", displayName: "Rank" },
+  "[Cumulative Value %]": { name: "CumulativeValuePct", displayName: "Cumulative Value %" },
 };
 
 /**

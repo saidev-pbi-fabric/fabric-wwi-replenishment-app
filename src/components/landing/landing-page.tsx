@@ -7,9 +7,7 @@
 
 import { motion } from "framer-motion";
 import { AlertTriangle, ArrowRight, Info, PackagePlus, History } from "lucide-react";
-import { useQueryPanel } from "@/hooks/use-query-panel";
-import { topAtRiskItems } from "@/queries/overview/top-at-risk-items";
-import { TOP_AT_RISK_ITEMS_FIXTURE } from "@/lib/dev-preview-fixtures";
+import { useParetoDataset } from "@/hooks/use-pareto-dataset";
 import { LEAD_TIME_DOT_CLASS } from "@/lib/severity";
 import { fadeInUp, staggerContainer } from "@/lib/motion";
 import { cn } from "@/lib/utils";
@@ -46,20 +44,13 @@ const STEPS: Step[] = [
 ];
 
 export function LandingPage({ onOpenDashboard }: LandingPageProps) {
-    const topItemsPanel = useQueryPanel(topAtRiskItems("All"));
+    const dataset = useParetoDataset();
 
-    // Dev-only fallback, same pattern as every other query-backed component —
-    // see use-query-panel.ts for why this stays a literal `import.meta.env.DEV`
-    // check in this module rather than a hook param.
-    const usingDevFixture = import.meta.env.DEV && !import.meta.env.VITEST && topItemsPanel.status === "error";
-
-    const topTable = usingDevFixture
-        ? TOP_AT_RISK_ITEMS_FIXTURE
-        : topItemsPanel.status === "ready" || topItemsPanel.status === "refreshing"
-          ? topItemsPanel.table
-          : undefined;
-
-    const glimpseRows = topTable ? topRowsFromTable(topTable).slice(0, 3) : [];
+    const glimpseRows = dataset.rows.slice(0, 3).map((row) => ({
+        name: row.stockItem,
+        tier: row.tier,
+        rank: row.atRiskRank,
+    }));
 
     return (
         <motion.div
@@ -206,23 +197,4 @@ export function LandingPage({ onOpenDashboard }: LandingPageProps) {
             </motion.p>
         </motion.div>
     );
-}
-
-interface GlimpseRow {
-    name: string;
-    tier: string;
-    rank: number;
-}
-
-function topRowsFromTable(table: { columns: { name: string }[]; rows: unknown[][] }): GlimpseRow[] {
-    const idx = (name: string) => table.columns.findIndex((col) => col.name === name);
-    const nameIdx = idx("Stock Item[Stock Item]");
-    const tierIdx = idx("Stock Item[Lead Time Priority Tier]");
-    const rankIdx = idx("[At Risk Rank]");
-
-    return table.rows.map((row) => ({
-        name: String(row[nameIdx]),
-        tier: String(row[tierIdx]),
-        rank: Number(row[rankIdx]),
-    }));
 }

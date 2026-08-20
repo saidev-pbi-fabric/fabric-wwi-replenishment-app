@@ -9,8 +9,8 @@ import { describe, it, expect } from "vitest";
 import { itemDetail } from "./item-detail";
 
 describe("itemDetail", () => {
-    it("targets the wwiRetail connection", () => {
-        expect(itemDetail(43).connection).toBe("wwiRetail");
+    it("targets the wwiRetailRebuild connection (rebuild/pareto-thesis branch only)", () => {
+        expect(itemDetail(43).connection).toBe("wwiRetailRebuild");
     });
 
     it("substitutes the stock item key into the filter", () => {

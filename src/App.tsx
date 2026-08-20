@@ -12,10 +12,12 @@ import { useThemeContext } from "@/hooks/theme.context";
 import { fadeInUp } from "@/lib/motion";
 import { LandingPage } from "@/components/landing/landing-page";
 import { KpiStrip } from "@/components/overview/kpi-strip";
-import { SalesTrendChart } from "@/components/overview/sales-trend-chart";
-import { TopAtRiskList } from "@/components/overview/top-at-risk-list";
+import { ParetoRiskView } from "@/components/overview/pareto-risk-view";
+import { useParetoDataset } from "@/hooks/use-pareto-dataset";
 import { ActionCenter } from "@/components/action-center/action-center";
 import { cn } from "@/lib/utils";
+
+const DEFAULT_CUTOFF_PCT = 0.8;
 
 type Page = "landing" | "overview" | "action-center";
 
@@ -113,6 +115,9 @@ function ThemeToggle() {
 }
 
 function OverviewPage({ onSelectItem }: { onSelectItem: (stockItemName: string) => void }) {
+    const dataset = useParetoDataset();
+    const [cutoffPct, setCutoffPct] = useState(DEFAULT_CUTOFF_PCT);
+
     return (
         <div className="flex flex-col gap-400">
             <div>
@@ -123,9 +128,13 @@ function OverviewPage({ onSelectItem }: { onSelectItem: (stockItemName: string) 
                     Demand-driven reorder attention, ranked by sales velocity vs. lead time.
                 </p>
             </div>
-            <KpiStrip />
-            <SalesTrendChart />
-            <TopAtRiskList onSelectItem={onSelectItem} />
+            <KpiStrip dataset={dataset} cutoffPct={cutoffPct} />
+            <ParetoRiskView
+                dataset={dataset}
+                cutoffPct={cutoffPct}
+                onCutoffChange={setCutoffPct}
+                onSelectItem={onSelectItem}
+            />
         </div>
     );
 }

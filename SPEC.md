@@ -277,13 +277,22 @@ SUMMARIZECOLUMNS(
     'Stock Item'[Stock Item Key],
     'Stock Item'[Stock Item],
     'Stock Item'[Lead Time Priority Tier],
-    "Reorder Value", [Suggested Reorder Qty] * 'Stock Item'[Unit Price],
+    "Reorder Value", [Reorder Value Total],
     "Value Share %", [Reorder Value Share %],
     "Cumulative Value %", [Cumulative Reorder Value %],
     "At Risk Rank", [At Risk Rank]
 )
 ORDER BY [At Risk Rank] ASC
 ```
+
+**Corrected 2026-08-20 during live validation**: the inline `[Suggested Reorder Qty] * 'Stock Item'[Unit Price]`
+expression failed at query time (`A single value for column 'Unit Price' ... cannot be determined`) —
+a raw column reference inside `SUMMARIZECOLUMNS` doesn't get the context transition a measure gets.
+Fixed by using the `[Reorder Value Total]` measure directly (identical value, already does the
+`SUMX` context transition correctly, same as `[Suggested Reorder Qty]`/`[At Risk Rank]` do). Live
+result verified: all 672 rows returned, cumulative % monotonic and arithmetically exact across
+rows, and the underlying thesis holds on real data — **109 of 672 items (16.2%) generate 80% of
+total reorder value**.
 
 ### KPI strip — becomes hybrid (found during the mockup, not in the original plan)
 The mockup's slider updates the two dollar/count KPI tiles live, which only works if they're

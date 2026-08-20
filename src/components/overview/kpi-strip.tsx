@@ -5,30 +5,21 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { Package, Clock, AlertTriangle, TrendingUp, ArrowUpRight, DollarSign } from "lucide-react";
+import { Package, Clock, AlertTriangle, TrendingUp, DollarSign } from "lucide-react";
 import { fadeInUp, staggerContainer } from "@/lib/motion";
 import { useQueryPanel } from "@/hooks/use-query-panel";
 import { kpiStrip } from "@/queries/overview/kpi-strip";
 import { cn } from "@/lib/utils";
 import { scalarByColumnName } from "@/lib/to-data-table";
 import { KPI_STRIP_FIXTURE } from "@/lib/dev-preview-fixtures";
-import { TopAtRiskDrillThrough } from "@/components/overview/top-at-risk-drill-through";
-import { TopContributorsDrillThrough } from "@/components/overview/top-contributors-drill-through";
+import type { ParetoDataset } from "@/hooks/use-pareto-dataset";
 
 type Severity = "critical" | "at-risk" | "on-track" | "neutral";
-type DrillKind = "risk" | "contributors";
 
-interface Tile {
-    key: string;
-    label: string;
-    icon: React.ComponentType<{ className?: string }>;
-    format: (value: unknown) => string;
-    context: string;
-    severity: (value: unknown) => Severity;
-    /** Which full-list drill-through table opens when the tile is clicked, if any. */
-    drillThrough?: DrillKind;
+interface KpiStripProps {
+    dataset: ParetoDataset;
+    cutoffPct: number;
 }
 
 /** "$98.8M" / "$640K" / "$420" — this app's numbers run large (aggregated over the full ~11-month
@@ -41,89 +32,12 @@ function formatCompactCurrency(value: number): string {
     return `$${value.toFixed(0)}`;
 }
 
-const TILES: Tile[] = [
-    {
-        key: "[Items Tracked]",
-        label: "Items Tracked",
-        icon: Package,
-        format: (v) => String(v ?? "—"),
-        context: "Distinct stock items in the model",
-        severity: () => "neutral",
-    },
-    {
-        key: "[Avg Lead Time Days]",
-        label: "Avg Lead Time (Days)",
-        icon: Clock,
-        format: (v) => String(v ?? "—"),
-        context: "Average supplier lead time across all items",
-        severity: () => "neutral",
-    },
-    {
-        key: "[Top At Risk Items]",
-        label: "Top At-Risk Items",
-        icon: AlertTriangle,
-        format: (v) => String(v ?? "—"),
-        context: "Ranked in the top 20 by demand-vs-lead-time risk",
-        severity: () => "critical",
-        drillThrough: "risk",
-    },
-    {
-        key: "[Accelerating Demand Items]",
-        label: "Accelerating Demand",
-        icon: TrendingUp,
-        format: (v) => String(v ?? "—"),
-        context: "Items with a positive 30-day demand trend",
-        severity: () => "neutral",
-    },
-    {
-        key: "[At Risk Reorder Value]",
-        label: "At-Risk Reorder Value",
-        icon: DollarSign,
-        format: (v) => formatCompactCurrency(Number(v ?? 0)),
-        context: "Unit Price × Suggested Reorder Qty, same top 20 at-risk items as the tile above",
-        severity: () => "critical",
-        drillThrough: "contributors",
-    },
-];
-
-/**
- * Every tile's number fades/scales in on load, not just the drill-through tile's icon wiggle on
- * hover — a universal, non-clickable motion touch so the strip doesn't read as "one tile
- * animates, four are static." Deliberately NOT a numeric count-up: for a value like $98.8M that
- * meant ticking through big, jumpy intermediate numbers ($4.2M, $61.8M, ...) in under a second —
- * reads as jank, not polish, especially for a large, already-compact-formatted figure. A plain
- * reveal keeps the "alive on load" feel without the flicker.
- */
-function AnimatedTileValue({
-    raw,
-    format,
-    prefersReducedMotion,
-}: {
-    raw: unknown;
-    format: (value: unknown) => string;
-    prefersReducedMotion: boolean | null;
-}) {
-    return (
-        <motion.span
-            initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.92 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.35, delay: 0.1, ease: "easeOut" }}
-            className="inline-block"
-        >
-            {format(raw)}
-        </motion.span>
-    );
-}
-
 const RAIL_CLASS: Record<Severity, string> = {
     critical: "border-l-critical",
     "at-risk": "border-l-at-risk",
     "on-track": "border-l-on-track",
-    // Visible neutral gray, not transparent: a transparent rail made these two
-    // tiles look unstyled/unfinished next to the colored-rail tiles beside
-    // them (flagged directly by the user against the live app) — this keeps
-    // all 4 tiles visually consistent while still reserving color for actual
-    // severity.
+    // Visible neutral gray, not transparent — see kpi-strip.tsx git history (2026-08-19) for why
+    // a transparent rail read as unstyled next to the colored-rail tiles beside it.
     neutral: "border-l-border",
 };
 
@@ -134,9 +48,50 @@ const ICON_CLASS: Record<Severity, string> = {
     neutral: "text-muted-foreground",
 };
 
-export function KpiStrip() {
+function TileCard({
+    label,
+    icon: Icon,
+    value,
+    context,
+    severity,
+    prefersReducedMotion,
+}: {
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+    value: string;
+    context: string;
+    severity: Severity;
+    prefersReducedMotion: boolean | null;
+}) {
+    return (
+        <motion.div
+            variants={fadeInUp}
+            className={cn(
+                "rounded-lg border border-border border-l-4 bg-card p-400 text-left shadow-sm",
+                RAIL_CLASS[severity],
+            )}
+        >
+            <div className="flex items-center justify-between gap-200">
+                <div className="font-base text-200 uppercase tracking-wide text-muted-foreground">{label}</div>
+                <Icon className={cn("icon-size-300 shrink-0", ICON_CLASS[severity])} />
+            </div>
+            <div className="mt-200 font-numeric text-hero-800 font-semibold text-foreground">
+                <motion.span
+                    initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.92 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.35, delay: 0.1, ease: "easeOut" }}
+                    className="inline-block"
+                >
+                    {value}
+                </motion.span>
+            </div>
+            <div className="mt-200 font-base text-200 text-muted-foreground">{context}</div>
+        </motion.div>
+    );
+}
+
+export function KpiStrip({ dataset, cutoffPct }: KpiStripProps) {
     const panel = useQueryPanel(kpiStrip());
-    const [drillOpen, setDrillOpen] = useState<DrillKind | null>(null);
     const prefersReducedMotion = useReducedMotion();
 
     // Dev-only fallback so `npm run dev` can render the ready state without
@@ -160,9 +115,9 @@ export function KpiStrip() {
     if (!usingDevFixture && panel.status === "loading") {
         return (
             <div className="grid grid-cols-2 gap-400 sm:grid-cols-3 lg:grid-cols-5">
-                {TILES.map((tile) => (
+                {Array.from({ length: 5 }).map((_, i) => (
                     <div
-                        key={tile.key}
+                        key={i}
                         className="rounded-lg border border-border border-l-4 border-l-transparent bg-card p-400"
                     >
                         <div className="h-200 w-3/4 animate-pulse rounded-md bg-muted" />
@@ -185,87 +140,65 @@ export function KpiStrip() {
     const table = usingDevFixture ? KPI_STRIP_FIXTURE : panel.status === "ready" ? panel.table : undefined;
     if (!table) return null;
 
-    return (
-        <>
-            <motion.div
-                className="grid grid-cols-2 gap-400 sm:grid-cols-3 lg:grid-cols-5"
-                initial="hidden"
-                animate="visible"
-                variants={staggerContainer}
-            >
-                {usingDevFixture ? (
-                    <div className="col-span-2 -mb-200 text-200 text-muted-foreground sm:col-span-3 lg:col-span-5">
-                        Sample data · dev preview (no Fabric embed)
-                    </div>
-                ) : null}
-                {TILES.map((tile) => {
-                    const raw = scalarByColumnName(table, tile.key);
-                    const severity = tile.severity(raw);
-                    const Icon = tile.icon;
-                    const Tag = tile.drillThrough ? motion.button : motion.div;
-                    return (
-                        <Tag
-                            key={tile.key}
-                            type={tile.drillThrough ? "button" : undefined}
-                            onClick={tile.drillThrough ? () => setDrillOpen(tile.drillThrough ?? null) : undefined}
-                            variants={fadeInUp}
-                            // Hover lift is a real-action affordance — only tiles with a drill-through
-                            // get it. Animating a static tile on hover suggests it's clickable when it
-                            // isn't (same reasoning as the icon wiggle below).
-                            {...(tile.drillThrough ? { whileHover: { y: -2 } } : {})}
-                            className={cn(
-                                "rounded-lg border border-border border-l-4 bg-card p-400 text-left shadow-sm transition-shadow",
-                                tile.drillThrough &&
-                                    "cursor-pointer hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                                RAIL_CLASS[severity],
-                            )}
-                        >
-                            <div className="flex items-center justify-between gap-200">
-                                <div className="font-base text-200 uppercase tracking-wide text-muted-foreground">
-                                    {tile.label}
-                                </div>
-                                <motion.span
-                                    initial={
-                                        prefersReducedMotion ? false : { scale: 0.4, rotate: -20, opacity: 0 }
-                                    }
-                                    animate={{ scale: 1, rotate: 0, opacity: 1 }}
-                                    transition={{ type: "spring", stiffness: 260, damping: 18, delay: 0.15 }}
-                                    // Only the drill-through tile's icon gets a hover/tap animation —
-                                    // it's the only one bound to a real action (opening the full-list
-                                    // table). Animating the other three's icons would suggest they're
-                                    // clickable when they aren't, which is a false affordance.
-                                    {...(tile.drillThrough && !prefersReducedMotion
-                                        ? {
-                                              whileHover: { rotate: [0, -8, 8, -5, 0], transition: { duration: 0.4 } },
-                                              whileTap: { scale: 0.85 },
-                                          }
-                                        : {})}
-                                >
-                                    <Icon className={cn("icon-size-300 shrink-0", ICON_CLASS[severity])} />
-                                </motion.span>
-                            </div>
-                            <div className="mt-200 font-numeric text-hero-800 font-semibold text-foreground">
-                                <AnimatedTileValue raw={raw} format={tile.format} prefersReducedMotion={prefersReducedMotion} />
-                            </div>
-                            <div className="mt-200 flex items-center justify-between gap-200 text-200 text-muted-foreground">
-                                <span>{tile.context}</span>
-                                {tile.drillThrough ? (
-                                    <span className="flex shrink-0 items-center gap-100 font-semibold text-foreground">
-                                        View all
-                                        <ArrowUpRight className="icon-size-200" />
-                                    </span>
-                                ) : null}
-                            </div>
-                        </Tag>
-                    );
-                })}
-            </motion.div>
+    // The two cutoff-based tiles are a client-side reduction over the shared
+    // pareto dataset at the current slider position, not their own DAX
+    // measures — see SPEC.md's "KPI strip — becomes hybrid" section.
+    const cutoffIdx = dataset.rows.findIndex((r) => r.cumulativeValuePct >= cutoffPct);
+    const itemsInCutoff = cutoffIdx === -1 ? dataset.rows.length : cutoffIdx + 1;
+    const valueInCutoff = dataset.rows.slice(0, itemsInCutoff).reduce((sum, r) => sum + r.reorderValue, 0);
 
-            <TopAtRiskDrillThrough open={drillOpen === "risk"} onClose={() => setDrillOpen(null)} />
-            <TopContributorsDrillThrough
-                open={drillOpen === "contributors"}
-                onClose={() => setDrillOpen(null)}
+    return (
+        <motion.div
+            className="grid grid-cols-2 gap-400 sm:grid-cols-3 lg:grid-cols-5"
+            initial="hidden"
+            animate="visible"
+            variants={staggerContainer}
+        >
+            {usingDevFixture ? (
+                <div className="col-span-2 -mb-200 text-200 text-muted-foreground sm:col-span-3 lg:col-span-5">
+                    Sample data · dev preview (no Fabric embed)
+                </div>
+            ) : null}
+            <TileCard
+                label="Items Tracked"
+                icon={Package}
+                value={String(scalarByColumnName(table, "[Items Tracked]") ?? "—")}
+                context="Distinct stock items in the model"
+                severity="neutral"
+                prefersReducedMotion={prefersReducedMotion}
             />
-        </>
+            <TileCard
+                label="Avg Lead Time (Days)"
+                icon={Clock}
+                value={String(scalarByColumnName(table, "[Avg Lead Time Days]") ?? "—")}
+                context="Average supplier lead time across all items"
+                severity="neutral"
+                prefersReducedMotion={prefersReducedMotion}
+            />
+            <TileCard
+                label={`Items In ${Math.round(cutoffPct * 100)}% Cutoff`}
+                icon={AlertTriangle}
+                value={String(itemsInCutoff)}
+                context="Reacts to the cutoff slider below"
+                severity="critical"
+                prefersReducedMotion={prefersReducedMotion}
+            />
+            <TileCard
+                label="Accelerating Demand"
+                icon={TrendingUp}
+                value={String(scalarByColumnName(table, "[Accelerating Demand Items]") ?? "—")}
+                context="Items with a positive 30-day demand trend"
+                severity="neutral"
+                prefersReducedMotion={prefersReducedMotion}
+            />
+            <TileCard
+                label="Reorder Value In Cutoff"
+                icon={DollarSign}
+                value={formatCompactCurrency(valueInCutoff)}
+                context="Reacts to the cutoff slider below"
+                severity="critical"
+                prefersReducedMotion={prefersReducedMotion}
+            />
+        </motion.div>
     );
 }

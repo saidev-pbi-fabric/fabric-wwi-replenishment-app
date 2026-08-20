@@ -20,16 +20,18 @@ vi.mock("@/lib/fabric-client", () => ({
 
 const TOP_ITEMS_TABLE = {
     columns: [
+        { name: "Stock Item[Stock Item Key]" },
         { name: "Stock Item[Stock Item]" },
         { name: "Stock Item[Lead Time Priority Tier]" },
-        { name: "[Suggested Reorder Qty]" },
-        { name: "[Demand Trend]" },
+        { name: "[Reorder Value]" },
+        { name: "[Value Share %]" },
+        { name: "[Cumulative Value %]" },
         { name: "[At Risk Rank]" },
     ],
     rows: [
-        ["Shipping carton (Brown)", "Long Lead Time", 1840, 0.34, 1],
-        ["Bubble wrap 500mm x 10m", "Long Lead Time", 1620, 0.28, 2],
-        ["Packing tape 48mm x 100m", "Medium Lead Time", 1310, 0.22, 3],
+        [17, "Shipping carton (Brown)", "Long Lead Time", 3241644, 0.34, 0.34, 1],
+        [58, "Bubble wrap 500mm x 10m", "Long Lead Time", 1620000, 0.28, 0.62, 2],
+        [93, "Packing tape 48mm x 100m", "Medium Lead Time", 1310000, 0.22, 0.84, 3],
     ],
 };
 

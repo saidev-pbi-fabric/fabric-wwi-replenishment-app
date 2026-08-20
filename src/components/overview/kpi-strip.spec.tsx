@@ -6,8 +6,9 @@
 //-----------------------------------------------------------------------
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { KpiStrip } from "./kpi-strip";
+import type { ParetoDataset, ParetoRow } from "@/hooks/use-pareto-dataset";
 
 const mockQuery = vi.fn();
 
@@ -21,6 +22,16 @@ vi.mock("@/lib/fabric-client", () => ({
     }),
 }));
 
+const SAMPLE_ROWS: ParetoRow[] = [
+    { stockItemKey: 1, stockItem: "Item A", tier: "Long Lead Time", reorderValue: 60_000_000, valueSharePct: 0.6, cumulativeValuePct: 0.6, atRiskRank: 1 },
+    { stockItemKey: 2, stockItem: "Item B", tier: "Medium Lead Time", reorderValue: 25_000_000, valueSharePct: 0.25, cumulativeValuePct: 0.85, atRiskRank: 2 },
+    { stockItemKey: 3, stockItem: "Item C", tier: "Short Lead Time", reorderValue: 15_000_000, valueSharePct: 0.15, cumulativeValuePct: 1.0, atRiskRank: 3 },
+];
+
+function makeDataset(rows: ParetoRow[] = SAMPLE_ROWS): ParetoDataset {
+    return { status: "ready", usingDevFixture: false, rows };
+}
+
 describe("KpiStrip", () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -28,59 +39,32 @@ describe("KpiStrip", () => {
 
     it("renders a skeleton for each tile while loading", () => {
         mockQuery.mockReturnValue(new Promise(() => {}));
-        render(<KpiStrip />);
+        render(<KpiStrip dataset={makeDataset()} cutoffPct={0.8} />);
         expect(screen.queryByText("Items Tracked")).not.toBeInTheDocument();
     });
 
-    it("renders all five KPI values on success", async () => {
+    it("renders the three DAX-backed tiles and the two cutoff-computed tiles on success", async () => {
         mockQuery.mockResolvedValue({
             status: "success",
             table: {
                 columns: [
                     { name: "[Items Tracked]" },
                     { name: "[Avg Lead Time Days]" },
-                    { name: "[Top At Risk Items]" },
                     { name: "[Accelerating Demand Items]" },
-                    { name: "[At Risk Reorder Value]" },
                 ],
-                rows: [[672, 12.3, 20, 15, 98842975.92]],
+                rows: [[672, 12.3, 164]],
             },
             fromCache: false,
         });
 
-        render(<KpiStrip />);
+        render(<KpiStrip dataset={makeDataset()} cutoffPct={0.8} />);
 
         await waitFor(() => expect(screen.getByText("672")).toBeInTheDocument());
         expect(screen.getByText("12.3")).toBeInTheDocument();
-        expect(screen.getByText("20")).toBeInTheDocument();
-        expect(screen.getByText("15")).toBeInTheDocument();
-        expect(screen.getByText("$98.8M")).toBeInTheDocument();
-    });
-
-    it("opens the drill-through table when the Top At-Risk Items tile is clicked", async () => {
-        mockQuery.mockResolvedValue({
-            status: "success",
-            table: {
-                columns: [
-                    { name: "[Items Tracked]" },
-                    { name: "[Avg Lead Time Days]" },
-                    { name: "[Top At Risk Items]" },
-                    { name: "[Accelerating Demand Items]" },
-                    { name: "[At Risk Reorder Value]" },
-                ],
-                rows: [[672, 12.3, 20, 15, 98842975.92]],
-            },
-            fromCache: false,
-        });
-
-        render(<KpiStrip />);
-
-        const tile = await screen.findByRole("button", { name: /top at-risk items/i });
-        expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-
-        fireEvent.click(tile);
-
-        expect(await screen.findByRole("dialog")).toBeInTheDocument();
+        expect(screen.getByText("164")).toBeInTheDocument();
+        // Cutoff 0.8 crosses at row 2 (cumulative 0.85 >= 0.8) → 2 items, $85.0M value.
+        expect(screen.getByText("2")).toBeInTheDocument();
+        expect(screen.getByText("$85.0M")).toBeInTheDocument();
     });
 
     it("shows an empty state when the query returns no rows", async () => {
@@ -90,7 +74,7 @@ describe("KpiStrip", () => {
             fromCache: false,
         });
 
-        render(<KpiStrip />);
+        render(<KpiStrip dataset={makeDataset()} cutoffPct={0.8} />);
 
         await waitFor(() =>
             expect(screen.getByText(/no kpi data available/i)).toBeInTheDocument(),
@@ -103,7 +87,7 @@ describe("KpiStrip", () => {
             error: { message: "401 Unauthorized" },
         });
 
-        render(<KpiStrip />);
+        render(<KpiStrip dataset={makeDataset()} cutoffPct={0.8} />);
 
         await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
         expect(screen.getByRole("alert")).toHaveTextContent("401 Unauthorized");
