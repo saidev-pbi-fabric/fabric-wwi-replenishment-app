@@ -10,6 +10,7 @@ import { History } from "lucide-react";
 import { getRayfinClient, REORDER_ACTION_STATUSES, type ReorderActionRecord } from "@/lib/rayfin-client";
 import { logReorderActionFieldChange } from "@/lib/reorder-action-audit";
 import { useAuth } from "@/hooks/auth.context";
+import { formatApiDateTime } from "@/lib/utils";
 
 interface ReorderActionHistoryProps {
     stockItemKey: number;
@@ -119,7 +120,7 @@ export function ReorderActionHistory({ stockItemKey, refreshKey, onStatusChanged
                     >
                         <div className="min-w-0 flex-1">
                             <p className="font-base text-100 text-muted-foreground">
-                                {new Date(action.createdAt).toLocaleString()} · Qty {action.suggestedReorderQty}
+                                {formatApiDateTime(action.createdAt)} · Qty {action.suggestedReorderQty}
                                 {action.assignedTo ? (
                                     <>
                                         {" · "}

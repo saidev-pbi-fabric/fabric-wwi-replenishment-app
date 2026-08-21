@@ -62,19 +62,19 @@ describe("ItemDetailPanel", () => {
     });
 
     it("shows a placeholder prompt when nothing is selected", () => {
-        render(<ItemDetailPanel stockItemKey={null} tier={null} />);
+        render(<ItemDetailPanel stockItemKey={null} tier={null} rank={1} rankMode="value" totalItemCount={219} />);
         expect(screen.getByText(/select an item/i)).toBeInTheDocument();
     });
 
     it("shows a loading skeleton while the query is in flight", () => {
         mockQuery.mockReturnValue(new Promise(() => {}));
-        render(<ItemDetailPanel stockItemKey={17} tier="A" />);
+        render(<ItemDetailPanel stockItemKey={17} tier="A" rank={1} rankMode="value" totalItemCount={219} />);
         expect(screen.getByTestId("item-detail-loading")).toBeInTheDocument();
     });
 
     it("renders the item's name and key stats once loaded", async () => {
         mockBothQueries();
-        render(<ItemDetailPanel stockItemKey={17} tier="A" />);
+        render(<ItemDetailPanel stockItemKey={17} tier="A" rank={1} rankMode="value" totalItemCount={219} />);
 
         expect(await screen.findByText("Shipping carton (Brown)")).toBeInTheDocument();
         expect(screen.getByText("1,840")).toBeInTheDocument();
@@ -83,18 +83,18 @@ describe("ItemDetailPanel", () => {
 
     it("renders a plain-English rationale sentence with the tier, rank, trend, and lead time", async () => {
         mockBothQueries();
-        render(<ItemDetailPanel stockItemKey={17} tier="A" />);
+        render(<ItemDetailPanel stockItemKey={17} tier="A" rank={1} rankMode="value" totalItemCount={219} />);
 
         expect(
             await screen.findByText(
-                /Tier A · rank #1 of 672\. Sales rate accelerating \+34% vs\. the prior 30 days, against a 18-day lead time — the combination that puts it in the top concentration band\./,
+                /Tier A · rank #1 of 219 by \$ value\. Sales rate accelerating \+34% vs\. the prior 30 days, against a 18-day lead time — the combination that puts it in the top concentration band\./,
             ),
         ).toBeInTheDocument();
     });
 
     it("omits the top-concentration-band clause for tiers B and C", async () => {
         mockBothQueries();
-        render(<ItemDetailPanel stockItemKey={17} tier="B" />);
+        render(<ItemDetailPanel stockItemKey={17} tier="B" rank={1} rankMode="value" totalItemCount={219} />);
 
         expect(await screen.findByText(/against a 18-day lead time\./)).toBeInTheDocument();
         expect(screen.queryByText(/top concentration band/)).not.toBeInTheDocument();
@@ -102,7 +102,7 @@ describe("ItemDetailPanel", () => {
 
     it("renders the sales-trend chart once the trend query loads", async () => {
         mockBothQueries();
-        render(<ItemDetailPanel stockItemKey={17} tier="A" />);
+        render(<ItemDetailPanel stockItemKey={17} tier="A" rank={1} rankMode="value" totalItemCount={219} />);
 
         await screen.findByText("Shipping carton (Brown)");
         expect(await screen.findByRole("img", { name: /daily units sold/i })).toBeInTheDocument();
@@ -110,17 +110,17 @@ describe("ItemDetailPanel", () => {
 
     it("shows an error banner when the query fails", async () => {
         mockQuery.mockResolvedValue({ status: "error", error: { message: "401 Unauthorized" } });
-        render(<ItemDetailPanel stockItemKey={17} tier="A" />);
+        render(<ItemDetailPanel stockItemKey={17} tier="A" rank={1} rankMode="value" totalItemCount={219} />);
 
         expect(await screen.findByRole("alert")).toHaveTextContent("401 Unauthorized");
     });
 
     it("re-queries both the detail and trend data when the selected key changes", async () => {
         mockBothQueries();
-        const { rerender } = render(<ItemDetailPanel stockItemKey={17} tier="A" />);
+        const { rerender } = render(<ItemDetailPanel stockItemKey={17} tier="A" rank={1} rankMode="value" totalItemCount={219} />);
         await screen.findByText("Shipping carton (Brown)");
 
-        rerender(<ItemDetailPanel stockItemKey={126} tier="B" />);
+        rerender(<ItemDetailPanel stockItemKey={126} tier="B" rank={1} rankMode="value" totalItemCount={219} />);
 
         // One call each for item-detail and item-sales-trend, per key.
         await waitFor(() => expect(mockQuery).toHaveBeenCalledTimes(4));
@@ -143,10 +143,10 @@ describe("ItemDetailPanel", () => {
             }
             return new Promise((resolve) => (resolveSecondDetail = resolve));
         });
-        const { rerender } = render(<ItemDetailPanel stockItemKey={17} tier="A" />);
+        const { rerender } = render(<ItemDetailPanel stockItemKey={17} tier="A" rank={1} rankMode="value" totalItemCount={219} />);
 
         await screen.findByText("Shipping carton (Brown)");
-        rerender(<ItemDetailPanel stockItemKey={126} tier="A" />);
+        rerender(<ItemDetailPanel stockItemKey={126} tier="A" rank={1} rankMode="value" totalItemCount={219} />);
 
         expect(await screen.findByLabelText("Updating")).toBeInTheDocument();
         expect(screen.getByText("Shipping carton (Brown)")).toBeInTheDocument();

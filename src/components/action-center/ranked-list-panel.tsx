@@ -5,72 +5,77 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AlertTriangle, Download } from "lucide-react";
 import { itemSalesTrend } from "@/queries/action-center/item-sales-trend";
 import { getFabricClient } from "@/lib/fabric-client";
 import { downloadCsv } from "@/lib/csv-export";
-import { cn, formatShortDate } from "@/lib/utils";
+import { cn, formatCompactCurrency, formatCompactNumber, formatShortDate } from "@/lib/utils";
 import { ITEM_SALES_TREND_FIXTURE } from "@/lib/dev-preview-fixtures";
 import { Sparkline } from "@/components/shared/sparkline";
 import { VALUE_TIER_FILTERS, VALUE_TIER_RAIL_CLASS, valueTierFilterLabel, valueTierFor, type ValueTier } from "@/lib/severity";
-import type { ParetoDataset, ParetoRow } from "@/hooks/use-pareto-dataset";
-
-function formatCompactCurrency(value: number): string {
-    if (!Number.isFinite(value)) return "—";
-    const abs = Math.abs(value);
-    if (abs >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
-    if (abs >= 1_000) return `$${(value / 1_000).toFixed(1)}K`;
-    return `$${value.toFixed(0)}`;
-}
+import { cumPctOf, metricOf, rankOf, rankedRows, type ParetoDataset, type ParetoRow, type RankMode } from "@/hooks/use-pareto-dataset";
 
 interface RankedListPanelProps {
     dataset: ParetoDataset;
+    rankMode: RankMode;
     selectedStockItemKey: number | null;
-    onSelectItem: (stockItemKey: number, stockItemName: string, tier: ValueTier) => void;
+    onSelectItem: (row: ParetoRow, tier: ValueTier) => void;
     /** Name handed off from Page 1's click-through; auto-selected once the list loads, then ignored. */
     initialSelectedItemName?: string | null;
 }
 
 export function RankedListPanel({
     dataset,
+    rankMode,
     selectedStockItemKey,
     onSelectItem,
     initialSelectedItemName,
 }: RankedListPanelProps) {
-    const { rows, status, usingDevFixture } = dataset;
+    const { status, usingDevFixture } = dataset;
+    const rows = rankedRows(dataset, rankMode);
     const [tierFilter, setTierFilter] = useState<(typeof VALUE_TIER_FILTERS)[number]>("All");
     const [nameQuery, setNameQuery] = useState("");
     const autoSelectedRef = useRef(false);
 
-    // Per-row sparklines: one small itemSalesTrend fetch per visible row, fired directly via the
-    // Fabric client (not a hook) so all rows' requests run in parallel and each fills in as it
-    // resolves rather than blocking the whole list on the slowest row.
+    // Per-row sparklines: fetched lazily, one small itemSalesTrend request per row, only once
+    // that row actually scrolls into view (see the IntersectionObserver in ListRow below). Not a
+    // blanket "first 40 rows" fetch — with the dataset now holding 219 ranked items and a
+    // tier/search filter that can jump straight to rows past #40, a fixed prefix left every row
+    // beyond it permanently blank (reported directly: "these are all blank... why blank if not
+    // 0?"). Lazy-on-visible bounds concurrent requests to what's actually on screen and works
+    // under any filter/scroll position.
     const [sparklineData, setSparklineData] = useState<Record<number, { qty: number[]; dates: string[] }>>({});
+    const requestedKeysRef = useRef<Set<number>>(new Set());
+    const cancelledRef = useRef(false);
 
     useEffect(() => {
-        if (rows.length === 0) return;
-        const keys = rows.slice(0, 40).map((row) => row.stockItemKey);
-        let cancelled = false;
+        cancelledRef.current = false;
+        return () => {
+            cancelledRef.current = true;
+        };
+    }, []);
 
-        if (usingDevFixture) {
-            const qtyIdx = ITEM_SALES_TREND_FIXTURE.columns.findIndex((col) => col.name === "[Quantity]");
-            const dateIdx = ITEM_SALES_TREND_FIXTURE.columns.findIndex((col) => col.name === "Date[Date]");
-            const fixtureQty = ITEM_SALES_TREND_FIXTURE.rows.map((row) => Number(row[qtyIdx] ?? 0));
-            const fixtureDates = ITEM_SALES_TREND_FIXTURE.rows.map((row) => formatShortDate(String(row[dateIdx])));
-            // eslint-disable-next-line react-hooks/set-state-in-effect -- dev-only fixture fill, mirrors the real fetch branch below which is necessarily async
-            setSparklineData(Object.fromEntries(keys.map((key) => [key, { qty: fixtureQty, dates: fixtureDates }])));
-            return;
-        }
+    const requestSparkline = useCallback(
+        (key: number) => {
+            if (requestedKeysRef.current.has(key)) return;
+            requestedKeysRef.current.add(key);
 
-        keys.forEach((key) => {
-            if (sparklineData[key]) return; // already fetched
+            if (usingDevFixture) {
+                const qtyIdx = ITEM_SALES_TREND_FIXTURE.columns.findIndex((col) => col.name === "[Quantity]");
+                const dateIdx = ITEM_SALES_TREND_FIXTURE.columns.findIndex((col) => col.name === "Date[Date]");
+                const qty = ITEM_SALES_TREND_FIXTURE.rows.map((row) => Number(row[qtyIdx] ?? 0));
+                const dates = ITEM_SALES_TREND_FIXTURE.rows.map((row) => formatShortDate(String(row[dateIdx])));
+                setSparklineData((prev) => ({ ...prev, [key]: { qty, dates } }));
+                return;
+            }
+
             const { connection, query } = itemSalesTrend(key);
             getFabricClient()
                 .semanticModel(connection)
                 .query(query)
                 .then((result) => {
-                    if (cancelled || result.status !== "success") return;
+                    if (cancelledRef.current || result.status !== "success") return;
                     const qtyIdx = result.table.columns.findIndex((col) => col.name === "[Quantity]");
                     const dateIdx = result.table.columns.findIndex((col) => col.name === "Date[Date]");
                     const qty = result.table.rows.map((row) => Number(row[qtyIdx] ?? 0));
@@ -80,22 +85,18 @@ export function RankedListPanel({
                 .catch(() => {
                     // A missing sparkline for one row isn't worth surfacing as a panel-level error.
                 });
-        });
-
-        return () => {
-            cancelled = true;
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps -- sparklineData deliberately excluded: this only skips re-fetching rows already cached
-    }, [rows, usingDevFixture]);
+        },
+        [usingDevFixture],
+    );
 
     useEffect(() => {
         if (autoSelectedRef.current || !initialSelectedItemName || rows.length === 0) return;
         const match = rows.find((row) => row.stockItem === initialSelectedItemName);
         if (match) {
             autoSelectedRef.current = true;
-            onSelectItem(match.stockItemKey, match.stockItem, valueTierFor(match.cumulativeValuePct));
+            onSelectItem(match, valueTierFor(cumPctOf(match, rankMode)));
         }
-    }, [rows, initialSelectedItemName, onSelectItem]);
+    }, [rows, initialSelectedItemName, onSelectItem, rankMode]);
 
     if (status === "error" && !usingDevFixture) {
         return (
@@ -118,21 +119,28 @@ export function RankedListPanel({
     }
 
     const trimmedQuery = nameQuery.trim().toLowerCase();
-    const filteredByTier = tierFilter === "All" ? rows : rows.filter((r) => valueTierFor(r.cumulativeValuePct) === tierFilter);
+    const filteredByTier =
+        tierFilter === "All" ? rows : rows.filter((r) => valueTierFor(cumPctOf(r, rankMode)) === tierFilter);
     const visibleRows = trimmedQuery
         ? filteredByTier.filter((r) => r.stockItem.toLowerCase().includes(trimmedQuery))
         : filteredByTier;
 
     function handleDownloadCsv() {
+        const metricHeader = rankMode === "value" ? "Reorder Value" : "Suggested Reorder Qty";
         downloadCsv(
             "at-risk-items.csv",
-            ["Rank", "Item", "Value Tier", "Reorder Value"],
-            visibleRows.map((r) => [r.atRiskRank, r.stockItem, valueTierFor(r.cumulativeValuePct), r.reorderValue.toFixed(2)]),
+            ["Rank", "Item", "Value Tier", metricHeader],
+            visibleRows.map((r) => [
+                rankOf(r, rankMode),
+                r.stockItem,
+                valueTierFor(cumPctOf(r, rankMode)),
+                metricOf(r, rankMode).toFixed(2),
+            ]),
         );
     }
 
     return (
-        <div className="flex max-h-[640px] min-h-[480px] flex-col overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+        <div className="flex h-[calc(100vh-200px)] min-h-[480px] flex-col overflow-hidden rounded-lg border border-border bg-card shadow-sm">
             <div className="flex items-center justify-between gap-300 border-b border-border p-400">
                 <h2 className="flex items-center gap-200 font-heading text-400 font-semibold text-foreground">
                     <AlertTriangle className="icon-size-300 text-muted-foreground" />
@@ -195,9 +203,11 @@ export function RankedListPanel({
                         <ListRow
                             key={r.stockItemKey}
                             row={r}
+                            rankMode={rankMode}
                             isSelected={r.stockItemKey === selectedStockItemKey}
                             sparkline={sparklineData[r.stockItemKey]}
-                            onSelect={() => onSelectItem(r.stockItemKey, r.stockItem, valueTierFor(r.cumulativeValuePct))}
+                            onVisible={requestSparkline}
+                            onSelect={() => onSelectItem(r, valueTierFor(cumPctOf(r, rankMode)))}
                         />
                     ))}
                 </ul>
@@ -208,17 +218,36 @@ export function RankedListPanel({
 
 function ListRow({
     row,
+    rankMode,
     isSelected,
     sparkline,
+    onVisible,
     onSelect,
 }: {
     row: ParetoRow;
+    rankMode: RankMode;
     isSelected: boolean;
     sparkline: { qty: number[]; dates: string[] } | undefined;
+    onVisible: (stockItemKey: number) => void;
     onSelect: () => void;
 }) {
+    const liRef = useRef<HTMLLIElement>(null);
+
+    useEffect(() => {
+        const el = liRef.current;
+        if (!el) return;
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0]?.isIntersecting) onVisible(row.stockItemKey);
+            },
+            { root: el.closest("ul"), rootMargin: "200px 0px" },
+        );
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, [row.stockItemKey, onVisible]);
+
     return (
-        <li>
+        <li ref={liRef}>
             <button
                 type="button"
                 onClick={onSelect}
@@ -229,10 +258,10 @@ function ListRow({
                 )}
             >
                 <span className="w-[28px] shrink-0 font-numeric text-100 text-muted-foreground">
-                    #{row.atRiskRank}
+                    #{rankOf(row, rankMode)}
                 </span>
                 <span
-                    className={cn("h-[14px] w-[4px] shrink-0 rounded-sm", VALUE_TIER_RAIL_CLASS[valueTierFor(row.cumulativeValuePct)])}
+                    className={cn("h-[14px] w-[4px] shrink-0 rounded-sm", VALUE_TIER_RAIL_CLASS[valueTierFor(cumPctOf(row, rankMode))])}
                     aria-hidden="true"
                 />
                 <span className="min-w-0 flex-1 truncate font-base text-200 text-foreground" title={row.stockItem}>
@@ -253,7 +282,9 @@ function ListRow({
                     <span aria-hidden="true" className="block h-[20px] w-[56px] shrink-0 animate-pulse rounded-md bg-muted" />
                 )}
                 <span className="w-[56px] shrink-0 text-right font-numeric text-100 text-foreground">
-                    {formatCompactCurrency(row.reorderValue)}
+                    {rankMode === "value"
+                        ? formatCompactCurrency(metricOf(row, rankMode))
+                        : formatCompactNumber(metricOf(row, rankMode))}
                 </span>
             </button>
         </li>

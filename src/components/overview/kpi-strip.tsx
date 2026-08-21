@@ -10,26 +10,17 @@ import { Package, Clock, AlertTriangle, TrendingUp, DollarSign } from "lucide-re
 import { fadeInUp, staggerContainer } from "@/lib/motion";
 import { useQueryPanel } from "@/hooks/use-query-panel";
 import { kpiStrip } from "@/queries/overview/kpi-strip";
-import { cn } from "@/lib/utils";
+import { cn, formatCompactCurrency, formatCompactNumber } from "@/lib/utils";
 import { scalarByColumnName } from "@/lib/to-data-table";
 import { KPI_STRIP_FIXTURE } from "@/lib/dev-preview-fixtures";
-import type { ParetoDataset } from "@/hooks/use-pareto-dataset";
+import { cumPctOf, metricOf, rankedRows, type ParetoDataset, type RankMode } from "@/hooks/use-pareto-dataset";
 
 type Severity = "critical" | "at-risk" | "on-track" | "neutral";
 
 interface KpiStripProps {
     dataset: ParetoDataset;
+    rankMode: RankMode;
     cutoffPct: number;
-}
-
-/** "$98.8M" / "$640K" / "$420" — this app's numbers run large (aggregated over the full ~11-month
- * sample), so a raw `toLocaleString()` dollar figure would be unreadably long in a KPI tile. */
-function formatCompactCurrency(value: number): string {
-    if (!Number.isFinite(value)) return "—";
-    const abs = Math.abs(value);
-    if (abs >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
-    if (abs >= 1_000) return `$${(value / 1_000).toFixed(1)}K`;
-    return `$${value.toFixed(0)}`;
 }
 
 const RAIL_CLASS: Record<Severity, string> = {
@@ -90,7 +81,7 @@ function TileCard({
     );
 }
 
-export function KpiStrip({ dataset, cutoffPct }: KpiStripProps) {
+export function KpiStrip({ dataset, rankMode, cutoffPct }: KpiStripProps) {
     const panel = useQueryPanel(kpiStrip());
     const prefersReducedMotion = useReducedMotion();
 
@@ -143,9 +134,13 @@ export function KpiStrip({ dataset, cutoffPct }: KpiStripProps) {
     // The two cutoff-based tiles are a client-side reduction over the shared
     // pareto dataset at the current slider position, not their own DAX
     // measures — see SPEC.md's "KPI strip — becomes hybrid" section.
-    const cutoffIdx = dataset.rows.findIndex((r) => r.cumulativeValuePct >= cutoffPct);
-    const itemsInCutoff = cutoffIdx === -1 ? dataset.rows.length : cutoffIdx + 1;
-    const valueInCutoff = dataset.rows.slice(0, itemsInCutoff).reduce((sum, r) => sum + r.reorderValue, 0);
+    // Ordered by whichever rank mode is active — cumulative % is only monotonic in the matching
+    // order. See use-pareto-dataset.ts.
+    const rows = rankedRows(dataset, rankMode);
+    const cutoffIdx = rows.findIndex((r) => cumPctOf(r, rankMode) >= cutoffPct);
+    const itemsInCutoff = cutoffIdx === -1 ? rows.length : cutoffIdx + 1;
+    const metricInCutoff = rows.slice(0, itemsInCutoff).reduce((sum, r) => sum + metricOf(r, rankMode), 0);
+    const formatMetric = rankMode === "value" ? formatCompactCurrency : formatCompactNumber;
 
     return (
         <motion.div
@@ -192,9 +187,9 @@ export function KpiStrip({ dataset, cutoffPct }: KpiStripProps) {
                 prefersReducedMotion={prefersReducedMotion}
             />
             <TileCard
-                label="Reorder Value In Cutoff"
+                label={rankMode === "value" ? "Reorder Value In Cutoff" : "Reorder Qty In Cutoff"}
                 icon={DollarSign}
-                value={formatCompactCurrency(valueInCutoff)}
+                value={formatMetric(metricInCutoff)}
                 context="Reacts to the cutoff slider below"
                 severity="critical"
                 prefersReducedMotion={prefersReducedMotion}

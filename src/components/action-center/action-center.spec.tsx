@@ -49,10 +49,14 @@ const PARETO_TABLE = {
         { name: "[Value Share %]" },
         { name: "[Cumulative Value %]" },
         { name: "[At Risk Rank]" },
+        { name: "[Reorder Value Rank]" },
+        { name: "[Suggested Reorder Qty]" },
+        { name: "[Qty Share %]" },
+        { name: "[Cumulative Qty %]" },
     ],
     rows: [
-        [17, "Shipping carton (Brown)", "Long Lead Time", 3200000, 0.5, 0.5, 1],
-        [126, "Pallet wrap 500mm x 300m", "Short Lead Time", 940000, 0.1, 0.97, 5],
+        [17, "Shipping carton (Brown)", "Long Lead Time", 3200000, 0.5, 0.5, 1, 1, 320, 0.5, 0.5],
+        [126, "Pallet wrap 500mm x 300m", "Short Lead Time", 940000, 0.1, 0.97, 5, 2, 94, 0.1, 0.97],
     ],
 };
 
@@ -95,7 +99,7 @@ describe("ActionCenter", () => {
 
     it("shows the detail placeholder when nothing is selected yet", async () => {
         mockAllQueries();
-        render(<ActionCenter initialSelectedItemName={null} />);
+        render(<ActionCenter rankMode="value" initialSelectedItemName={null} />);
 
         await screen.findByText("Shipping carton (Brown)");
         expect(screen.getByText(/select an item/i)).toBeInTheDocument();
@@ -103,18 +107,18 @@ describe("ActionCenter", () => {
 
     it("selects the item clicked in the list and shows its detail", async () => {
         mockAllQueries();
-        render(<ActionCenter initialSelectedItemName={null} />);
+        render(<ActionCenter rankMode="value" initialSelectedItemName={null} />);
 
         const row = await screen.findByText("Pallet wrap 500mm x 300m");
         fireEvent.click(row);
 
-        expect(await screen.findByText(/Tier C · rank #5 of 672/)).toBeInTheDocument();
+        expect(await screen.findByText(/Tier C · rank #2 of 2 by \$ value/)).toBeInTheDocument();
     });
 
     it("auto-selects the item handed off from Page 1's click-through", async () => {
         mockAllQueries();
-        render(<ActionCenter initialSelectedItemName="Pallet wrap 500mm x 300m" />);
+        render(<ActionCenter rankMode="value" initialSelectedItemName="Pallet wrap 500mm x 300m" />);
 
-        expect(await screen.findByText(/Tier C · rank #5 of 672/)).toBeInTheDocument();
+        expect(await screen.findByText(/Tier C · rank #2 of 2 by \$ value/)).toBeInTheDocument();
     });
 });

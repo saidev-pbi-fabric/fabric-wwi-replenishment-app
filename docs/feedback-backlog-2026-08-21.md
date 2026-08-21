@@ -13,16 +13,23 @@ survives a cutoff. Check which of items 1–6 are actually done in the code befo
 still open — this file is updated to strike through items as they land, but verify against the
 diff, don't trust the checklist blindly if it looks stale.
 
-- [ ] 1. Global rank-mode toggle (qty ⇄ $) + dynamic labeling — SM measures + App.tsx state +
-      Overview + Action Center wiring.
-- [ ] 2. Pareto chart y-axis zero-baseline fix (`scale: { zero: true }`, auto "nice" ticks).
-- [ ] 3. Currency M → B dynamic formatting.
-- [ ] 4. Default chart-window toggle = Fixed (B).
-- [ ] 5. Dense-rank tie collision fix (unique chart x-slot vs. displayed rank).
-- [ ] 6. Table scrollbar/empty-space CSS fix.
+- [x] 1. Global rank-mode toggle (qty ⇄ $) + dynamic labeling — 4 new SM measures (live-verified),
+      `RankMode` lifted to App.tsx, shared toggle in header, wired through KpiStrip, ParetoRiskView,
+      RankedListPanel, ItemDetailPanel (rank/tier/CSV all mode-aware now).
+- [x] 2. Pareto chart y-axis zero-baseline fix — `scale: { zero: true }` explicit, ticks left to
+      Vega's automatic "nice" selection (no hardcoded step).
+- [x] 3. Currency M → B dynamic formatting — centralized `formatCompactCurrency`/`formatCompactNumber`
+      in `src/lib/utils.ts` (deduped 3 local copies), both handle the B tier now.
+- [x] 4. Default chart-window toggle = Fixed (B).
+- [x] 5. Dense-rank tie collision fix — chart x-position now uses a sequential `ChartSlot` (always
+      unique), displayed rank (`DisplayRank`, can tie) is tooltip-only; selection keys off
+      `StockItemKey` instead of rank, for the same reason.
+- [x] 6. Table scrollbar/empty-space CSS fix — `pr-200` on the scroll container so the scrollbar
+      no longer sits on top of the "Cum. %" column.
 
-Verify (tests/tsc/lint/build) + deploy (`npx rayfin up`) once all 6 land, not per sub-item —
-these all touch the same one component, splitting the deploy 6 ways wastes the remaining budget.
+92/92 tests, tsc/lint clean vs. documented baseline, `npm run build` clean. All 4 new SM measures
+live-verified against the real model before wiring (top qty item, cumulative monotonicity).
+Not yet deployed/user-confirmed against the live app — see commit log for when `npx rayfin up` ran.
 
 ## LOCKED WORK ORDER (as of last discussion) — each basis-tagged, nothing starts until user says go
 

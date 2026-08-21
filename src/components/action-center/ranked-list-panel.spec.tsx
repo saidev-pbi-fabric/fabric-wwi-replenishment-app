@@ -33,6 +33,10 @@ const ROWS: ParetoDataset["rows"] = [
         valueSharePct: 0.5,
         cumulativeValuePct: 0.5,
         atRiskRank: 1,
+        reorderValueRank: 1,
+        suggestedReorderQty: 320,
+        qtySharePct: 0.5,
+        cumulativeQtyPct: 0.5,
     },
     {
         stockItemKey: 126,
@@ -42,11 +46,15 @@ const ROWS: ParetoDataset["rows"] = [
         valueSharePct: 0.1,
         cumulativeValuePct: 0.97,
         atRiskRank: 5,
+        reorderValueRank: 2,
+        suggestedReorderQty: 94,
+        qtySharePct: 0.1,
+        cumulativeQtyPct: 0.97,
     },
 ];
 
 function readyDataset(rows = ROWS): ParetoDataset {
-    return { status: "ready", usingDevFixture: false, rows };
+    return { status: "ready", usingDevFixture: false, rows, rowsByValueRank: rows };
 }
 
 beforeEach(() => {
@@ -62,7 +70,8 @@ describe("RankedListPanel", () => {
     it("shows a loading skeleton while the dataset is loading", () => {
         render(
             <RankedListPanel
-                dataset={{ status: "loading", usingDevFixture: false, rows: [] }}
+                dataset={{ status: "loading", usingDevFixture: false, rows: [], rowsByValueRank: [] }}
+                rankMode="value"
                 selectedStockItemKey={null}
                 onSelectItem={vi.fn()}
             />,
@@ -71,24 +80,27 @@ describe("RankedListPanel", () => {
     });
 
     it("renders every row with its stock item name once loaded", async () => {
-        render(<RankedListPanel dataset={readyDataset()} selectedStockItemKey={null} onSelectItem={vi.fn()} />);
+        render(<RankedListPanel dataset={readyDataset()} rankMode="value" selectedStockItemKey={null} onSelectItem={vi.fn()} />);
 
         expect(await screen.findByText("Shipping carton (Brown)")).toBeInTheDocument();
         expect(screen.getByText("Pallet wrap 500mm x 300m")).toBeInTheDocument();
     });
 
-    it("calls onSelectItem with the row's key, name, and value tier when clicked", async () => {
+    it("calls onSelectItem with the row and its value tier when clicked", async () => {
         const onSelectItem = vi.fn();
-        render(<RankedListPanel dataset={readyDataset()} selectedStockItemKey={null} onSelectItem={onSelectItem} />);
+        render(<RankedListPanel dataset={readyDataset()} rankMode="value" selectedStockItemKey={null} onSelectItem={onSelectItem} />);
 
         const row = await screen.findByText("Shipping carton (Brown)");
         fireEvent.click(row);
 
-        expect(onSelectItem).toHaveBeenCalledWith(17, "Shipping carton (Brown)", "A");
+        expect(onSelectItem).toHaveBeenCalledWith(
+            expect.objectContaining({ stockItemKey: 17, stockItem: "Shipping carton (Brown)" }),
+            "A",
+        );
     });
 
     it("filters client-side by value tier when a tier chip is clicked, without a re-query", async () => {
-        render(<RankedListPanel dataset={readyDataset()} selectedStockItemKey={null} onSelectItem={vi.fn()} />);
+        render(<RankedListPanel dataset={readyDataset()} rankMode="value" selectedStockItemKey={null} onSelectItem={vi.fn()} />);
 
         await screen.findByText("Shipping carton (Brown)");
         const callsBeforeFilter = mockQuery.mock.calls.length;
@@ -101,7 +113,7 @@ describe("RankedListPanel", () => {
     });
 
     it("shows a tier-aware empty message when a tier has no matching rows", async () => {
-        render(<RankedListPanel dataset={readyDataset()} selectedStockItemKey={null} onSelectItem={vi.fn()} />);
+        render(<RankedListPanel dataset={readyDataset()} rankMode="value" selectedStockItemKey={null} onSelectItem={vi.fn()} />);
 
         await screen.findByText("Shipping carton (Brown)");
         fireEvent.click(screen.getByRole("button", { name: "Tier B" }));
@@ -110,7 +122,7 @@ describe("RankedListPanel", () => {
     });
 
     it("shows an empty message when the dataset has no rows", async () => {
-        render(<RankedListPanel dataset={readyDataset([])} selectedStockItemKey={null} onSelectItem={vi.fn()} />);
+        render(<RankedListPanel dataset={readyDataset([])} rankMode="value" selectedStockItemKey={null} onSelectItem={vi.fn()} />);
 
         expect(await screen.findByText(/no at-risk items/i)).toBeInTheDocument();
     });
@@ -118,7 +130,8 @@ describe("RankedListPanel", () => {
     it("shows an error banner when the dataset fails to load", async () => {
         render(
             <RankedListPanel
-                dataset={{ status: "error", usingDevFixture: false, rows: [] }}
+                dataset={{ status: "error", usingDevFixture: false, rows: [], rowsByValueRank: [] }}
+                rankMode="value"
                 selectedStockItemKey={null}
                 onSelectItem={vi.fn()}
             />,
@@ -129,16 +142,20 @@ describe("RankedListPanel", () => {
 
     it("bounds the panel height so a long list scrolls internally instead of growing the page", async () => {
         const { container } = render(
-            <RankedListPanel dataset={readyDataset()} selectedStockItemKey={null} onSelectItem={vi.fn()} />,
+            <RankedListPanel dataset={readyDataset()} rankMode="value" selectedStockItemKey={null} onSelectItem={vi.fn()} />,
         );
 
         await screen.findByText("Shipping carton (Brown)");
 
-        expect(container.firstElementChild?.className).toMatch(/max-h-/);
+        // Viewport-relative height (not a fixed 640px cap, per user feedback that the list was
+        // cutting off early with room to spare) but still bounded + internally scrollable, not
+        // free to grow the whole page.
+        expect(container.firstElementChild?.className).toMatch(/h-\[calc\(100vh-/);
+        expect(container.firstElementChild?.className).toMatch(/overflow-hidden/);
     });
 
     it("filters rows client-side by name as the user types, without a re-query", async () => {
-        render(<RankedListPanel dataset={readyDataset()} selectedStockItemKey={null} onSelectItem={vi.fn()} />);
+        render(<RankedListPanel dataset={readyDataset()} rankMode="value" selectedStockItemKey={null} onSelectItem={vi.fn()} />);
 
         await screen.findByText("Shipping carton (Brown)");
         const callsBeforeSearch = mockQuery.mock.calls.length;
@@ -151,7 +168,7 @@ describe("RankedListPanel", () => {
     });
 
     it("shows a search-aware empty message when no item matches the query", async () => {
-        render(<RankedListPanel dataset={readyDataset()} selectedStockItemKey={null} onSelectItem={vi.fn()} />);
+        render(<RankedListPanel dataset={readyDataset()} rankMode="value" selectedStockItemKey={null} onSelectItem={vi.fn()} />);
 
         await screen.findByText("Shipping carton (Brown)");
         fireEvent.change(screen.getByLabelText("Search items by name"), { target: { value: "zzz-no-match" } });
@@ -160,7 +177,7 @@ describe("RankedListPanel", () => {
     });
 
     it("downloads a CSV of the currently visible (filtered) rows", async () => {
-        render(<RankedListPanel dataset={readyDataset()} selectedStockItemKey={null} onSelectItem={vi.fn()} />);
+        render(<RankedListPanel dataset={readyDataset()} rankMode="value" selectedStockItemKey={null} onSelectItem={vi.fn()} />);
 
         await screen.findByText("Shipping carton (Brown)");
         fireEvent.change(screen.getByLabelText("Search items by name"), { target: { value: "pallet" } });
@@ -169,12 +186,12 @@ describe("RankedListPanel", () => {
         expect(mockDownloadCsv).toHaveBeenCalledWith(
             "at-risk-items.csv",
             ["Rank", "Item", "Value Tier", "Reorder Value"],
-            [[5, "Pallet wrap 500mm x 300m", "C", "940000.00"]],
+            [[2, "Pallet wrap 500mm x 300m", "C", "940000.00"]],
         );
     });
 
     it("disables the CSV button when there are no rows to export", async () => {
-        render(<RankedListPanel dataset={readyDataset([])} selectedStockItemKey={null} onSelectItem={vi.fn()} />);
+        render(<RankedListPanel dataset={readyDataset([])} rankMode="value" selectedStockItemKey={null} onSelectItem={vi.fn()} />);
 
         expect(await screen.findByRole("button", { name: /csv/i })).toBeDisabled();
     });

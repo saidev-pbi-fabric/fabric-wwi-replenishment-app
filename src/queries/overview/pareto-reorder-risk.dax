@@ -3,9 +3,14 @@ SUMMARIZECOLUMNS(
     'Stock Item'[Stock Item Key],
     'Stock Item'[Stock Item],
     'Stock Item'[Lead Time Priority Tier],
+    FILTER(ALL('Stock Item'), [Reorder Value Total] > 0),
     "Reorder Value", [Reorder Value Total],
     "Value Share %", [Reorder Value Share %],
     "Cumulative Value %", [Cumulative Reorder Value %],
-    "At Risk Rank", [At Risk Rank]
+    "At Risk Rank", [At Risk Rank],
+    "Reorder Value Rank", [Reorder Value Rank],
+    "Suggested Reorder Qty", [Suggested Reorder Qty Total],
+    "Qty Share %", [Suggested Reorder Qty Share %],
+    "Cumulative Qty %", [Cumulative Suggested Reorder Qty %]
 )
 ORDER BY [At Risk Rank] ASC

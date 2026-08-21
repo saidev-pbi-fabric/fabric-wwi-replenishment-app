@@ -8,6 +8,7 @@
 import { useEffect, useState } from "react";
 import { ScrollText } from "lucide-react";
 import { getRayfinClient, type ReorderActionAuditLogRecord } from "@/lib/rayfin-client";
+import { parseApiDate } from "@/lib/utils";
 
 interface ReorderActionAuditLogPanelProps {
     stockItemKey: number;
@@ -45,7 +46,7 @@ export function ReorderActionAuditLogPanel({ stockItemKey, refreshKey }: Reorder
                 if (cancelled) return;
                 const merged = groups
                     .flat()
-                    .sort((a, b) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime());
+                    .sort((a, b) => (parseApiDate(b.changedAt)?.getTime() ?? 0) - (parseApiDate(a.changedAt)?.getTime() ?? 0));
                 setEntries(merged);
                 setStatus("ready");
             })
@@ -101,7 +102,7 @@ export function ReorderActionAuditLogPanel({ stockItemKey, refreshKey }: Reorder
                 {entries.map((entry) => (
                     <li key={entry.id} className="flex gap-200 border-b border-border py-200 text-100 last:border-b-0">
                         <span className="w-[92px] shrink-0 font-numeric text-100 text-muted-foreground">
-                            {new Date(entry.changedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                            {parseApiDate(entry.changedAt)?.toLocaleDateString(undefined, { month: "short", day: "numeric" }) ?? "—"}
                         </span>
                         <div className="min-w-0">
                             <p className="font-base text-100 text-foreground">

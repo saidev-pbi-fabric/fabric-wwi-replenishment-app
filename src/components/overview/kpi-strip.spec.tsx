@@ -23,13 +23,13 @@ vi.mock("@/lib/fabric-client", () => ({
 }));
 
 const SAMPLE_ROWS: ParetoRow[] = [
-    { stockItemKey: 1, stockItem: "Item A", tier: "Long Lead Time", reorderValue: 60_000_000, valueSharePct: 0.6, cumulativeValuePct: 0.6, atRiskRank: 1 },
-    { stockItemKey: 2, stockItem: "Item B", tier: "Medium Lead Time", reorderValue: 25_000_000, valueSharePct: 0.25, cumulativeValuePct: 0.85, atRiskRank: 2 },
-    { stockItemKey: 3, stockItem: "Item C", tier: "Short Lead Time", reorderValue: 15_000_000, valueSharePct: 0.15, cumulativeValuePct: 1.0, atRiskRank: 3 },
+    { stockItemKey: 1, stockItem: "Item A", tier: "Long Lead Time", reorderValue: 60_000_000, valueSharePct: 0.6, cumulativeValuePct: 0.6, atRiskRank: 1, reorderValueRank: 1, suggestedReorderQty: 6000, qtySharePct: 0.6, cumulativeQtyPct: 0.6 },
+    { stockItemKey: 2, stockItem: "Item B", tier: "Medium Lead Time", reorderValue: 25_000_000, valueSharePct: 0.25, cumulativeValuePct: 0.85, atRiskRank: 2, reorderValueRank: 2, suggestedReorderQty: 2500, qtySharePct: 0.25, cumulativeQtyPct: 0.85 },
+    { stockItemKey: 3, stockItem: "Item C", tier: "Short Lead Time", reorderValue: 15_000_000, valueSharePct: 0.15, cumulativeValuePct: 1.0, atRiskRank: 3, reorderValueRank: 3, suggestedReorderQty: 1500, qtySharePct: 0.15, cumulativeQtyPct: 1.0 },
 ];
 
 function makeDataset(rows: ParetoRow[] = SAMPLE_ROWS): ParetoDataset {
-    return { status: "ready", usingDevFixture: false, rows };
+    return { status: "ready", usingDevFixture: false, rows, rowsByValueRank: rows };
 }
 
 describe("KpiStrip", () => {
@@ -39,7 +39,7 @@ describe("KpiStrip", () => {
 
     it("renders a skeleton for each tile while loading", () => {
         mockQuery.mockReturnValue(new Promise(() => {}));
-        render(<KpiStrip dataset={makeDataset()} cutoffPct={0.8} />);
+        render(<KpiStrip dataset={makeDataset()} rankMode="value" cutoffPct={0.8} />);
         expect(screen.queryByText("Items Tracked")).not.toBeInTheDocument();
     });
 
@@ -57,7 +57,7 @@ describe("KpiStrip", () => {
             fromCache: false,
         });
 
-        render(<KpiStrip dataset={makeDataset()} cutoffPct={0.8} />);
+        render(<KpiStrip dataset={makeDataset()} rankMode="value" cutoffPct={0.8} />);
 
         await waitFor(() => expect(screen.getByText("672")).toBeInTheDocument());
         expect(screen.getByText("12.3")).toBeInTheDocument();
@@ -74,7 +74,7 @@ describe("KpiStrip", () => {
             fromCache: false,
         });
 
-        render(<KpiStrip dataset={makeDataset()} cutoffPct={0.8} />);
+        render(<KpiStrip dataset={makeDataset()} rankMode="value" cutoffPct={0.8} />);
 
         await waitFor(() =>
             expect(screen.getByText(/no kpi data available/i)).toBeInTheDocument(),
@@ -87,7 +87,7 @@ describe("KpiStrip", () => {
             error: { message: "401 Unauthorized" },
         });
 
-        render(<KpiStrip dataset={makeDataset()} cutoffPct={0.8} />);
+        render(<KpiStrip dataset={makeDataset()} rankMode="value" cutoffPct={0.8} />);
 
         await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
         expect(screen.getByRole("alert")).toHaveTextContent("401 Unauthorized");

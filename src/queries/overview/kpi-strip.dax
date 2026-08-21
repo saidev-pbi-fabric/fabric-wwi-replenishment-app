@@ -1,6 +1,8 @@
 EVALUATE
+VAR TrackedItems = FILTER(ALL('Stock Item'), [Reorder Value Total] > 0)
+RETURN
 ROW(
-    "Items Tracked", DISTINCTCOUNT('Stock Item'[Stock Item Key]),
-    "Avg Lead Time Days", ROUND(AVERAGE('Stock Item'[Lead Time Days]), 1),
-    "Accelerating Demand Items", COUNTROWS(FILTER(ALL('Stock Item'), [Demand Trend %] > 0))
+    "Items Tracked", COUNTROWS(TrackedItems),
+    "Avg Lead Time Days", ROUND(AVERAGEX(TrackedItems, 'Stock Item'[Lead Time Days]), 1),
+    "Accelerating Demand Items", COUNTROWS(FILTER(TrackedItems, [Demand Trend %] > 0))
 )

@@ -12,7 +12,7 @@ import { fadeInUp } from "@/lib/motion";
 import { LandingPage } from "@/components/landing/landing-page";
 import { KpiStrip } from "@/components/overview/kpi-strip";
 import { ParetoRiskView } from "@/components/overview/pareto-risk-view";
-import { useParetoDataset } from "@/hooks/use-pareto-dataset";
+import { useParetoDataset, type RankMode } from "@/hooks/use-pareto-dataset";
 import { ActionCenter } from "@/components/action-center/action-center";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +23,9 @@ type Page = "landing" | "overview" | "action-center";
 function App() {
     const [page, setPage] = useState<Page>("landing");
     const [selectedItemName, setSelectedItemName] = useState<string | null>(null);
+    // Single shared toggle, lifted here so Overview and Action Center never disagree on which
+    // metric is driving the app — flagged directly: "2 diff ranks in 2 pages will trip users."
+    const [rankMode, setRankMode] = useState<RankMode>("value");
 
     const goToActionCenter = (stockItemName: string) => {
         setSelectedItemName(stockItemName);
@@ -58,7 +61,10 @@ function App() {
                             </NavTab>
                         </nav>
                     </div>
-                    <ThemeToggle />
+                    <div className="flex items-center gap-300">
+                        {page !== "landing" ? <RankModeToggle rankMode={rankMode} onChange={setRankMode} /> : null}
+                        <ThemeToggle />
+                    </div>
                 </header>
 
                 <AnimatePresence mode="popLayout" initial={false}>
@@ -66,9 +72,9 @@ function App() {
                         {page === "landing" ? (
                             <LandingPage onOpenDashboard={() => setPage("overview")} />
                         ) : page === "overview" ? (
-                            <OverviewPage onSelectItem={goToActionCenter} />
+                            <OverviewPage rankMode={rankMode} onSelectItem={goToActionCenter} />
                         ) : (
-                            <ActionCenterPage initialSelectedItemName={selectedItemName} />
+                            <ActionCenterPage rankMode={rankMode} initialSelectedItemName={selectedItemName} />
                         )}
                     </motion.div>
                 </AnimatePresence>
@@ -104,6 +110,40 @@ function NavTab({
     );
 }
 
+/**
+ * One shared control for the whole app — not duplicated per page — so Overview and Action
+ * Center are always looking at the same lens. Qty (At Risk Rank: velocity vs. lead time, no
+ * price) vs $ Value (Reorder Value Rank: qty x unit price). See use-pareto-dataset.ts.
+ */
+function RankModeToggle({ rankMode, onChange }: { rankMode: RankMode; onChange: (mode: RankMode) => void }) {
+    return (
+        <div className="flex items-center gap-100" role="group" aria-label="Rank by">
+            <span className="mr-100 font-base text-200 text-muted-foreground">Rank by</span>
+            {(
+                [
+                    ["qty", "Qty"],
+                    ["value", "$ Value"],
+                ] as const
+            ).map(([mode, label]) => (
+                <button
+                    key={mode}
+                    type="button"
+                    onClick={() => onChange(mode)}
+                    aria-pressed={rankMode === mode}
+                    className={cn(
+                        "rounded-md border px-300 py-100-nudge font-base text-200 font-medium transition-colors",
+                        rankMode === mode
+                            ? "border-border bg-accent text-foreground"
+                            : "border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground",
+                    )}
+                >
+                    {label}
+                </button>
+            ))}
+        </div>
+    );
+}
+
 function ThemeToggle() {
     const { isDark, toggleTheme } = useThemeContext();
     return (
@@ -118,7 +158,13 @@ function ThemeToggle() {
     );
 }
 
-function OverviewPage({ onSelectItem }: { onSelectItem: (stockItemName: string) => void }) {
+function OverviewPage({
+    rankMode,
+    onSelectItem,
+}: {
+    rankMode: RankMode;
+    onSelectItem: (stockItemName: string) => void;
+}) {
     const dataset = useParetoDataset();
     const [cutoffPct, setCutoffPct] = useState(DEFAULT_CUTOFF_PCT);
 
@@ -132,9 +178,10 @@ function OverviewPage({ onSelectItem }: { onSelectItem: (stockItemName: string) 
                     Demand-driven reorder attention, ranked by sales velocity vs. lead time.
                 </p>
             </div>
-            <KpiStrip dataset={dataset} cutoffPct={cutoffPct} />
+            <KpiStrip dataset={dataset} rankMode={rankMode} cutoffPct={cutoffPct} />
             <ParetoRiskView
                 dataset={dataset}
+                rankMode={rankMode}
                 cutoffPct={cutoffPct}
                 onCutoffChange={setCutoffPct}
                 onSelectItem={onSelectItem}
@@ -143,18 +190,18 @@ function OverviewPage({ onSelectItem }: { onSelectItem: (stockItemName: string) 
     );
 }
 
-function ActionCenterPage({ initialSelectedItemName }: { initialSelectedItemName: string | null }) {
-    return (
-        <div className="flex flex-col gap-300">
-            <div>
-                <h1 className="font-heading text-600 font-semibold text-foreground">Action Center</h1>
-                <p className="mt-100 font-base text-300 text-muted-foreground">
-                    Select an at-risk item to review its detail and record a reorder action.
-                </p>
-            </div>
-            <ActionCenter initialSelectedItemName={initialSelectedItemName} />
-        </div>
-    );
+function ActionCenterPage({
+    rankMode,
+    initialSelectedItemName,
+}: {
+    rankMode: RankMode;
+    initialSelectedItemName: string | null;
+}) {
+    // No page-level H1 here — the nav tab above already reads "Action Center" (active-highlighted),
+    // so a repeated "Action Center" heading directly under it was pure duplication with no added
+    // information (flagged directly: "the existing one is a repetition"). Overview keeps its own
+    // H1 because that one adds real framing copy the nav label doesn't carry.
+    return <ActionCenter rankMode={rankMode} initialSelectedItemName={initialSelectedItemName} />;
 }
 
 export default App;

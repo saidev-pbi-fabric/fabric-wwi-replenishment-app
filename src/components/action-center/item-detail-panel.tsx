@@ -13,15 +13,22 @@ import { cn, formatShortDate } from "@/lib/utils";
 import { scalarByColumnName } from "@/lib/to-data-table";
 import { ITEM_DETAIL_FIXTURE, ITEM_SALES_TREND_FIXTURE } from "@/lib/dev-preview-fixtures";
 import type { ValueTier } from "@/lib/severity";
+import type { RankMode } from "@/hooks/use-pareto-dataset";
 import { ItemTrendChart } from "@/components/action-center/item-trend-chart";
 
 interface ItemDetailPanelProps {
     stockItemKey: number | null;
     /** ABC value tier for the selected item, from the shared Pareto dataset (see action-center.tsx). */
     tier: ValueTier | null;
+    /** Rank matching the active rankMode, from the shared Pareto dataset — not re-queried here, so
+     * it can never disagree with what the ranked list/chart show for the same item. */
+    rank: number | null;
+    rankMode: RankMode;
+    /** Row count of the shared Pareto dataset (see action-center.tsx) — the "of N" in the rationale line. */
+    totalItemCount: number;
 }
 
-export function ItemDetailPanel({ stockItemKey, tier }: ItemDetailPanelProps) {
+export function ItemDetailPanel({ stockItemKey, tier, rank, rankMode, totalItemCount }: ItemDetailPanelProps) {
     // Hooks run unconditionally — an empty connection/query is the hook's
     // own "skip" signal (see useSemanticModelQuery's `canExecute`), so this
     // stays a no-op query until a key is actually selected.
@@ -99,17 +106,20 @@ export function ItemDetailPanel({ stockItemKey, tier }: ItemDetailPanelProps) {
     const recentDailySales = Number(scalarByColumnName(table, "[Recent Daily Sales Rate]") ?? 0);
     const demandTrend = Number(scalarByColumnName(table, "[Demand Trend]") ?? 0);
     const suggestedReorderQty = Number(scalarByColumnName(table, "[Suggested Reorder Qty]") ?? 0);
-    const atRiskRank = String(scalarByColumnName(table, "[At Risk Rank]") ?? "—");
 
     // Composed client-side from fields already on screen — not a new metric, just a plain-English
     // read of them, so the "why" behind the rank doesn't require mentally parsing separate cells.
     // Matches the locked mockup's phrasing (docs/mockup-reference.html, #page-action rationale
     // line), extended to read sensibly for tiers B/C too (the mockup only illustrates a Tier A row).
+    // Rank/mode label is explicit ("by $ value" / "by qty") — with two live rank modes in the app
+    // now, a bare "#3" is ambiguous without saying which lens it's from.
     const trendWord = demandTrend > 0.03 ? "accelerating" : demandTrend < -0.03 ? "declining" : "steady";
     const trendPct = `${demandTrend >= 0 ? "+" : ""}${(demandTrend * 100).toFixed(0)}%`;
     const tierLabel = tier ?? "—";
+    const rankLabel = rank !== null ? `#${rank}` : "—";
+    const modeLabel = rankMode === "value" ? "$ value" : "qty";
     const rationale =
-        `Tier ${tierLabel} · rank #${atRiskRank} of 672. Sales rate ${trendWord} ${trendPct} vs. the prior 30 days, ` +
+        `Tier ${tierLabel} · rank ${rankLabel} of ${totalItemCount} by ${modeLabel}. Sales rate ${trendWord} ${trendPct} vs. the prior 30 days, ` +
         `against a ${leadTimeDays}-day lead time` +
         (tier === "A" ? " — the combination that puts it in the top concentration band." : ".");
 
@@ -135,7 +145,7 @@ export function ItemDetailPanel({ stockItemKey, tier }: ItemDetailPanelProps) {
     return (
         <div
             className={cn(
-                "flex h-full min-h-[480px] flex-col rounded-lg border border-border bg-card p-400 shadow-sm transition-opacity duration-200",
+                "flex flex-col rounded-lg border border-border bg-card p-400 shadow-sm transition-opacity duration-200",
                 isRefreshing ? "opacity-50" : "opacity-100",
             )}
         >
@@ -160,13 +170,21 @@ export function ItemDetailPanel({ stockItemKey, tier }: ItemDetailPanelProps) {
                 {!usingTrendFixture && (trendPanel.status === "loading" || trendPanel.status === "refreshing") && salesTrendData.length === 0 ? (
                     <div className="h-[100px] w-full animate-pulse rounded-md bg-muted" />
                 ) : salesTrendData.length > 0 ? (
-                    <ItemTrendChart
-                        data={salesTrendData}
-                        startLabel={salesTrendDates[0] ?? ""}
-                        endLabel={salesTrendDates[salesTrendDates.length - 1] ?? ""}
-                        className="text-critical"
-                        ariaLabel="Daily units sold, last 60 days"
-                    />
+                    <>
+                        <ItemTrendChart
+                            data={salesTrendData}
+                            startLabel={salesTrendDates[0] ?? ""}
+                            endLabel={salesTrendDates[salesTrendDates.length - 1] ?? ""}
+                            className="text-critical"
+                            ariaLabel="Daily units sold, last 60 days"
+                        />
+                        {Math.min(...salesTrendData) === Math.max(...salesTrendData) ? (
+                            <p className="mt-100 font-base text-100 text-muted-foreground">
+                                Flat by design, not a rendering issue — this item sold the exact same quantity every
+                                day over this window, verified against the underlying data.
+                            </p>
+                        ) : null}
+                    </>
                 ) : (
                     <p className="text-200 text-muted-foreground">No recent sales history for this item.</p>
                 )}
