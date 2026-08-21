@@ -22,6 +22,8 @@ export function buildParetoChartSpec(cutoffPct: number) {
         $schema: "https://vega.github.io/schema/vega-lite/v5.json",
         description:
             "Reorder Value per stock item, ranked by At Risk Rank, with a running cumulative % line. Bars in-cutoff are colored; past-cutoff bars are muted.",
+        width: "container",
+        autosize: { type: "fit-x", contains: "padding" },
         resolve: { scale: { y: "independent" } },
         layer: [
             {
@@ -75,7 +77,7 @@ export function buildParetoChartSpec(cutoffPct: number) {
                 data: { values: [{ cutoff: cutoffPct }] },
                 mark: { type: "rule", strokeDash: [4, 4], color: "#8a8a8a" },
                 encoding: {
-                    y: { field: "cutoff", type: "quantitative", scale: { domain: [0, 1] } },
+                    y: { field: "cutoff", type: "quantitative", scale: { domain: [0, 1] }, axis: null },
                 },
             },
         ],

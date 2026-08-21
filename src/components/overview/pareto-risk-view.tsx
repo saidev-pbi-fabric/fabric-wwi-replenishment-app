@@ -199,7 +199,7 @@ export function ParetoRiskView({ dataset, cutoffPct, onCutoffChange, onSelectIte
                 theme={theme}
                 configVegaLite={{ range: { category: [...CUTOFF_COLOR_RANGE[isDark ? "dark" : "light"]] } }}
                 onInteraction={handleInteraction}
-                style={{ height: 320 }}
+                style={{ width: "100%", height: 320 }}
             />
 
             <div className="overflow-x-auto">
