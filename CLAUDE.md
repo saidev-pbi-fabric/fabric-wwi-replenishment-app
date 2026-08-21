@@ -68,6 +68,64 @@ Microsoft Fabric Hackathon 2026 entry (Hyderabad Data & AI Community + India Fab
 
 **Schedule-critical day: Monday (SM build)** - everything downstream depends on it, no slack.
 
+## Status (as of 2026-08-21, rank-mode toggle session — evening)
+Full detail in `docs/feedback-backlog-2026-08-21.md` — this session ran almost entirely off
+direct user feedback against the live deployed app (screenshots), not planned tasks. That file is
+the working log; keep it, don't delete once "done" — it has the basis-tag ("Feedback" / "Mockup
+drift" / "Live-data bug") for every change, per the new standing process rule below.
+- **[ROOT-CAUSE, FIXED]** Overview's Pareto chart's tallest bar wasn't landing at rank #1 — a
+  real modeling bug, not a rendering issue. `Cumulative Reorder Value` was accumulating in
+  qty-based `At Risk Rank` order instead of $-based order. Added `Reorder Value Rank` measure
+  (dense rank by `Reorder Value Total` desc) + rewired the cumulative measure to use it,
+  live-verified (top $ item: "Air cushion machine (Blue)", $182M, was buried at qty-rank #109).
+  Full writeup: `[[project_pareto_rank_confusion]]` in Claude's memory.
+- **[NEW]** A single shared **Rank By: Qty / $ Value** toggle, lifted to `App.tsx`, drives
+  Overview and Action Center together — previously Action Center silently stayed qty-ranked while
+  Overview switched to $, which read as broken/inconsistent to the user. 4 new qty-mode SM
+  measures added as counterparts to the existing $ ones (`Suggested Reorder Qty
+  Total/Share %/Cumulative/Cumulative %`). Every rank/headline/axis/table/CSV label switches
+  wording with the mode now — `use-pareto-dataset.ts` exports `rankedRows`/`rankOf`/`metricOf`/
+  `cumPctOf` helpers so every consumer branches the same way, not ad hoc per component.
+- **[FIXED]** Pareto chart y-axis wasn't zero-based — bars compressed into a narrow band, short
+  ones nearly invisible. Forced `scale: { zero: true }`; tick step left to Vega's automatic
+  "nice" selection so it scales correctly at any value range (was a hardcoded risk otherwise).
+- **[FIXED]** Dense-rank ties (two items sharing one rank number) were colliding on one chart
+  x-slot. Bars now position by a unique sequential `ChartSlot`; the displayed (tie-able) rank is
+  tooltip-only; click-selection keys off `StockItemKey`, never a rank number.
+- **[FIXED, real bug not cosmetic]** Reorder Actions/Audit Trail showed "Invalid Date" — Data API
+  Builder round-trips SQL Server `datetime2` columns in a non-ISO string shape the native `Date`
+  constructor can't parse. Added `parseApiDate`/`formatApiDateTime` in `src/lib/utils.ts`.
+- **[FIXED]** Action Center sparklines were blank past ~rank #40 — old code only ever fetched the
+  first 40 rows by rank; with 219 items and tier/search filters that jump straight past #40,
+  everything beyond stayed blank forever. Now lazy-fetches per row via `IntersectionObserver` on
+  scroll-into-view, works under any filter/scroll position.
+- **[FIXED]** 672-item Pareto view was including ~453 items with zero recent sales (zero
+  `Reorder Value Total`) — live-verified they contribute $0 to the curve regardless of inclusion,
+  so filtering them (`Reorder Value Total > 0`) drops the count to 219 with zero analysis lost.
+- Also: full-width-stacked Overview chart layout (was side-by-side) with a live A/B chart-window
+  toggle (Dynamic/Fixed, default now Fixed); currency formatting centralized with a billion tier;
+  redundant Action Center page H1 removed; panel title/caption restored to match
+  `docs/mockup-reference.html` ("Reorder Risk Concentration").
+- **[PROCESS, standing rule now]** User gave an explicit process instruction this session after
+  repeated same-category bugs: (1) re-read the actual mockup/source file fresh before any UI
+  change, never trust a spec's prose paraphrase of it; (2) run one live plausibility-check query
+  before shipping any new ranking/cumulative measure; (3) a second same-category bug in one
+  session means stop and audit that whole category, not another point-patch. Full text in Claude's
+  memory as `[[feedback_root_cause_and_stop_on_repeat]]`. Also re-confirmed: one backlog item at a
+  time, user checks and approves each before the next — an explicit mid-session correction after
+  this session's own bundled-list approach under-delivered once.
+- **[OPEN, next session]** Per `docs/feedback-backlog-2026-08-21.md`: Item Detail blank/black-area
+  screenshot needs the user's clarification (real bug or no item selected?) before touching it;
+  Action Center's date/audit-trail fixes above are believed correct but not yet user-confirmed
+  live; a live A/B/qty-mode 3-way visual check across both pages together hasn't happened yet.
+  Also flagged, not yet decided: on-chart bar value labels (reference: a YouTube Pareto-analysis
+  video the user compared against) — would need to be dynamic/limited to the leading few bars
+  only, given this dataset can run to 40-150 visible bars vs. that reference's ~19.
+- Verify: 92/92 tests, `tsc --noEmit` clean vs. the documented `use-query-panel.spec.ts` baseline,
+  `npm run lint` clean vs. the documented `main.tsx` baseline, `npm run build` clean, committed
+  (`f0cf9d5`, `ce554c5` on `rebuild/pareto-thesis`) and deployed (`npx rayfin up`,
+  deploy-20260821140453) — confirmed no code changes since that deploy.
+
 ## Status (as of 2026-08-21, mockup-fidelity rebuild session)
 Branch `rebuild/pareto-thesis` (pushed). Root cause found and fixed this session: `SPEC.md`'s
 rebuild amendment only paraphrased the locked Claude.ai mockup in prose, so earlier build passes
