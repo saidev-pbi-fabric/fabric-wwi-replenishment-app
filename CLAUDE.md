@@ -68,6 +68,48 @@ Microsoft Fabric Hackathon 2026 entry (Hyderabad Data & AI Community + India Fab
 
 **Schedule-critical day: Monday (SM build)** - everything downstream depends on it, no slack.
 
+## Status (as of 2026-08-21, mockup-fidelity rebuild session)
+Branch `rebuild/pareto-thesis` (pushed). Root cause found and fixed this session: `SPEC.md`'s
+rebuild amendment only paraphrased the locked Claude.ai mockup in prose, so earlier build passes
+drifted from it (wrong bar color, wrong layout, wrong tier semantics) despite the spec looking
+complete. Fix: saved the mockup's full HTML/CSS/JS verbatim to `docs/mockup-reference.html` —
+that file is ground truth from here on, not `SPEC.md`'s prose.
+- **[DONE, pushed, deployed]** All 3 pages rebuilt against the mockup directly, page by page, each
+  with its own commit: Landing (`8b54fb8` — trimmed to hero + 3 step cards only, extra sections
+  from the old build removed per explicit user confirmation), Overview (`4d5517e` + `3563ab7` —
+  kept the existing Vega Pareto chart rather than rebuilding as the mockup's plain CSS bars, since
+  it's richer; reskinned colors/layout/tier logic to match; added a total-item denominator to the
+  headline), Action Center (`f9961e0` — ranked list now shares Overview's already-verified
+  `pareto-reorder-risk` dataset instead of a second lead-time-filtered DAX query, retiring
+  `ranked-at-risk-list.ts/.dax`; filter switched from a Lead Time dropdown to the mockup's ABC
+  Tier A/B/C pill chips; item detail trimmed to the mockup's shape; **added a real Supplier form
+  field** — `supplierKey`/`supplierName` were already on the locked `ReorderAction` entity but had
+  no form input wired to them until now, an independent gap found and fixed, not a mockup-only
+  change).
+- **[NEW]** A single reusable concept introduced this session, used app-wide now: ABC
+  value-concentration tier (`valueTierFor()` in `src/lib/severity.ts`, cumulative reorder value
+  ≤80%/≤95%/rest = A/B/C), replacing the old Lead Time Priority Tier as the filter/color axis on
+  both Overview's Pareto table and Action Center's ranked list + item detail. The old
+  `LEAD_TIME_RAIL_CLASS`/`TIER_FILTERS`/`tierFilterClause` machinery is fully removed, not just
+  unused — nothing else referenced it.
+- **[DONE]** `npx rayfin up` run 2026-08-21 — deploy succeeded clean, live at
+  `https://clear-flora-56b47b3cae-westus.webapp.fabricapps.net` (open via the Fabric portal link
+  in the deploy output, not the bare static URL, for real auth/data). **Not yet user-confirmed
+  against real data** — asked the user to check the real "N of 672" Overview number and the real
+  Action Center ranked list/audit trail next session or later this session.
+- Verify: 92/92 tests (down from 98 — net of the retired `ranked-at-risk-list.spec.ts`), `tsc
+  --noEmit` clean vs. the documented `use-query-panel.spec.ts` baseline, `npm run lint` clean vs.
+  the documented `main.tsx` baseline, `npm run build` clean, all 3 page-rebuild commits pushed to
+  `rebuild/pareto-thesis`, deploy done. Visually verified all 3 pages in both themes via Playwright
+  against a locally-served copy of `docs/mockup-reference.html` (the Chrome extension wasn't
+  connected this session, `mcp__playwright__*` used instead — served the mockup file over a local
+  `python -m http.server` since Playwright blocks `file://`).
+- **[OPEN, next session]** Merge `rebuild/pareto-thesis` to `main` — not done, stays gated on the
+  user's explicit go-ahead same as every deploy/merge this project. Also open: user's live-data
+  validation of this session's deploy: whether Overview's "N of 672" headline and Action Center's
+  ranked list/sparklines/audit trail look right against the real ~50M-row dataset, not just the
+  15-row local fixture.
+
 ## Status (as of 2026-08-20, autonomous rebuild session)
 Full detail in `docs/rebuild-session-2026-08-20.md` — kept short here per the user's own
 noise-reduction request. Working on branch `rebuild/pareto-thesis` (pushed), executing the
