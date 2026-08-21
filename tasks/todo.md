@@ -463,3 +463,14 @@ done, tested, deployed, and confirmed live. Only these are still open:
       unless told otherwise.
 - [ ] **T7.5** — Run `/batch-grill-me` against `docs/talk-track.md`'s Q&A section specifically
       (not the code, not the other docs) before the live demo.
+- [ ] **T7.6** — Landing page visual polish pass (user request 2026-08-22, deferred at 97% session
+      limit): use repo-local skills directly, not a subagent — `design-dna` (quick identity audit
+      of `src/components/landing/landing-page.tsx`), `industrial-brutalist-ui` (matches this app's
+      existing control-room/severity-rail/IBM-Plex tone, don't fight it), `cast`/`paint` for one
+      orchestrated hero motion moment on load. Current bones (hero + 3-step) are fine but read flat
+      — add real depth: texture/grain, a live chart-preview snippet instead of static text, tighter
+      type scale. Also fold into `talk-track.md`'s Q&A (or the T7.5 `/batch-grill-me` pass): Power
+      BI *can* do a Pareto view but needs DAX-hand-built rank/cumulative measures (parity, not an
+      edge) and has no native write-back — that needs Power Apps + Power Automate + a separate
+      table bolted on, 3 tools stitched vs. this app's one coherent Fabric Data App with a real
+      write-back + audit-trail loop, built faster via agent-paired DAX/React/TS.
