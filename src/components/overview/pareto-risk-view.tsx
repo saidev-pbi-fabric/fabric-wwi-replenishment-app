@@ -158,6 +158,7 @@ export function ParetoRiskView({ dataset, rankMode, cutoffPct, onCutoffChange, o
         ]),
     };
     const boundarySlot = pastCutoffRows.length > 0 ? itemCount + 1 : null;
+    const metricMax = Math.max(0, ...chartRows.map((r) => metricOf(r, rankMode)));
 
     const handleInteraction: InteractionEventCallback = (events) => {
         for (const event of events) {
@@ -275,7 +276,7 @@ export function ParetoRiskView({ dataset, rankMode, cutoffPct, onCutoffChange, o
             <div className="flex flex-col gap-400">
                 <div>
                     <VegaVisual
-                        spec={JSON.stringify(buildParetoChartSpec(boundarySlot, isDark, rankMode))}
+                        spec={JSON.stringify(buildParetoChartSpec(boundarySlot, isDark, rankMode, metricMax))}
                         data={chartData}
                         theme={theme}
                         configVegaLite={{ range: { category: [...CUTOFF_COLOR_RANGE[isDark ? "dark" : "light"]] } }}

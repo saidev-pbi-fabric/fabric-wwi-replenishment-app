@@ -32,7 +32,17 @@ export function ActionCenter({ rankMode, initialSelectedItemName }: ActionCenter
     // both read off the one shared ranking rather than two different concepts.
     const dataset = useParetoDataset();
     const [selected, setSelected] = useState<SelectedItem | null>(null);
-    const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
+    // Two separate keys, not one shared "refresh everything" key. ReorderActionHistory already
+    // has the authoritative fresh row locally the instant its own status-change update() resolves
+    // (merged in-place) -- refetching it from the server right after is not just wasted work, it's
+    // a real race: reported live as "did many steps... after the last step it changed back to
+    // Pending Review", consistent with a self-triggered refetch's read landing before (or racing)
+    // its own write's replication and clobbering the newer optimistic state with a stale one.
+    // listRefreshKey only needs to fire when a *new* row is created (the form doesn't know about
+    // it locally); auditRefreshKey fires on both create and status-change, since the audit panel
+    // never has local state of its own to merge into.
+    const [listRefreshKey, setListRefreshKey] = useState(0);
+    const [auditRefreshKey, setAuditRefreshKey] = useState(0);
 
     // Lets the ranked-list card stretch to match however tall the right column actually
     // renders (detail + form + history + audit log stacked can exceed a single viewport) instead
@@ -73,16 +83,19 @@ export function ActionCenter({ rankMode, initialSelectedItemName }: ActionCenter
                         <ReorderActionForm
                             stockItemKey={selected.row.stockItemKey}
                             stockItemName={selected.row.stockItem}
-                            onSubmitted={() => setHistoryRefreshKey((n) => n + 1)}
+                            onSubmitted={() => {
+                                setListRefreshKey((n) => n + 1);
+                                setAuditRefreshKey((n) => n + 1);
+                            }}
                         />
                         <ReorderActionHistory
                             stockItemKey={selected.row.stockItemKey}
-                            refreshKey={historyRefreshKey}
-                            onStatusChanged={() => setHistoryRefreshKey((n) => n + 1)}
+                            refreshKey={listRefreshKey}
+                            onStatusChanged={() => setAuditRefreshKey((n) => n + 1)}
                         />
                         <ReorderActionAuditLogPanel
                             stockItemKey={selected.row.stockItemKey}
-                            refreshKey={historyRefreshKey}
+                            refreshKey={auditRefreshKey}
                         />
                     </>
                 ) : null}

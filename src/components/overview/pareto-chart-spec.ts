@@ -13,6 +13,27 @@ export const CUTOFF_COLOR_RANGE = {
 const CUTOFF_RULE_COLOR = { light: "#9a6700", dark: "#e0a828" } as const;
 
 /**
+ * Explicit tick values for the y-axis, always starting at 0. `scale: { zero: true }` alone forces
+ * the *domain* to include 0, but doesn't guarantee a "$0" tick actually gets drawn — Vega's
+ * automatic "nice" tick-count heuristic picks its own values from the domain and, in this
+ * rendering environment, was consistently choosing a lowest label (e.g. "$50M") above the true
+ * axis floor, reported directly ("scale is not starting at 0") even though the domain genuinely
+ * did start at 0 the whole time. Computing the tick set ourselves and passing it via `axis.values`
+ * removes that ambiguity entirely instead of trusting an opaque default a second time.
+ */
+export function niceTicks(max: number, targetCount = 5): number[] {
+    if (!Number.isFinite(max) || max <= 0) return [0];
+    const rawStep = max / targetCount;
+    const magnitude = 10 ** Math.floor(Math.log10(rawStep));
+    const residual = rawStep / magnitude;
+    const niceResidual = residual >= 5 ? 10 : residual >= 2 ? 5 : residual >= 1 ? 2 : 1;
+    const step = niceResidual * magnitude;
+    const ticks: number[] = [];
+    for (let v = 0; v <= max + step; v += step) ticks.push(Math.round(v * 100) / 100);
+    return ticks;
+}
+
+/**
  * Pareto bar chart, mockup-faithful (docs/mockup-reference.html's `.chart-area`/`.bar`):
  * bars = per-item metric (colored by whether the item falls within the live cutoff), dashed
  * rule = the cutoff boundary. No cumulative-% line layer — that was a "richer than the mockup"
@@ -31,20 +52,22 @@ const CUTOFF_RULE_COLOR = { light: "#9a6700", dark: "#e0a828" } as const;
  *
  * y scale is explicitly `zero: true` — without it, an unconfirmed default was compressing bars
  * into a narrow band near the axis max, making shorter bars nearly invisible (reported directly
- * as "only parts of it visible"). Tick step is left to Vega's automatic "nice" selection rather
- * than a hardcoded step, so it scales correctly whether the axis is showing hundreds of millions
- * of dollars or a qty-mode range of a few thousand units.
+ * as "only parts of it visible"). Tick *values* are computed explicitly via `niceTicks()` (always
+ * starting at 0) rather than left to Vega's automatic selection — see that function's doc comment
+ * for why trusting the automatic "nice" behavior a second time wasn't good enough.
  *
  * Built as a function (not a static .json import) because the dashed cutoff rule's x-position is
  * the live slider value (`boundarySlot`) — needs a fresh literal data point every render, which a
  * static spec can't express.
  */
-export function buildParetoChartSpec(boundarySlot: number | null, isDark: boolean, mode: RankMode) {
+export function buildParetoChartSpec(boundarySlot: number | null, isDark: boolean, mode: RankMode, metricMax: number) {
     const ruleColor = CUTOFF_RULE_COLOR[isDark ? "dark" : "light"];
     const isValue = mode === "value";
     const metricTitle = isValue ? "Reorder Value" : "Suggested Reorder Qty";
     const axisFormat = isValue ? "$.2s" : "~s";
     const tooltipFormat = isValue ? "$,.0f" : ",.0f";
+    const tickValues = niceTicks(metricMax);
+    const domainMax = tickValues[tickValues.length - 1];
     const layer: Record<string, unknown>[] = [
         {
             mark: { type: "bar" },
@@ -59,8 +82,8 @@ export function buildParetoChartSpec(boundarySlot: number | null, isDark: boolea
                     field: "Metric",
                     type: "quantitative",
                     title: metricTitle,
-                    axis: { format: axisFormat },
-                    scale: { zero: true },
+                    axis: { format: axisFormat, values: tickValues },
+                    scale: { zero: true, domain: [0, domainMax] },
                 },
                 color: {
                     field: "InCutoff",
