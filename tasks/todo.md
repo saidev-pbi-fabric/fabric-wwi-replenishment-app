@@ -436,3 +436,30 @@ dependency; a second team member can start T5.1 in parallel with T3.2/T3.3 if Pa
     118/118 total pass above.
   - Files: `src/queries/overview/kpi-strip.dax` (+`.ts`, `.spec.ts`),
     `src/components/overview/kpi-strip.tsx` (+`.spec.tsx`), `src/lib/dev-preview-fixtures.ts`.
+
+## Phase 7 — Event-day open items (as of 2026-08-22)
+
+Everything else from the 2026-08-22 session (see `CLAUDE.md`'s "2026-08-22, event day — Action
+Center live-bug session" status block for the full list of what was fixed/root-caused that day) is
+done, tested, deployed, and confirmed live. Only these are still open:
+
+- [ ] **T7.1** — Fix `docs/ui-audit-findings-2026-08-22-explained.md` finding #1: Quantity input
+      has no `min`/`step` guard (`src/components/action-center/reorder-action-form.tsx:156-161`).
+      Highest priority — real risk of a negative/fractional value going through live in front of
+      judges. ~2-line fix (`min={0}`, `step={1}`).
+- [ ] **T7.2** — Fix finding #2: new pill-style controls (Rank Mode toggle, ABC tier chips, Chart
+      Window A/B toggle) don't carry the app's `focus-visible:ring` treatment used everywhere else
+      — `src/App.tsx:168-181`, `src/components/action-center/ranked-list-panel.tsx:121-136`,
+      `src/components/overview/pareto-risk-view.tsx:256-269`. Copy-paste the existing focus class
+      string onto those buttons.
+- [ ] **T7.3** — Fix finding #3: item-detail sales-trend chart is hardcoded `text-critical`
+      (alarm red) regardless of actual trend direction, contradicting the adjacent rationale text
+      — `src/components/action-center/item-detail-panel.tsx:178`. Needs the already-computed trend
+      direction threaded into the chart's color via the existing severity-token scale.
+- [ ] **T7.4** — Decide + implement the two open product-behavior questions (recommendations
+      already given, not yet built): (1) duplicate `ReorderAction` submissions per item — keep the
+      current soft double-click guard, don't hard-block; (2) status-change confirmation — skip it,
+      rely on the existing audit trail instead of a confirm dialog. Go with these recommendations
+      unless told otherwise.
+- [ ] **T7.5** — Run `/batch-grill-me` against `docs/talk-track.md`'s Q&A section specifically
+      (not the code, not the other docs) before the live demo.
