@@ -1,10 +1,14 @@
 // Vega renders to SVG and can't resolve `var(--color-*)`, so these are duplicated as literal
-// hex, matching global.css exactly (critical = --color-critical, past-cutoff = a neutral not
-// otherwise used as a severity color, so "in cutoff" reads as the only meaningful color).
+// hex, matching global.css exactly. Matches the locked mockup (docs/mockup-reference.html):
+// in-cutoff bars are --color-primary (the featured metric), not a severity color — red/amber/
+// green are reserved for the ABC value-tier rail, not the chart fill.
 export const CUTOFF_COLOR_RANGE = {
-    light: ["#c50f1f", "#c7c7c7"], // In cutoff / Past cutoff
-    dark: ["#f1707b", "#5a5a5a"],
+    light: ["#0f6cbd", "#616161"], // In cutoff (primary) / Past cutoff (muted-foreground)
+    dark: ["#115ea3", "#adadad"],
 } as const;
+
+// Mockup's `.cutoff-rule` is --color-at-risk (amber) — the one non-primary accent in the chart.
+const CUTOFF_RULE_COLOR = { light: "#9a6700", dark: "#e0a828" } as const;
 
 /**
  * Layered Pareto combo chart: bars = per-item Reorder Value (colored by
@@ -17,7 +21,8 @@ export const CUTOFF_COLOR_RANGE = {
  * rule's position is the live slider value — it needs a fresh literal data
  * point every render, which a static spec can't express.
  */
-export function buildParetoChartSpec(cutoffPct: number) {
+export function buildParetoChartSpec(cutoffPct: number, isDark: boolean) {
+    const ruleColor = CUTOFF_RULE_COLOR[isDark ? "dark" : "light"];
     return {
         $schema: "https://vega.github.io/schema/vega-lite/v5.json",
         description:
@@ -75,7 +80,7 @@ export function buildParetoChartSpec(cutoffPct: number) {
             },
             {
                 data: { values: [{ cutoff: cutoffPct }] },
-                mark: { type: "rule", strokeDash: [4, 4], color: "#8a8a8a" },
+                mark: { type: "rule", strokeDash: [4, 4], color: ruleColor },
                 encoding: {
                     y: { field: "cutoff", type: "quantitative", scale: { domain: [0, 1] }, axis: null },
                 },

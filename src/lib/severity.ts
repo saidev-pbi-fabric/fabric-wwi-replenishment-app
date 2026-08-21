@@ -89,3 +89,24 @@ export function tierFilterClause(tier: (typeof TIER_FILTERS)[number]): string {
     if (tier === "All") return "";
     return `,\n        FILTER(ALL('Stock Item'[Lead Time Priority Tier]), 'Stock Item'[Lead Time Priority Tier] = "${tier}")`;
 }
+
+/**
+ * ABC value-concentration tier, per the locked mockup (docs/mockup-reference.html,
+ * `tierFor`) — distinct from Lead Time Priority Tier above. A = cumulative reorder
+ * value share up to 80%, B = up to 95%, C = the remainder. Pure client-side bucketing
+ * off a row's own `cumulativeValuePct`, no new DAX measure needed (matches SPEC.md's
+ * "No fixed ABC-tier measure is needed on the model side" note).
+ */
+export type ValueTier = "A" | "B" | "C";
+
+export function valueTierFor(cumulativeValuePct: number): ValueTier {
+    if (cumulativeValuePct <= 0.8) return "A";
+    if (cumulativeValuePct <= 0.95) return "B";
+    return "C";
+}
+
+export const VALUE_TIER_RAIL_CLASS: Record<ValueTier, string> = {
+    A: "bg-critical",
+    B: "bg-at-risk",
+    C: "bg-on-track",
+};

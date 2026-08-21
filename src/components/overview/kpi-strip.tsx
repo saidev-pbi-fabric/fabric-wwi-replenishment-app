@@ -188,7 +188,7 @@ export function KpiStrip({ dataset, cutoffPct }: KpiStripProps) {
                 icon={TrendingUp}
                 value={String(scalarByColumnName(table, "[Accelerating Demand Items]") ?? "—")}
                 context="Items with a positive 30-day demand trend"
-                severity="neutral"
+                severity="at-risk"
                 prefersReducedMotion={prefersReducedMotion}
             />
             <TileCard

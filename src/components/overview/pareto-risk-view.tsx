@@ -12,7 +12,7 @@ import type { InteractionEventCallback } from "@microsoft/fabric-visuals-core";
 import { useThemeContext } from "@/hooks/theme.context";
 import type { ParetoDataset, ParetoRow } from "@/hooks/use-pareto-dataset";
 import { buildParetoChartSpec, CUTOFF_COLOR_RANGE } from "@/components/overview/pareto-chart-spec";
-import { LEAD_TIME_DOT_CLASS, TIER_FILTERS } from "@/lib/severity";
+import { valueTierFor, VALUE_TIER_RAIL_CLASS, type ValueTier } from "@/lib/severity";
 import { downloadCsv } from "@/lib/csv-export";
 import { cn } from "@/lib/utils";
 
@@ -37,29 +37,29 @@ function itemsWithinCutoff(rows: ParetoRow[], cutoffPct: number): number {
     return idx === -1 ? rows.length : idx + 1;
 }
 
-interface TierSubtotal {
-    tier: string;
+interface ValueTierGroup {
+    tier: ValueTier;
     count: number;
-    reorderValue: number;
-    valueSharePct: number;
+    cumPctLabel: string;
 }
 
-function subtotalsByTier(rows: ParetoRow[]): TierSubtotal[] {
-    const byTier = new Map<string, TierSubtotal>();
-    for (const row of rows) {
-        const existing = byTier.get(row.tier);
-        if (existing) {
-            existing.count += 1;
-            existing.reorderValue += row.reorderValue;
-            existing.valueSharePct += row.valueSharePct;
-        } else {
-            byTier.set(row.tier, { tier: row.tier, count: 1, reorderValue: row.reorderValue, valueSharePct: row.valueSharePct });
-        }
-    }
-    // Stable Short/Medium/Long order, matching the app's other tier displays.
-    return TIER_FILTERS.filter((t) => t !== "All")
-        .map((tier) => byTier.get(tier))
-        .filter((v): v is TierSubtotal => v !== undefined);
+/**
+ * Past-cutoff rows split into two ABC value-tier bands, per the locked mockup
+ * (docs/mockup-reference.html, `tierFor`/`renderTable`) — "Tier B, collapsed" /
+ * "Tier C, collapsed" summary rows, distinct from Lead Time Priority Tier.
+ * Split at 95% cumulative (mockup's fixed B/C boundary), always relative to the
+ * live cutoff rather than mockup's fixed-independent-of-slider bands, so every
+ * past-cutoff row lands in exactly one group at any slider position (mockup's
+ * own fixed-band version can double-count or drop rows once the slider moves
+ * away from its 80% default — not worth reproducing that bug).
+ */
+function pastCutoffValueTierGroups(pastCutoffRows: ParetoRow[]): ValueTierGroup[] {
+    const tierB = pastCutoffRows.filter((r) => r.cumulativeValuePct <= 0.95);
+    const tierC = pastCutoffRows.filter((r) => r.cumulativeValuePct > 0.95);
+    const groups: ValueTierGroup[] = [];
+    if (tierB.length > 0) groups.push({ tier: "B", count: tierB.length, cumPctLabel: "95%" });
+    if (tierC.length > 0) groups.push({ tier: "C", count: tierC.length, cumPctLabel: "100%" });
+    return groups;
 }
 
 export function ParetoRiskView({ dataset, cutoffPct, onCutoffChange, onSelectItem }: ParetoRiskViewProps) {
@@ -95,7 +95,7 @@ export function ParetoRiskView({ dataset, cutoffPct, onCutoffChange, onSelectIte
     const inCutoffRows = rows.slice(0, itemCount);
     const pastCutoffRows = rows.slice(itemCount);
     const valueInCutoff = inCutoffRows.reduce((sum, r) => sum + r.reorderValue, 0);
-    const subtotals = subtotalsByTier(pastCutoffRows);
+    const tierGroups = pastCutoffValueTierGroups(pastCutoffRows);
 
     // Chart shows in-cutoff items plus a fixed window past the cutoff, so the
     // "drop-off" reads visually — rendering all 672 bars would be unreadable
@@ -137,11 +137,12 @@ export function ParetoRiskView({ dataset, cutoffPct, onCutoffChange, onSelectIte
     const handleDownloadCsv = () => {
         downloadCsv(
             "pareto-reorder-risk.csv",
-            ["Rank", "Item", "Lead Time Tier", "Reorder Value", "Value Share %", "Cumulative Value %"],
+            ["Rank", "Item", "Lead Time Tier", "Value Tier", "Reorder Value", "Value Share %", "Cumulative Value %"],
             inCutoffRows.map((r) => [
                 r.atRiskRank,
                 r.stockItem,
                 r.tier,
+                valueTierFor(r.cumulativeValuePct),
                 r.reorderValue.toFixed(2),
                 (r.valueSharePct * 100).toFixed(2) + "%",
                 (r.cumulativeValuePct * 100).toFixed(2) + "%",
@@ -151,123 +152,121 @@ export function ParetoRiskView({ dataset, cutoffPct, onCutoffChange, onSelectIte
 
     return (
         <div className="flex flex-col gap-400 rounded-lg border border-border bg-card p-400 shadow-sm">
-            <div className="flex flex-wrap items-start justify-between gap-300">
-                <div>
-                    <h2 className="flex items-center gap-200 font-heading text-400 font-semibold text-foreground">
-                        <TrendingDown className="icon-size-300 text-muted-foreground" />
-                        At-Risk Value Concentration
-                    </h2>
-                    <p className="mt-100 font-numeric text-500 font-semibold text-foreground">
-                        {Math.round(cutoffPct * 100)}% of at-risk reorder value is generated by {itemCount} items.
-                    </p>
-                </div>
+            <div className="flex flex-wrap items-center justify-between gap-300">
+                <h2 className="flex items-center gap-200 font-heading text-400 font-semibold text-foreground">
+                    <TrendingDown className="icon-size-300 text-muted-foreground" />
+                    At-Risk Value Concentration
+                </h2>
                 <button
                     type="button"
                     onClick={handleDownloadCsv}
                     disabled={inCutoffRows.length === 0}
-                    className="flex shrink-0 items-center gap-100 rounded-md border border-border bg-background px-300 py-100-nudge font-base text-200 text-foreground hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex shrink-0 items-center gap-100 rounded-md border border-border bg-secondary px-300 py-100-nudge font-base text-200 text-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
                 >
                     <Download className="icon-size-200" />
                     Download CSV
                 </button>
             </div>
 
-            <label className="flex flex-col gap-100 font-base text-200 text-muted-foreground">
-                <span>
-                    Cutoff: <span className="font-numeric font-semibold text-foreground">{Math.round(cutoffPct * 100)}%</span>{" "}
-                    of cumulative reorder value
-                </span>
-                <input
-                    type="range"
-                    min={10}
-                    max={99}
-                    step={1}
-                    value={Math.round(cutoffPct * 100)}
-                    onChange={(e) => onCutoffChange(Number(e.target.value) / 100)}
-                    aria-label="Cumulative reorder value cutoff percentage"
-                    className="w-full accent-primary"
-                />
-            </label>
+            <div className="flex flex-wrap items-center justify-between gap-300">
+                <p className="font-base text-400 text-foreground">
+                    <span className="font-numeric font-bold text-primary">{Math.round(cutoffPct * 100)}</span>% of
+                    at-risk reorder value is generated by{" "}
+                    <span className="font-numeric font-bold text-primary">{itemCount}</span> items
+                </p>
+                <label className="flex min-w-[220px] items-center gap-200">
+                    <span className="whitespace-nowrap font-base text-200 text-muted-foreground">Cutoff</span>
+                    <input
+                        type="range"
+                        min={10}
+                        max={99}
+                        step={1}
+                        value={Math.round(cutoffPct * 100)}
+                        onChange={(e) => onCutoffChange(Number(e.target.value) / 100)}
+                        aria-label="Cumulative reorder value cutoff percentage"
+                        className="flex-1 accent-primary"
+                    />
+                    <span className="w-[34px] shrink-0 text-right font-numeric text-200 font-semibold text-foreground">
+                        {Math.round(cutoffPct * 100)}%
+                    </span>
+                </label>
+            </div>
 
             {usingDevFixture ? (
                 <p className="text-200 text-muted-foreground">Sample data · dev preview (no Fabric embed)</p>
             ) : null}
 
-            <VegaVisual
-                spec={JSON.stringify(buildParetoChartSpec(cutoffPct))}
-                data={chartData}
-                theme={theme}
-                configVegaLite={{ range: { category: [...CUTOFF_COLOR_RANGE[isDark ? "dark" : "light"]] } }}
-                onInteraction={handleInteraction}
-                style={{ width: "100%", height: 320 }}
-            />
+            <div className="grid grid-cols-1 gap-400 lg:grid-cols-[1.3fr_1fr]">
+                <div>
+                    <VegaVisual
+                        spec={JSON.stringify(buildParetoChartSpec(cutoffPct, isDark))}
+                        data={chartData}
+                        theme={theme}
+                        configVegaLite={{ range: { category: [...CUTOFF_COLOR_RANGE[isDark ? "dark" : "light"]] } }}
+                        onInteraction={handleInteraction}
+                        style={{ width: "100%", height: 280 }}
+                    />
+                    <div className="mt-100 flex justify-between font-base text-100 text-muted-foreground">
+                        <span>Rank 1</span>
+                        <span>Rank {chartRows.length}</span>
+                    </div>
+                </div>
 
-            <div className="overflow-x-auto">
-                <table className="w-full text-left font-base text-200">
-                    <thead>
-                        <tr className="border-b border-border text-muted-foreground">
-                            <th className="py-200 pr-200 font-normal">Rank</th>
-                            <th className="py-200 pr-200 font-normal">Item</th>
-                            <th className="py-200 pr-200 font-normal">Lead Time</th>
-                            <th className="py-200 pr-200 text-right font-normal">Reorder Value</th>
-                            <th className="py-200 pr-200 text-right font-normal">Value Share %</th>
-                            <th className="py-200 text-right font-normal">Cumulative %</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {inCutoffRows.map((row) => (
-                            <tr
-                                key={row.stockItemKey}
-                                className={cn(
-                                    "cursor-pointer border-b border-border last:border-b-0 hover:bg-accent",
-                                    selectedRank === row.atRiskRank && "bg-accent",
-                                )}
-                                onClick={() => {
-                                    setSelectedRank(row.atRiskRank);
-                                    onSelectItem?.(row.stockItem);
-                                }}
-                            >
-                                <td className="py-200 pr-200 font-numeric text-foreground">{row.atRiskRank}</td>
-                                <td className="max-w-[280px] truncate py-200 pr-200 text-foreground" title={row.stockItem}>
-                                    <span className="mr-100 inline-flex items-center gap-100">
+                <div className="max-h-[420px] overflow-y-auto overflow-x-auto">
+                    <table className="w-full text-left font-base text-200">
+                        <thead>
+                            <tr className="border-b border-border text-muted-foreground">
+                                <th className="py-200 pr-200 font-normal">Item</th>
+                                <th className="py-200 pr-200 text-right font-normal">Rank</th>
+                                <th className="py-200 text-right font-normal">Cum. %</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {inCutoffRows.map((row) => (
+                                <tr
+                                    key={row.stockItemKey}
+                                    className={cn(
+                                        "cursor-pointer border-b border-border last:border-b-0 hover:bg-accent",
+                                        selectedRank === row.atRiskRank && "bg-accent",
+                                    )}
+                                    onClick={() => {
+                                        setSelectedRank(row.atRiskRank);
+                                        onSelectItem?.(row.stockItem);
+                                    }}
+                                >
+                                    <td
+                                        className="max-w-[220px] truncate py-200 pr-200 text-foreground"
+                                        title={row.stockItem}
+                                    >
                                         <span
-                                            className={`icon-size-100 inline-block shrink-0 rounded-full ${LEAD_TIME_DOT_CLASS[row.tier] ?? "bg-muted-foreground"}`}
+                                            className={`mr-100 inline-block h-[14px] w-[4px] shrink-0 rounded-sm align-[-2px] ${VALUE_TIER_RAIL_CLASS[valueTierFor(row.cumulativeValuePct)]}`}
                                             aria-hidden="true"
                                         />
                                         {row.stockItem}
-                                    </span>
-                                </td>
-                                <td className="py-200 pr-200 text-muted-foreground">{row.tier.replace(" Lead Time", "")}</td>
-                                <td className="py-200 pr-200 text-right font-numeric text-foreground">
-                                    {formatCompactCurrency(row.reorderValue)}
-                                </td>
-                                <td className="py-200 pr-200 text-right font-numeric text-foreground">
-                                    {(row.valueSharePct * 100).toFixed(1)}%
-                                </td>
-                                <td className="py-200 text-right font-numeric text-foreground">
-                                    {(row.cumulativeValuePct * 100).toFixed(1)}%
-                                </td>
-                            </tr>
-                        ))}
-                        {subtotals.map((s) => (
-                            <tr key={s.tier} className="border-b border-border bg-muted/40 last:border-b-0">
-                                <td className="py-200 pr-200 text-muted-foreground">—</td>
-                                <td className="py-200 pr-200 text-muted-foreground">
-                                    {s.count} more {s.tier.replace(" Lead Time", "")} items, past cutoff
-                                </td>
-                                <td className="py-200 pr-200 text-muted-foreground">{s.tier.replace(" Lead Time", "")}</td>
-                                <td className="py-200 pr-200 text-right font-numeric text-muted-foreground">
-                                    {formatCompactCurrency(s.reorderValue)}
-                                </td>
-                                <td className="py-200 pr-200 text-right font-numeric text-muted-foreground">
-                                    {(s.valueSharePct * 100).toFixed(1)}%
-                                </td>
-                                <td className="py-200 text-right font-numeric text-muted-foreground">—</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                                    </td>
+                                    <td className="py-200 pr-200 text-right font-numeric text-foreground">
+                                        #{row.atRiskRank}
+                                    </td>
+                                    <td className="py-200 text-right font-numeric text-foreground">
+                                        {(row.cumulativeValuePct * 100).toFixed(0)}%
+                                    </td>
+                                </tr>
+                            ))}
+                            {tierGroups.map((g) => (
+                                <tr key={g.tier} className="border-b border-border bg-accent last:border-b-0">
+                                    <td colSpan={2} className="py-200 pr-200 font-semibold text-foreground">
+                                        Tier {g.tier}, collapsed [{g.count}]
+                                    </td>
+                                    <td className="py-200 text-right font-numeric font-semibold text-foreground">
+                                        {g.cumPctLabel}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
+
             <p className="font-base text-100 text-muted-foreground">
                 Value here is a proxy (Suggested Reorder Qty × Unit Price), not a real inventory valuation — see the
                 Action Center item detail for the full disclosure.{" "}
