@@ -282,6 +282,14 @@ export function ParetoRiskView({ dataset, rankMode, cutoffPct, onCutoffChange, o
                         configVegaLite={{ range: { category: [...CUTOFF_COLOR_RANGE[isDark ? "dark" : "light"]] } }}
                         onInteraction={handleInteraction}
                         style={{ width: "100%", height: 280 }}
+                        // fabric-visuals always injects its own scale.nice=5 onto quantitative axes
+                        // ("for cleaner tick values") unless told not to -- confirmed in its own
+                        // source (chunk-YOIUDW6A.js applyAxisBounds) and public capability doc
+                        // comment. That auto-nice-ing was fighting the explicit tickValues/domain
+                        // this chart computes itself (niceTicks in pareto-chart-spec.ts, which
+                        // already guarantees a $0 floor), which is why "not starting at 0" kept
+                        // reproducing even after the spec-level fix.
+                        capabilities={{ disableNiceAxisBounds: true }}
                     />
                     <div className="mt-100 flex justify-between font-base text-100 text-muted-foreground">
                         <span>Rank 1</span>
