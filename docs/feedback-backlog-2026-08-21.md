@@ -29,7 +29,8 @@ diff, don't trust the checklist blindly if it looks stale.
 
 92/92 tests, tsc/lint clean vs. documented baseline, `npm run build` clean. All 4 new SM measures
 live-verified against the real model before wiring (top qty item, cumulative monotonicity).
-Not yet deployed/user-confirmed against the live app — see commit log for when `npx rayfin up` ran.
+Committed (`f0cf9d5`) and deployed (`npx rayfin up`, deploy-20260821140453). Not yet user-confirmed
+against the live app — check both rank modes on Overview and Action Center together next.
 
 ## LOCKED WORK ORDER (as of last discussion) — each basis-tagged, nothing starts until user says go
 
