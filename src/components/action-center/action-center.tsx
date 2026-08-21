@@ -5,7 +5,7 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { RankedListPanel } from "@/components/action-center/ranked-list-panel";
 import { ItemDetailPanel } from "@/components/action-center/item-detail-panel";
 import { ReorderActionForm } from "@/components/action-center/reorder-action-form";
@@ -34,6 +34,22 @@ export function ActionCenter({ rankMode, initialSelectedItemName }: ActionCenter
     const [selected, setSelected] = useState<SelectedItem | null>(null);
     const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
 
+    // Lets the ranked-list card stretch to match however tall the right column actually
+    // renders (detail + form + history + audit log stacked can exceed a single viewport) instead
+    // of independently capping at 100vh, which left it visibly shorter than its sibling.
+    const rightColRef = useRef<HTMLDivElement>(null);
+    const [rightColHeight, setRightColHeight] = useState<number | null>(null);
+
+    useEffect(() => {
+        const el = rightColRef.current;
+        if (!el) return;
+        const observer = new ResizeObserver((entries) => {
+            setRightColHeight(entries[0]?.contentRect.height ?? null);
+        });
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, []);
+
     return (
         <div className="grid grid-cols-1 items-start gap-500 lg:grid-cols-[1fr_1.05fr]">
             <RankedListPanel
@@ -42,8 +58,9 @@ export function ActionCenter({ rankMode, initialSelectedItemName }: ActionCenter
                 selectedStockItemKey={selected?.row.stockItemKey ?? null}
                 initialSelectedItemName={initialSelectedItemName}
                 onSelectItem={(row, tier) => setSelected({ row, tier })}
+                matchHeight={rightColHeight}
             />
-            <div className="flex flex-col gap-500">
+            <div ref={rightColRef} className="flex flex-col gap-500">
                 <ItemDetailPanel
                     stockItemKey={selected?.row.stockItemKey ?? null}
                     tier={selected?.tier ?? null}

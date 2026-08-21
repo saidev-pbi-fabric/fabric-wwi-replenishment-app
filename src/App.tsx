@@ -7,6 +7,7 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { Moon, Sun } from "lucide-react";
 import { useThemeContext } from "@/hooks/theme.context";
 import { fadeInUp } from "@/lib/motion";
 import { LandingPage } from "@/components/landing/landing-page";
@@ -17,11 +18,38 @@ import { ActionCenter } from "@/components/action-center/action-center";
 import { cn } from "@/lib/utils";
 
 const DEFAULT_CUTOFF_PCT = 0.8;
+const PAGE_STORAGE_KEY = "wwi-replenishment.page";
 
 type Page = "landing" | "overview" | "action-center";
 
+/**
+ * Both the Fabric portal's own "Refresh" button and a plain browser refresh fully reload this
+ * embedded app -- there's no way for us to intercept either from inside the SPA. What we can fix
+ * is what happens on that reload: without this, `page` always restarted at its `useState`
+ * default ("landing"), so any refresh silently bounced the user back to Home. Persisting the
+ * current page to sessionStorage and reading it back on mount means a reload lands back on
+ * whichever page (and, indirectly, whichever selected item) the user was actually on.
+ */
+function readStoredPage(): Page {
+    try {
+        const stored = sessionStorage.getItem(PAGE_STORAGE_KEY);
+        if (stored === "landing" || stored === "overview" || stored === "action-center") return stored;
+    } catch {
+        // sessionStorage unavailable (e.g. a sandboxed embed) -- fall back to the default below.
+    }
+    return "landing";
+}
+
 function App() {
-    const [page, setPage] = useState<Page>("landing");
+    const [page, setPageState] = useState<Page>(readStoredPage);
+    const setPage = (next: Page) => {
+        setPageState(next);
+        try {
+            sessionStorage.setItem(PAGE_STORAGE_KEY, next);
+        } catch {
+            // Best-effort persistence only -- losing it just means a refresh lands on Home again.
+        }
+    };
     const [selectedItemName, setSelectedItemName] = useState<string | null>(null);
     // Single shared toggle, lifted here so Overview and Action Center never disagree on which
     // metric is driving the app — flagged directly: "2 diff ranks in 2 pages will trip users."
@@ -156,6 +184,11 @@ function RankModeToggle({ rankMode, onChange }: { rankMode: RankMode; onChange: 
     );
 }
 
+/**
+ * Icon-based sliding switch (sun/moon), same sliding-indicator mechanic as RankModeToggle above
+ * rather than the plain text button it replaces -- "not a good switch... sun or moon, whatever's
+ * better". Uses the app's own token colors, not the reference image's literal black/orange.
+ */
 function ThemeToggle() {
     const { isDark, toggleTheme } = useThemeContext();
     return (
@@ -163,9 +196,17 @@ function ThemeToggle() {
             type="button"
             onClick={toggleTheme}
             aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
-            className="rounded-md border border-border bg-secondary px-300 py-100-nudge font-base text-200 text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            aria-pressed={isDark}
+            className="relative h-[28px] w-[52px] shrink-0 rounded-full border border-border bg-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
-            Toggle theme
+            <motion.span
+                className="absolute top-100-nudge flex h-[20px] w-[20px] items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm"
+                initial={false}
+                animate={{ left: isDark ? "calc(100% - 24px)" : "4px" }}
+                transition={{ type: "spring", stiffness: 500, damping: 35 }}
+            >
+                {isDark ? <Moon className="icon-size-100" /> : <Sun className="icon-size-100" />}
+            </motion.span>
         </button>
     );
 }

@@ -7,25 +7,14 @@
 
 import "@testing-library/jest-dom";
 
-// jsdom has no IntersectionObserver. Used by ranked-list-panel.tsx to lazily fetch each row's
-// sparkline once it scrolls into view — this mock fires "intersecting" immediately on observe,
-// so tests see the same eager-fetch behavior as before without simulating real scroll/viewport.
-class MockIntersectionObserver implements IntersectionObserver {
-    readonly root = null;
-    readonly rootMargin = "";
-    readonly thresholds: ReadonlyArray<number> = [];
-    constructor(private callback: IntersectionObserverCallback) {}
-    observe(target: Element) {
-        this.callback(
-            [{ isIntersecting: true, target } as IntersectionObserverEntry],
-            this,
-        );
-    }
+// jsdom has no ResizeObserver. Used by action-center.tsx to measure the right column's rendered
+// height so the ranked-list card can stretch to match it. This mock never fires (no real layout
+// in jsdom), which is fine -- consumers must already handle "no measurement yet" as their
+// default/unmatched state.
+class MockResizeObserver implements ResizeObserver {
+    observe() {}
     unobserve() {}
     disconnect() {}
-    takeRecords(): IntersectionObserverEntry[] {
-        return [];
-    }
 }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test-only global polyfill
-(globalThis as any).IntersectionObserver = MockIntersectionObserver;
+(globalThis as any).ResizeObserver = MockResizeObserver;

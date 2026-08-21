@@ -5,14 +5,10 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, Download } from "lucide-react";
-import { itemSalesTrend } from "@/queries/action-center/item-sales-trend";
-import { getFabricClient } from "@/lib/fabric-client";
 import { downloadCsv } from "@/lib/csv-export";
-import { cn, formatCompactCurrency, formatCompactNumber, formatShortDate } from "@/lib/utils";
-import { ITEM_SALES_TREND_FIXTURE } from "@/lib/dev-preview-fixtures";
-import { Sparkline } from "@/components/shared/sparkline";
+import { cn, formatCompactCurrency, formatCompactNumber } from "@/lib/utils";
 import { VALUE_TIER_FILTERS, VALUE_TIER_RAIL_CLASS, valueTierFilterLabel, valueTierFor, type ValueTier } from "@/lib/severity";
 import { cumPctOf, metricOf, rankOf, rankedRows, type ParetoDataset, type ParetoRow, type RankMode } from "@/hooks/use-pareto-dataset";
 
@@ -23,6 +19,9 @@ interface RankedListPanelProps {
     onSelectItem: (row: ParetoRow, tier: ValueTier) => void;
     /** Name handed off from Page 1's click-through; auto-selected once the list loads, then ignored. */
     initialSelectedItemName?: string | null;
+    /** Right column's measured height (action-center.tsx), so this card can stretch to match it
+     * instead of independently capping at the viewport -- see the ResizeObserver there. */
+    matchHeight?: number | null;
 }
 
 export function RankedListPanel({
@@ -31,63 +30,13 @@ export function RankedListPanel({
     selectedStockItemKey,
     onSelectItem,
     initialSelectedItemName,
+    matchHeight,
 }: RankedListPanelProps) {
     const { status, usingDevFixture } = dataset;
     const rows = rankedRows(dataset, rankMode);
     const [tierFilter, setTierFilter] = useState<(typeof VALUE_TIER_FILTERS)[number]>("All");
     const [nameQuery, setNameQuery] = useState("");
     const autoSelectedRef = useRef(false);
-
-    // Per-row sparklines: fetched lazily, one small itemSalesTrend request per row, only once
-    // that row actually scrolls into view (see the IntersectionObserver in ListRow below). Not a
-    // blanket "first 40 rows" fetch — with the dataset now holding 219 ranked items and a
-    // tier/search filter that can jump straight to rows past #40, a fixed prefix left every row
-    // beyond it permanently blank (reported directly: "these are all blank... why blank if not
-    // 0?"). Lazy-on-visible bounds concurrent requests to what's actually on screen and works
-    // under any filter/scroll position.
-    const [sparklineData, setSparklineData] = useState<Record<number, { qty: number[]; dates: string[] }>>({});
-    const requestedKeysRef = useRef<Set<number>>(new Set());
-    const cancelledRef = useRef(false);
-
-    useEffect(() => {
-        cancelledRef.current = false;
-        return () => {
-            cancelledRef.current = true;
-        };
-    }, []);
-
-    const requestSparkline = useCallback(
-        (key: number) => {
-            if (requestedKeysRef.current.has(key)) return;
-            requestedKeysRef.current.add(key);
-
-            if (usingDevFixture) {
-                const qtyIdx = ITEM_SALES_TREND_FIXTURE.columns.findIndex((col) => col.name === "[Quantity]");
-                const dateIdx = ITEM_SALES_TREND_FIXTURE.columns.findIndex((col) => col.name === "Date[Date]");
-                const qty = ITEM_SALES_TREND_FIXTURE.rows.map((row) => Number(row[qtyIdx] ?? 0));
-                const dates = ITEM_SALES_TREND_FIXTURE.rows.map((row) => formatShortDate(String(row[dateIdx])));
-                setSparklineData((prev) => ({ ...prev, [key]: { qty, dates } }));
-                return;
-            }
-
-            const { connection, query } = itemSalesTrend(key);
-            getFabricClient()
-                .semanticModel(connection)
-                .query(query)
-                .then((result) => {
-                    if (cancelledRef.current || result.status !== "success") return;
-                    const qtyIdx = result.table.columns.findIndex((col) => col.name === "[Quantity]");
-                    const dateIdx = result.table.columns.findIndex((col) => col.name === "Date[Date]");
-                    const qty = result.table.rows.map((row) => Number(row[qtyIdx] ?? 0));
-                    const dates = result.table.rows.map((row) => formatShortDate(String(row[dateIdx])));
-                    setSparklineData((prev) => ({ ...prev, [key]: { qty, dates } }));
-                })
-                .catch(() => {
-                    // A missing sparkline for one row isn't worth surfacing as a panel-level error.
-                });
-        },
-        [usingDevFixture],
-    );
 
     useEffect(() => {
         if (autoSelectedRef.current || !initialSelectedItemName || rows.length === 0) return;
@@ -140,7 +89,10 @@ export function RankedListPanel({
     }
 
     return (
-        <div className="flex h-[calc(100vh-200px)] min-h-[480px] flex-col overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+        <div
+            className="flex h-[calc(100vh-200px)] min-h-[480px] flex-col overflow-hidden rounded-lg border border-border bg-card shadow-sm"
+            style={matchHeight ? { height: Math.max(matchHeight, 480) } : undefined}
+        >
             <div className="flex items-center justify-between gap-300 border-b border-border p-400">
                 <h2 className="flex items-center gap-200 font-heading text-400 font-semibold text-foreground">
                     <AlertTriangle className="icon-size-300 text-muted-foreground" />
@@ -205,8 +157,6 @@ export function RankedListPanel({
                             row={r}
                             rankMode={rankMode}
                             isSelected={r.stockItemKey === selectedStockItemKey}
-                            sparkline={sparklineData[r.stockItemKey]}
-                            onVisible={requestSparkline}
                             onSelect={() => onSelectItem(r, valueTierFor(cumPctOf(r, rankMode)))}
                         />
                     ))}
@@ -220,34 +170,15 @@ function ListRow({
     row,
     rankMode,
     isSelected,
-    sparkline,
-    onVisible,
     onSelect,
 }: {
     row: ParetoRow;
     rankMode: RankMode;
     isSelected: boolean;
-    sparkline: { qty: number[]; dates: string[] } | undefined;
-    onVisible: (stockItemKey: number) => void;
     onSelect: () => void;
 }) {
-    const liRef = useRef<HTMLLIElement>(null);
-
-    useEffect(() => {
-        const el = liRef.current;
-        if (!el) return;
-        const observer = new IntersectionObserver(
-            (entries) => {
-                if (entries[0]?.isIntersecting) onVisible(row.stockItemKey);
-            },
-            { root: el.closest("ul"), rootMargin: "200px 0px" },
-        );
-        observer.observe(el);
-        return () => observer.disconnect();
-    }, [row.stockItemKey, onVisible]);
-
     return (
-        <li ref={liRef}>
+        <li>
             <button
                 type="button"
                 onClick={onSelect}
@@ -267,21 +198,7 @@ function ListRow({
                 <span className="min-w-0 flex-1 truncate font-base text-200 text-foreground" title={row.stockItem}>
                     {row.stockItem}
                 </span>
-                {sparkline ? (
-                    <span className="block h-[20px] w-[56px] shrink-0">
-                        <Sparkline
-                            data={sparkline.qty}
-                            labels={sparkline.dates}
-                            width={56}
-                            height={20}
-                            className="text-at-risk"
-                            ariaLabel={`${row.stockItem}: daily units sold, last 60 days`}
-                        />
-                    </span>
-                ) : (
-                    <span aria-hidden="true" className="block h-[20px] w-[56px] shrink-0 animate-pulse rounded-md bg-muted" />
-                )}
-                <span className="w-[56px] shrink-0 text-right font-numeric text-100 text-foreground">
+                <span className="w-[72px] shrink-0 text-right font-numeric text-100 text-foreground">
                     {rankMode === "value"
                         ? formatCompactCurrency(metricOf(row, rankMode))
                         : formatCompactNumber(metricOf(row, rankMode))}

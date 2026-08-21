@@ -10,15 +10,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { RankedListPanel } from "@/components/action-center/ranked-list-panel";
 import type { ParetoDataset } from "@/hooks/use-pareto-dataset";
 
-const mockQuery = vi.fn();
 const mockDownloadCsv = vi.fn();
-
-vi.mock("@/lib/fabric-client", () => ({
-    getFabricClient: () => ({
-        clearCache: vi.fn(),
-        semanticModel: () => ({ query: mockQuery, clearCache: vi.fn() }),
-    }),
-}));
 
 vi.mock("@/lib/csv-export", () => ({
     downloadCsv: (...args: unknown[]) => mockDownloadCsv(...args),
@@ -59,11 +51,6 @@ function readyDataset(rows = ROWS): ParetoDataset {
 
 beforeEach(() => {
     vi.clearAllMocks();
-    mockQuery.mockResolvedValue({
-        status: "success",
-        table: { columns: [{ name: "Date[Date]" }, { name: "[Quantity]" }], rows: [] },
-        fromCache: false,
-    });
 });
 
 describe("RankedListPanel", () => {
@@ -99,17 +86,15 @@ describe("RankedListPanel", () => {
         );
     });
 
-    it("filters client-side by value tier when a tier chip is clicked, without a re-query", async () => {
+    it("filters client-side by value tier when a tier chip is clicked", async () => {
         render(<RankedListPanel dataset={readyDataset()} rankMode="value" selectedStockItemKey={null} onSelectItem={vi.fn()} />);
 
         await screen.findByText("Shipping carton (Brown)");
-        const callsBeforeFilter = mockQuery.mock.calls.length;
 
         fireEvent.click(screen.getByRole("button", { name: "Tier C" }));
 
         expect(screen.queryByText("Shipping carton (Brown)")).not.toBeInTheDocument();
         expect(screen.getByText("Pallet wrap 500mm x 300m")).toBeInTheDocument();
-        expect(mockQuery.mock.calls.length).toBe(callsBeforeFilter);
     });
 
     it("shows a tier-aware empty message when a tier has no matching rows", async () => {
@@ -154,17 +139,15 @@ describe("RankedListPanel", () => {
         expect(container.firstElementChild?.className).toMatch(/overflow-hidden/);
     });
 
-    it("filters rows client-side by name as the user types, without a re-query", async () => {
+    it("filters rows client-side by name as the user types", async () => {
         render(<RankedListPanel dataset={readyDataset()} rankMode="value" selectedStockItemKey={null} onSelectItem={vi.fn()} />);
 
         await screen.findByText("Shipping carton (Brown)");
-        const callsBeforeSearch = mockQuery.mock.calls.length;
 
         fireEvent.change(screen.getByLabelText("Search items by name"), { target: { value: "pallet" } });
 
         expect(screen.queryByText("Shipping carton (Brown)")).not.toBeInTheDocument();
         expect(screen.getByText("Pallet wrap 500mm x 300m")).toBeInTheDocument();
-        expect(mockQuery.mock.calls.length).toBe(callsBeforeSearch);
     });
 
     it("shows a search-aware empty message when no item matches the query", async () => {
