@@ -116,30 +116,42 @@ function NavTab({
  * price) vs $ Value (Reorder Value Rank: qty x unit price). See use-pareto-dataset.ts.
  */
 function RankModeToggle({ rankMode, onChange }: { rankMode: RankMode; onChange: (mode: RankMode) => void }) {
+    const options = [
+        ["qty", "Qty"],
+        ["value", "$ Value"],
+    ] as const;
+    const activeIndex = options.findIndex(([mode]) => mode === rankMode);
+
     return (
-        <div className="flex items-center gap-100" role="group" aria-label="Rank by">
-            <span className="mr-100 font-base text-200 text-muted-foreground">Rank by</span>
-            {(
-                [
-                    ["qty", "Qty"],
-                    ["value", "$ Value"],
-                ] as const
-            ).map(([mode, label]) => (
-                <button
-                    key={mode}
-                    type="button"
-                    onClick={() => onChange(mode)}
-                    aria-pressed={rankMode === mode}
-                    className={cn(
-                        "rounded-md border px-300 py-100-nudge font-base text-200 font-medium transition-colors",
-                        rankMode === mode
-                            ? "border-border bg-accent text-foreground"
-                            : "border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground",
-                    )}
-                >
-                    {label}
-                </button>
-            ))}
+        <div className="flex items-center gap-200">
+            <span className="font-base text-200 text-muted-foreground">Rank by</span>
+            <div
+                className="relative flex items-center rounded-md border border-border bg-secondary p-100-nudge"
+                role="group"
+                aria-label="Rank by"
+            >
+                <motion.div
+                    className="absolute inset-y-100-nudge rounded-sm bg-accent shadow-sm"
+                    initial={false}
+                    animate={{ left: `calc(${activeIndex * 50}% + 2px)` }}
+                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                    style={{ width: "calc(50% - 4px)" }}
+                />
+                {options.map(([mode, label]) => (
+                    <button
+                        key={mode}
+                        type="button"
+                        onClick={() => onChange(mode)}
+                        aria-pressed={rankMode === mode}
+                        className={cn(
+                            "relative z-10 min-w-[64px] rounded-sm px-300 py-100-nudge font-base text-200 font-medium transition-colors",
+                            rankMode === mode ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+                        )}
+                    >
+                        {label}
+                    </button>
+                ))}
+            </div>
         </div>
     );
 }

@@ -288,7 +288,7 @@ export function ParetoRiskView({ dataset, rankMode, cutoffPct, onCutoffChange, o
                     </div>
                 </div>
 
-                <div className="max-h-[420px] overflow-y-auto overflow-x-auto pr-200">
+                <div className="scroll-overlay max-h-[420px] overflow-y-auto overflow-x-auto">
                     <table className="w-full text-left font-base text-200">
                         <thead>
                             <tr className="border-b border-border text-muted-foreground">

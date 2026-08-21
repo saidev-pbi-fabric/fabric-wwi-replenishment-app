@@ -196,14 +196,15 @@ export function ItemDetailPanel({ stockItemKey, tier, rank, rankMode, totalItemC
 
             <p className="mt-300 rounded-md border border-border bg-accent px-300 py-200 font-base text-100 text-muted-foreground">
                 No stock-on-hand figure exists anywhere in this dataset — "days of stock left" can't be
-                shown honestly. <strong className="text-foreground">Suggested Reorder Qty</strong> below is a
-                formula (recent daily sales rate &times; lead time &times; safety buffer), not a prediction.
+                shown honestly. <strong className="text-foreground">Suggested Reorder Qty</strong> below covers
+                this item's own {leadTimeDays}-day lead time (recent daily sales rate &times; lead time &times;
+                safety buffer) — not a fixed 30- or 60-day window, and not a prediction.
             </p>
 
             <dl className="mt-300 grid grid-cols-3 gap-300">
                 <DetailStat label="Unit Price" value={`$${unitPrice.toFixed(2)}`} />
                 <DetailStat label="Recent Daily Sales" value={recentDailySales.toLocaleString(undefined, { maximumFractionDigits: 1 })} />
-                <DetailStat label="Suggested Reorder Qty" value={suggestedReorderQty.toLocaleString()} />
+                <DetailStat label={`Suggested Reorder Qty (next ${leadTimeDays}d)`} value={suggestedReorderQty.toLocaleString()} />
             </dl>
         </div>
     );

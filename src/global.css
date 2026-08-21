@@ -197,6 +197,37 @@
   }
 }
 
+@layer utilities {
+  /* Thin overlay-style scrollbar: invisible at rest, thumb fades in on hover/scroll so it
+     never visually competes with adjacent table columns. Themed off the same border color
+     used app-wide, so it matches light/dark without a separate token. */
+  .scroll-overlay {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    transition: scrollbar-color 150ms ease;
+  }
+  .scroll-overlay:hover,
+  .scroll-overlay:focus-within {
+    scrollbar-color: var(--color-border) transparent;
+  }
+  .scroll-overlay::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .scroll-overlay::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scroll-overlay::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: 999px;
+    transition: background-color 150ms ease;
+  }
+  .scroll-overlay:hover::-webkit-scrollbar-thumb,
+  .scroll-overlay:focus-within::-webkit-scrollbar-thumb {
+    background-color: var(--color-border);
+  }
+}
+
 html,
 body,
 #root {

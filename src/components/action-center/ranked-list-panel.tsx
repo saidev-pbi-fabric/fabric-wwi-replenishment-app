@@ -198,7 +198,7 @@ export function RankedListPanel({
                           : `No items in ${valueTierFilterLabel(tierFilter)}.`}
                 </div>
             ) : (
-                <ul className="flex-1 overflow-y-auto">
+                <ul className="scroll-overlay flex-1 overflow-y-auto">
                     {visibleRows.map((r) => (
                         <ListRow
                             key={r.stockItemKey}
