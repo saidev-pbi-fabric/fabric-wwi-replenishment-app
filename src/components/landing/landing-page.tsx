@@ -5,56 +5,44 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
+import { ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
-import { AlertTriangle, ArrowRight, Info, PackagePlus, History } from "lucide-react";
-import { useParetoDataset } from "@/hooks/use-pareto-dataset";
-import { LEAD_TIME_DOT_CLASS } from "@/lib/severity";
 import { fadeInUp, staggerContainer } from "@/lib/motion";
-import { cn } from "@/lib/utils";
 
 interface LandingPageProps {
     onOpenDashboard: () => void;
 }
 
 interface Step {
-    icon: React.ComponentType<{ className?: string }>;
+    n: string;
     title: string;
     description: string;
 }
 
+// Copy locked verbatim against docs/mockup-reference.html's #page-landing section —
+// do not rephrase without updating the mockup or getting sign-off first.
 const STEPS: Step[] = [
     {
-        icon: AlertTriangle,
-        title: "Surface the risk",
-        description:
-            "Every stock item ranked by demand trend vs. lead time, no guessing which SKUs need attention first.",
+        n: "01",
+        title: "See the concentration",
+        description: "A live Pareto view of every stock item, ranked by dollar exposure.",
     },
     {
-        icon: PackagePlus,
-        title: "Record the action",
-        description:
-            "Log a reorder decision (quantity, status, note) directly against the item. No spreadsheet or email hop.",
+        n: "02",
+        title: "Drill into one item",
+        description: "Sales trend, lead time, and the plain-English reason it's flagged.",
     },
     {
-        icon: History,
-        title: "Track it through",
-        description:
-            "Status stays with the item: Pending Review → Approved → Ordered → Received.",
+        n: "03",
+        title: "Log the reorder",
+        description: "Record quantity, supplier, and status — tracked with a full audit trail.",
     },
 ];
 
 export function LandingPage({ onOpenDashboard }: LandingPageProps) {
-    const dataset = useParetoDataset();
-
-    const glimpseRows = dataset.rows.slice(0, 3).map((row) => ({
-        name: row.stockItem,
-        tier: row.tier,
-        rank: row.atRiskRank,
-    }));
-
     return (
         <motion.div
-            className="flex flex-col gap-700"
+            className="flex flex-col gap-400"
             initial="hidden"
             animate="visible"
             variants={staggerContainer}
@@ -63,138 +51,46 @@ export function LandingPage({ onOpenDashboard }: LandingPageProps) {
                 variants={fadeInUp}
                 className="flex flex-col items-start gap-300 rounded-lg border border-border bg-card p-600 shadow-sm"
             >
-                <span className="font-base text-200 font-semibold uppercase tracking-wide text-muted-foreground">
-                    Microsoft Fabric Hackathon 2026 &middot; Fabric App Champion
-                </span>
-
-                <h1 className="font-heading text-800 font-semibold leading-tight text-foreground">
-                    Twenty percent of your catalog is carrying eighty percent of the reorder risk.
+                <h1 className="max-w-[720px] font-heading text-800 font-bold leading-tight text-foreground">
+                    Twenty percent of your catalog is carrying{" "}
+                    <span className="text-primary">eighty percent</span> of the reorder risk.
                 </h1>
 
-                <p className="max-w-[720px] font-base text-400 text-muted-foreground">
+                <p className="max-w-[560px] font-base text-400 leading-relaxed text-muted-foreground">
                     WWI Replenishment ranks stock items by sales velocity against supplier lead time,
-                    then shows exactly how concentrated that risk is &mdash; and lets you act on it,
-                    without leaving the app.
+                    then shows exactly how concentrated that risk is &mdash; and lets a planner act on
+                    it without leaving the app.
                 </p>
                 <motion.button
                     type="button"
                     onClick={onOpenDashboard}
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
-                    className="mt-200 flex items-center gap-200 rounded-md bg-primary px-400 py-200 font-base text-300 text-primary-foreground shadow-sm"
+                    className="mt-200 flex items-center gap-200 rounded-md bg-primary px-400 py-200 font-base text-300 font-semibold text-primary-foreground shadow-sm"
                 >
-                    Open the Dashboard
+                    Open the dashboard
                     <ArrowRight className="icon-size-300" />
                 </motion.button>
             </motion.section>
 
-            {glimpseRows.length > 0 ? (
-                <motion.section
-                    variants={fadeInUp}
-                    className="rounded-lg border border-border bg-card shadow-sm"
-                >
-                    <div className="border-b border-border px-400 py-300">
-                        <h2 className="font-base text-200 font-semibold uppercase tracking-wide text-muted-foreground">
-                            Right now, ranked by risk
-                        </h2>
-                    </div>
-                    <ul>
-                        {glimpseRows.map((row) => (
-                            <li
-                                key={row.name}
-                                className="flex items-center gap-300 border-b border-border px-400 py-200 last:border-b-0"
-                            >
-                                <span
-                                    className={`icon-size-100 inline-block shrink-0 rounded-full ${
-                                        LEAD_TIME_DOT_CLASS[row.tier] ?? "bg-muted-foreground"
-                                    }`}
-                                    aria-hidden="true"
-                                />
-                                <span
-                                    className="min-w-0 flex-1 truncate font-base text-300 text-foreground"
-                                    title={row.name}
-                                >
-                                    {row.name}
-                                </span>
-                                <span className="shrink-0 font-numeric text-200 text-muted-foreground">
-                                    Rank #{row.rank}
-                                </span>
-                            </li>
-                        ))}
-                    </ul>
-                </motion.section>
-            ) : null}
-
-            <motion.section variants={fadeInUp} className="flex flex-col gap-300">
-                <h2 className="font-heading text-500 font-semibold text-foreground">The problem</h2>
-                <p className="max-w-[820px] font-base text-300 text-muted-foreground">
-                    Sales dashboards show what happened. They don't say what to do about it, that step
-                    still lives in a spreadsheet or an email, outside the report. This app closes that
-                    loop: see what's at risk of stocking out, then record and track the reorder action for
-                    it, in the same place.
-                </p>
-            </motion.section>
-
             <motion.section
                 variants={staggerContainer}
-                className="grid grid-cols-1 gap-400 md:grid-cols-[1.4fr_1fr_1fr]"
+                className="grid grid-cols-1 gap-300 md:grid-cols-3"
             >
-                {STEPS.map((step, index) => {
-                    const Icon = step.icon;
-                    const isFirst = index === 0;
-                    return (
-                        <motion.div
-                            key={step.title}
-                            variants={fadeInUp}
-                            className={cn(
-                                "relative flex flex-col gap-200 rounded-lg border border-border p-400",
-                                isFirst ? "bg-muted" : "bg-card",
-                            )}
-                        >
-                            <div className="flex items-center gap-200">
-                                <span className="font-numeric text-200 font-semibold text-primary">
-                                    {String(index + 1).padStart(2, "0")}
-                                </span>
-                                <Icon
-                                    className={cn(
-                                        "text-muted-foreground",
-                                        isFirst ? "icon-size-500" : "icon-size-400",
-                                    )}
-                                />
-                            </div>
-                            <h3
-                                className={cn(
-                                    "font-heading font-semibold text-foreground",
-                                    isFirst ? "text-500" : "text-400",
-                                )}
-                            >
-                                {step.title}
-                            </h3>
-                            <p className="font-base text-200 text-muted-foreground">{step.description}</p>
-                        </motion.div>
-                    );
-                })}
+                {STEPS.map((step) => (
+                    <motion.div
+                        key={step.title}
+                        variants={fadeInUp}
+                        className="flex flex-col gap-100 rounded-lg border border-border bg-card p-400 shadow-sm"
+                    >
+                        <span className="font-numeric text-200 font-semibold text-primary">{step.n}</span>
+                        <h3 className="font-heading text-400 font-semibold text-foreground">{step.title}</h3>
+                        <p className="font-base text-200 leading-relaxed text-muted-foreground">
+                            {step.description}
+                        </p>
+                    </motion.div>
+                ))}
             </motion.section>
-
-            <motion.section
-                variants={fadeInUp}
-                className="flex items-start gap-300 rounded-lg border border-border bg-card p-400 text-200 text-muted-foreground shadow-sm"
-            >
-                <Info className="icon-size-300 shrink-0" />
-                <p>
-                    Built on the Wide World Importers retail sample data (Fabric Warehouse Copy Job, ~50M sales
-                    rows). This sample has no real purchasing or backorder data, so "risk" here is a{" "}
-                    <strong className="text-foreground">disclosed proxy</strong>: sales velocity trend vs.
-                    lead time, ranked, not a literal stock count.
-                </p>
-            </motion.section>
-
-            <motion.p
-                variants={fadeInUp}
-                className="font-base text-200 uppercase tracking-wide text-muted-foreground"
-            >
-                Fabric Warehouse &middot; Power BI Semantic Model &middot; Rayfin Backend &middot; React + Vite
-            </motion.p>
         </motion.div>
     );
 }

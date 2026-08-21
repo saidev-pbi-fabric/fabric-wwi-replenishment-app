@@ -5,48 +5,16 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { LandingPage } from "@/components/landing/landing-page";
 
-const mockQuery = vi.fn();
-
-vi.mock("@/lib/fabric-client", () => ({
-    getFabricClient: () => ({
-        clearCache: vi.fn(),
-        semanticModel: () => ({ query: mockQuery, clearCache: vi.fn() }),
-    }),
-}));
-
-const TOP_ITEMS_TABLE = {
-    columns: [
-        { name: "Stock Item[Stock Item Key]" },
-        { name: "Stock Item[Stock Item]" },
-        { name: "Stock Item[Lead Time Priority Tier]" },
-        { name: "[Reorder Value]" },
-        { name: "[Value Share %]" },
-        { name: "[Cumulative Value %]" },
-        { name: "[At Risk Rank]" },
-    ],
-    rows: [
-        [17, "Shipping carton (Brown)", "Long Lead Time", 3241644, 0.34, 0.34, 1],
-        [58, "Bubble wrap 500mm x 10m", "Long Lead Time", 1620000, 0.28, 0.62, 2],
-        [93, "Packing tape 48mm x 100m", "Medium Lead Time", 1310000, 0.22, 0.84, 3],
-    ],
-};
-
 describe("LandingPage", () => {
-    beforeEach(() => {
-        vi.clearAllMocks();
-    });
-
     // Regression: the hero used to lead with a large animated at-risk count
     // ("20 items need attention"). User feedback: "we don't need any numbers
     // here in the first place ... it needs to give you the direction only."
-    // The headline is now a fixed directional statement, not data-driven —
-    // it must render identically whether or not the query has resolved.
-    it("always shows the directional headline and the one-liner pitch, regardless of data state", () => {
-        mockQuery.mockResolvedValue({ status: "error", error: { message: "no embed" } });
+    // The headline is a fixed directional statement, not data-driven.
+    it("shows the directional headline and the one-liner pitch", () => {
         render(<LandingPage onOpenDashboard={vi.fn()} />);
 
         expect(
@@ -58,32 +26,16 @@ describe("LandingPage", () => {
         expect(screen.queryByText(/items need attention/i)).not.toBeInTheDocument();
     });
 
-    it("shows a glimpse of the real top at-risk items once loaded", async () => {
-        mockQuery.mockResolvedValue({ status: "success", table: TOP_ITEMS_TABLE, fromCache: false });
+    // Copy locked against docs/mockup-reference.html's #page-landing .steps section.
+    it("shows the three locked steps", () => {
         render(<LandingPage onOpenDashboard={vi.fn()} />);
 
-        expect(await screen.findByText("Shipping carton (Brown)")).toBeInTheDocument();
-        expect(screen.getByText("Bubble wrap 500mm x 10m")).toBeInTheDocument();
-        expect(screen.getByText("Packing tape 48mm x 100m")).toBeInTheDocument();
-    });
-
-    it("explains the problem the app solves", () => {
-        mockQuery.mockResolvedValue({ status: "error", error: { message: "no embed" } });
-        render(<LandingPage onOpenDashboard={vi.fn()} />);
-
-        expect(screen.getByText(/the problem/i)).toBeInTheDocument();
-    });
-
-    it("discloses that replenishment risk is a proxy signal, not real stock data", () => {
-        mockQuery.mockResolvedValue({ status: "error", error: { message: "no embed" } });
-        render(<LandingPage onOpenDashboard={vi.fn()} />);
-
-        expect(screen.getByText(/disclosed proxy/i)).toBeInTheDocument();
-        expect(screen.getByText(/wide world importers/i)).toBeInTheDocument();
+        expect(screen.getByText("See the concentration")).toBeInTheDocument();
+        expect(screen.getByText("Drill into one item")).toBeInTheDocument();
+        expect(screen.getByText("Log the reorder")).toBeInTheDocument();
     });
 
     it("calls onOpenDashboard when the primary CTA is clicked", () => {
-        mockQuery.mockResolvedValue({ status: "error", error: { message: "no embed" } });
         const onOpenDashboard = vi.fn();
         render(<LandingPage onOpenDashboard={onOpenDashboard} />);
 

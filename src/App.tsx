@@ -7,7 +7,6 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Moon, Sun } from "lucide-react";
 import { useThemeContext } from "@/hooks/theme.context";
 import { fadeInUp } from "@/lib/motion";
 import { LandingPage } from "@/components/landing/landing-page";
@@ -32,31 +31,36 @@ function App() {
 
     return (
         <div className="flex min-h-full flex-col bg-background">
-            <header className="flex items-center justify-between border-b border-border px-500 py-300">
-                <div className="flex items-center gap-600">
-                    <button
-                        type="button"
-                        onClick={() => setPage("landing")}
-                        className="font-heading text-500 font-semibold tracking-tight text-foreground"
-                    >
-                        WWI Replenishment
-                    </button>
-                    <nav className="flex items-center gap-200" aria-label="Pages">
-                        <NavTab active={page === "landing"} onClick={() => setPage("landing")}>
-                            Home
-                        </NavTab>
-                        <NavTab active={page === "overview"} onClick={() => setPage("overview")}>
-                            Overview
-                        </NavTab>
-                        <NavTab active={page === "action-center"} onClick={() => setPage("action-center")}>
-                            Action Center
-                        </NavTab>
-                    </nav>
-                </div>
-                <ThemeToggle />
-            </header>
-
             <main className="mx-auto w-full max-w-[1400px] flex-1 p-500">
+                <header className="mb-400 flex items-center justify-between rounded-lg border border-border bg-card px-500 py-300 shadow-sm">
+                    <div className="flex items-center gap-600">
+                        <button
+                            type="button"
+                            onClick={() => setPage("landing")}
+                            className="flex items-center gap-200"
+                        >
+                            <span className="flex h-[26px] w-[26px] items-center justify-center rounded-md bg-primary font-heading text-200 font-bold text-primary-foreground">
+                                W
+                            </span>
+                            <span className="font-base text-300 font-semibold text-foreground">
+                                WWI Replenishment
+                            </span>
+                        </button>
+                        <nav className="flex items-center gap-100" aria-label="Pages">
+                            <NavTab active={page === "landing"} onClick={() => setPage("landing")}>
+                                Home
+                            </NavTab>
+                            <NavTab active={page === "overview"} onClick={() => setPage("overview")}>
+                                Overview
+                            </NavTab>
+                            <NavTab active={page === "action-center"} onClick={() => setPage("action-center")}>
+                                Action Center
+                            </NavTab>
+                        </nav>
+                    </div>
+                    <ThemeToggle />
+                </header>
+
                 <AnimatePresence mode="popLayout" initial={false}>
                     <motion.div key={page} initial="hidden" animate="visible" exit="hidden" variants={fadeInUp}>
                         {page === "landing" ? (
@@ -88,11 +92,11 @@ function NavTab({
             onClick={onClick}
             aria-current={active ? "page" : undefined}
             className={cn(
-                "rounded-md px-300 py-100-nudge font-base text-300 transition-colors active:scale-95",
+                "rounded-md border px-300 py-100-nudge font-base text-300 font-medium transition-colors active:scale-95",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                 active
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                    ? "border-border bg-accent text-foreground"
+                    : "border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground",
             )}
         >
             {children}
@@ -107,9 +111,9 @@ function ThemeToggle() {
             type="button"
             onClick={toggleTheme}
             aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
-            className="flex icon-size-600 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="rounded-md border border-border bg-secondary px-300 py-100-nudge font-base text-200 text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
-            {isDark ? <Sun className="icon-size-300" /> : <Moon className="icon-size-300" />}
+            Toggle theme
         </button>
     );
 }

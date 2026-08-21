@@ -1,0 +1,528 @@
+<!--
+  Locked design mockup for WWI Replenishment, saved verbatim from the Claude.ai
+  artifact (https://claude.ai/code/artifact/9654db45-6c0c-444b-aed0-27bce88caf48)
+  on 2026-08-21, after discovering SPEC.md's amendment section only paraphrased
+  this mockup instead of keeping it as a literal reference - which is why the
+  Overview rebuild drifted (bar color, layout, tier semantics) despite SPEC.md
+  looking complete. This file is the ground truth from here on; SPEC.md's prose
+  should defer to it, not the other way around.
+
+  The "Rebuild status" legend and NEW/MODIFIED/REUSED/RETIRED badges below are
+  the mockup author's own review annotations, not real UI - do not build those.
+-->
+<!doctype html><html><head>
+<meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1">
+<title>WWI Replenishment Redesign</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --color-background: #ffffff;
+    --color-foreground: #242424;
+    --color-card: #ffffff;
+    --color-card-foreground: #242424;
+    --color-primary: #0f6cbd;
+    --color-primary-foreground: #ffffff;
+    --color-secondary: #f7f7f8;
+    --color-muted: #eef0f2;
+    --color-muted-foreground: #616161;
+    --color-accent: #eef1f4;
+    --color-border: #d6d9dd;
+    --color-critical: #c50f1f;
+    --color-critical-foreground: #ffffff;
+    --color-at-risk: #9a6700;
+    --color-at-risk-foreground: #ffffff;
+    --color-on-track: #0e700e;
+    --color-on-track-foreground: #ffffff;
+    --status-new-bg: #0f6cbd;
+    --status-new-fg: #ffffff;
+    --status-modified-border: #0f6cbd;
+    --status-modified-fg: #0f6cbd;
+    --status-reused-border: #d6d9dd;
+    --status-reused-fg: #616161;
+    --status-retired-fg: #a3a7ad;
+    --shadow-card: 0 1px 2px rgba(20,20,20,.04), 0 1px 1px rgba(20,20,20,.03);
+    --shadow-card-hover: 0 2px 8px rgba(20,20,20,.07), 0 1px 2px rgba(20,20,20,.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --color-background: #292929; --color-foreground: #ffffff;
+      --color-card: #292929; --color-card-foreground: #ffffff;
+      --color-primary: #115ea3; --color-primary-foreground: #ffffff;
+      --color-secondary: #1f1f1f; --color-muted: #141414; --color-muted-foreground: #adadad;
+      --color-accent: #3d3d3d; --color-border: #525252;
+      --color-critical: #f1707b; --color-critical-foreground: #1a0000;
+      --color-at-risk: #e0a828; --color-at-risk-foreground: #1a1200;
+      --color-on-track: #54c454; --color-on-track-foreground: #001a00;
+      --status-new-bg: #115ea3; --status-new-fg: #ffffff;
+      --status-modified-border: #479ef5; --status-modified-fg: #479ef5;
+      --status-reused-border: #525252; --status-reused-fg: #adadad;
+      --status-retired-fg: #6b6b6b;
+      --shadow-card: 0 1px 2px rgba(0,0,0,.3), 0 1px 1px rgba(0,0,0,.2);
+      --shadow-card-hover: 0 4px 14px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"] {
+    --color-background: #292929; --color-foreground: #ffffff;
+    --color-card: #292929; --color-card-foreground: #ffffff;
+    --color-primary: #115ea3; --color-primary-foreground: #ffffff;
+    --color-secondary: #1f1f1f; --color-muted: #141414; --color-muted-foreground: #adadad;
+    --color-accent: #3d3d3d; --color-border: #525252;
+    --color-critical: #f1707b; --color-critical-foreground: #1a0000;
+    --color-at-risk: #e0a828; --color-at-risk-foreground: #1a1200;
+    --color-on-track: #54c454; --color-on-track-foreground: #001a00;
+    --status-new-bg: #115ea3; --status-new-fg: #ffffff;
+    --status-modified-border: #479ef5; --status-modified-fg: #479ef5;
+    --status-reused-border: #525252; --status-reused-fg: #adadad;
+    --status-retired-fg: #6b6b6b;
+    --shadow-card: 0 1px 2px rgba(0,0,0,.3), 0 1px 1px rgba(0,0,0,.2);
+    --shadow-card-hover: 0 4px 14px rgba(0,0,0,.4);
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--color-background); color: var(--color-foreground); font-family: 'IBM Plex Sans', -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+  h1, h2, h3, .heading { font-family: 'IBM Plex Sans Condensed', sans-serif; text-wrap: balance; margin: 0; }
+  .mono { font-family: 'IBM Plex Mono', Consolas, monospace; font-variant-numeric: tabular-nums; }
+
+  .shell { max-width: 1180px; margin: 0 auto; padding: 24px 24px 80px; }
+
+  .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 20px; margin-bottom: 20px; background: var(--color-card); border: 1px solid var(--color-border); border-radius: 6px; box-shadow: var(--shadow-card); }
+  .toolbar .brand { display: flex; align-items: center; gap: 10px; }
+  .toolbar .brand .mark { width: 26px; height: 26px; border-radius: 6px; background: var(--color-primary); display: flex; align-items: center; justify-content: center; color: var(--color-primary-foreground); font-family: 'IBM Plex Sans Condensed'; font-weight: 700; font-size: 13px; }
+  .toolbar .brand strong { font-size: 15px; font-weight: 600; }
+  .tabs { display: flex; gap: 4px; }
+  .tabs button { font-family: 'IBM Plex Sans'; font-size: 13px; font-weight: 500; padding: 7px 14px; border-radius: 5px; border: 1px solid transparent; background: none; color: var(--color-muted-foreground); cursor: pointer; transition: background .15s, color .15s; }
+  .tabs button:hover { background: var(--color-secondary); color: var(--color-foreground); }
+  .tabs button[aria-selected="true"] { background: var(--color-accent); color: var(--color-foreground); border-color: var(--color-border); }
+  .theme-toggle { font-family: 'IBM Plex Sans'; font-size: 12px; padding: 6px 12px; border-radius: 5px; border: 1px solid var(--color-border); background: var(--color-secondary); color: var(--color-foreground); cursor: pointer; transition: background .15s; }
+  .theme-toggle:hover { background: var(--color-accent); }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; padding: 10px 16px; margin-bottom: 20px; border-radius: 6px; background: var(--color-accent); border: 1px solid var(--color-border); font-size: 12px; color: var(--color-muted-foreground); }
+  .legend b { color: var(--color-foreground); font-weight: 600; margin-right: 2px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; }
+  .dot { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+  .dot.new { background: var(--status-new-bg); }
+  .dot.modified { background: none; border: 2px solid var(--status-modified-border); }
+  .dot.reused { background: none; border: 2px solid var(--status-reused-border); }
+  .dot.retired { background: var(--status-retired-fg); opacity: .5; }
+
+  .page { display: none; }
+  .page.active { display: block; animation: fade .25s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .page.active { animation: none; } }
+
+  .panel { position: relative; background: var(--color-card); border: 1px solid var(--color-border); border-radius: 6px; padding: 20px; box-shadow: var(--shadow-card); transition: box-shadow .15s; }
+  .panel:hover { box-shadow: var(--shadow-card-hover); }
+  .badge { position: absolute; top: 14px; right: 14px; font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; font-family: 'IBM Plex Sans'; }
+  .badge.new { background: var(--status-new-bg); color: var(--status-new-fg); }
+  .badge.modified { border: 1px solid var(--status-modified-border); color: var(--status-modified-fg); }
+  .badge.reused { border: 1px solid var(--status-reused-border); color: var(--status-reused-fg); }
+  .badge.retired { color: var(--status-retired-fg); font-style: italic; text-decoration: line-through; text-transform: none; letter-spacing: 0; }
+
+  .panel-title { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--color-muted-foreground); margin-bottom: 4px; }
+  .panel-sub { font-size: 12px; color: var(--color-muted-foreground); margin-bottom: 16px; }
+
+  .hero { text-align: left; padding: 56px 40px; border-radius: 6px; margin-bottom: 20px; background: var(--color-card); border: 1px solid var(--color-border); box-shadow: var(--shadow-card); }
+  .hero h1 { font-size: 34px; font-weight: 700; line-height: 1.2; max-width: 720px; }
+  .hero h1 span { color: var(--color-primary); }
+  .hero p { max-width: 560px; font-size: 15px; line-height: 1.6; color: var(--color-muted-foreground); margin: 16px 0 24px; }
+  .cta { display: inline-block; font-size: 14px; font-weight: 600; padding: 11px 22px; border-radius: 5px; background: var(--color-primary); color: var(--color-primary-foreground); text-decoration: none; transition: opacity .15s; }
+  .cta:hover { opacity: .88; }
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .step .n { font-family: 'IBM Plex Mono'; font-size: 11px; color: var(--color-primary); font-weight: 600; }
+  .step h3 { font-size: 14px; font-weight: 600; margin: 8px 0 4px; }
+  .step p { font-size: 12.5px; color: var(--color-muted-foreground); margin: 0; line-height: 1.5; }
+
+  .kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 16px; }
+  .kpi { position: relative; padding: 16px; overflow: hidden; }
+  .kpi.rail::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
+  .kpi.rail.critical::before { background: var(--color-critical); }
+  .kpi.rail.at-risk::before { background: var(--color-at-risk); }
+  .kpi .label { font-size: 11px; color: var(--color-muted-foreground); text-transform: uppercase; letter-spacing: .04em; }
+  .kpi .value { font-family: 'IBM Plex Mono'; font-size: 24px; font-weight: 600; margin-top: 6px; }
+  .kpi .note { font-size: 10.5px; color: var(--color-muted-foreground); margin-top: 4px; }
+
+  .pareto-panel { margin-bottom: 14px; }
+  .pareto-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 14px; flex-wrap: wrap; }
+  .pareto-headline { font-size: 15px; font-weight: 500; }
+  .pareto-headline .n { font-family: 'IBM Plex Mono'; font-weight: 700; color: var(--color-primary); }
+  .slider-wrap { display: flex; align-items: center; gap: 10px; min-width: 220px; }
+  .slider-wrap label { font-size: 11px; color: var(--color-muted-foreground); white-space: nowrap; }
+  input[type="range"] { flex: 1; accent-color: var(--color-primary); }
+  .slider-val { font-family: 'IBM Plex Mono'; font-size: 12px; font-weight: 600; width: 34px; text-align: right; }
+
+  .pareto-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 18px; align-items: start; }
+  .chart-area { position: relative; height: 220px; display: flex; align-items: flex-end; gap: 3px; padding-top: 10px; border-bottom: 1px solid var(--color-border); }
+  .bar { flex: 1; background: var(--color-primary); border-radius: 2px 2px 0 0; transition: opacity .2s, background .2s; position: relative; cursor: pointer; }
+  .bar.past-cutoff { background: var(--color-muted-foreground); opacity: .32; }
+  .bar:hover { opacity: .8; }
+  .cutoff-rule { position: absolute; top: 0; bottom: 0; width: 0; border-left: 2px dashed var(--color-at-risk); transition: left .15s; }
+
+  table.pareto-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  table.pareto-table th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: var(--color-muted-foreground); padding: 6px 8px; border-bottom: 1px solid var(--color-border); font-weight: 600; }
+  table.pareto-table td { padding: 6px 8px; border-bottom: 1px solid var(--color-border); font-family: 'IBM Plex Mono'; }
+  table.pareto-table td.name { font-family: 'IBM Plex Sans'; }
+  table.pareto-table tr.subtotal td { font-weight: 600; background: var(--color-accent); font-family: 'IBM Plex Sans'; }
+  .tier-rail { display: inline-block; width: 4px; height: 14px; vertical-align: -3px; margin-right: 7px; border-radius: 2px; }
+  .tier-rail.A { background: var(--color-critical); }
+  .tier-rail.B { background: var(--color-at-risk); }
+  .tier-rail.C { background: var(--color-on-track); }
+
+  .ac-grid { display: grid; grid-template-columns: 1fr 1.05fr; gap: 14px; align-items: start; }
+  .filter-chips { display: flex; gap: 6px; margin-bottom: 12px; }
+  .filter-chips span { font-size: 11px; padding: 4px 10px; border-radius: 12px; border: 1px solid var(--color-border); color: var(--color-muted-foreground); cursor: default; }
+  .filter-chips span.active { border-color: var(--color-primary); color: var(--color-primary); }
+  .list-row { display: flex; align-items: center; gap: 10px; padding: 8px 6px; border-bottom: 1px solid var(--color-border); font-size: 12.5px; }
+  .list-row:hover { background: var(--color-secondary); }
+  .list-row .rank { font-family: 'IBM Plex Mono'; font-size: 11px; color: var(--color-muted-foreground); width: 20px; flex-shrink: 0; }
+  .list-row .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .list-row .mini-spark { flex-shrink: 0; width: 56px; height: 20px; }
+  .list-row .val { font-family: 'IBM Plex Mono'; font-size: 11.5px; width: 52px; text-align: right; flex-shrink: 0; }
+
+  .detail-block { margin-bottom: 14px; }
+  .detail-title { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+  .detail-rationale { font-size: 12px; color: var(--color-muted-foreground); line-height: 1.5; margin-bottom: 14px; }
+  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 14px; }
+  .stat-grid .stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: .03em; color: var(--color-muted-foreground); }
+  .stat-grid .stat-val { font-family: 'IBM Plex Mono'; font-size: 14px; margin-top: 3px; }
+  .trend-caption { font-size: 10.5px; color: var(--color-muted-foreground); margin-top: 6px; }
+
+  .form-row { display: flex; gap: 10px; margin-bottom: 8px; }
+  .form-row > div { flex: 1; }
+  .form-row label { display: block; font-size: 10.5px; color: var(--color-muted-foreground); margin-bottom: 3px; text-transform: uppercase; letter-spacing: .03em; }
+  .form-row input, .form-row select { width: 100%; font-size: 12.5px; padding: 7px 9px; border-radius: 5px; border: 1px solid var(--color-border); background: var(--color-background); color: var(--color-foreground); font-family: inherit; }
+  .form-submit { margin-top: 6px; font-size: 12.5px; font-weight: 600; padding: 8px 16px; border-radius: 5px; background: var(--color-primary); color: var(--color-primary-foreground); border: none; cursor: pointer; transition: opacity .15s; }
+  .form-submit:hover { opacity: .88; }
+
+  .audit-row { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--color-border); font-size: 11.5px; }
+  .audit-row:last-child { border-bottom: none; }
+  .audit-time { font-family: 'IBM Plex Mono'; color: var(--color-muted-foreground); white-space: nowrap; width: 92px; flex-shrink: 0; }
+  .audit-diff .field { color: var(--color-muted-foreground); }
+  .audit-diff .old { text-decoration: line-through; color: var(--status-retired-fg); }
+  .audit-diff .new { font-weight: 600; }
+  .audit-by { font-size: 10.5px; color: var(--color-muted-foreground); margin-top: 2px; }
+
+  .csv-btn { font-size: 11px; font-weight: 500; padding: 5px 10px; border-radius: 5px; border: 1px solid var(--color-border); background: var(--color-secondary); color: var(--color-foreground); cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+  .csv-btn:hover { background: var(--color-accent); }
+  .csv-note { font-size: 10.5px; color: var(--color-muted-foreground); margin-left: 8px; opacity: 0; transition: opacity .2s; }
+  .csv-note.show { opacity: 1; }
+  .panel-header-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 4px; }
+
+  .chart-options { display: flex; flex-direction: column; gap: 14px; margin-top: 10px; }
+  .chart-option { border: 1px solid var(--color-border); border-radius: 5px; padding: 10px 12px; }
+  .option-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--color-primary); margin-bottom: 6px; }
+  .option-caption { font-size: 10.5px; color: var(--color-muted-foreground); margin-top: 4px; }
+
+  .reorder-note { font-size: 11px; color: var(--color-muted-foreground); background: var(--color-accent); border: 1px solid var(--color-border); border-radius: 5px; padding: 8px 10px; margin: 12px 0; line-height: 1.5; }
+
+  table.pareto-table tr.highlight td { background: rgba(15,108,189,0.12); font-weight: 600; }
+</style>
+
+<div class="shell">
+
+  <div class="toolbar">
+    <div class="brand"><span class="mark">W</span><strong>WWI Replenishment</strong></div>
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" onclick="showPage('landing', this)">Landing</button>
+      <button role="tab" aria-selected="false" onclick="showPage('overview', this)">Overview</button>
+      <button role="tab" aria-selected="false" onclick="showPage('action', this)">Action Center</button>
+    </div>
+    <button class="theme-toggle" onclick="toggleTheme()">Toggle theme</button>
+  </div>
+
+  <div class="legend">
+    <span><b>Rebuild status —</b> what's changing per panel:</span>
+    <span class="chip"><span class="dot new"></span>New</span>
+    <span class="chip"><span class="dot modified"></span>Reused, query/copy changed</span>
+    <span class="chip"><span class="dot reused"></span>Reused, unchanged</span>
+    <span class="chip"><span class="dot retired"></span>Retired</span>
+  </div>
+
+  <section class="page active" id="page-landing">
+    <div class="hero panel">
+      <span class="badge modified">Modified — copy</span>
+      <h1>Twenty percent of your catalog is carrying <span>eighty percent</span> of the reorder risk.</h1>
+      <p>WWI Replenishment ranks stock items by sales velocity against supplier lead time, then shows exactly how concentrated that risk is &mdash; and lets a planner act on it without leaving the app.</p>
+      <a class="cta" href="#">Open the dashboard &rarr;</a>
+    </div>
+    <div class="steps">
+      <div class="step panel"><span class="badge reused">Reused</span><div class="n">01</div><h3>See the concentration</h3><p>A live Pareto view of every stock item, ranked by dollar exposure.</p></div>
+      <div class="step panel"><span class="badge reused">Reused</span><div class="n">02</div><h3>Drill into one item</h3><p>Sales trend, lead time, and the plain-English reason it's flagged.</p></div>
+      <div class="step panel"><span class="badge reused">Reused</span><div class="n">03</div><h3>Log the reorder</h3><p>Record quantity, supplier, and status &mdash; tracked with a full audit trail.</p></div>
+    </div>
+  </section>
+
+  <section class="page" id="page-overview">
+    <div class="kpi-row">
+      <div class="kpi panel"><span class="badge modified">Query updated</span><div class="label">Items Tracked</div><div class="value">672</div></div>
+      <div class="kpi panel"><span class="badge reused">Reused</span><div class="label">Avg Lead Time</div><div class="value">12.3<span style="font-size:13px">d</span></div></div>
+      <div class="kpi panel rail critical"><span class="badge modified">Cutoff-based</span><div class="label">Items Driving 80%</div><div class="value" id="kpi-cutoff-count">34</div><div class="note">was fixed top-20</div></div>
+      <div class="kpi panel rail at-risk"><span class="badge reused">Reused</span><div class="label">Accelerating Demand</div><div class="value">210</div></div>
+      <div class="kpi panel rail critical"><span class="badge modified">Cutoff-based</span><div class="label">At-Risk Reorder Value</div><div class="value">$<span id="kpi-cutoff-val">98.8</span>M</div></div>
+    </div>
+
+    <div class="panel pareto-panel">
+      <span class="badge new">New</span>
+      <div class="panel-header-row">
+        <div class="panel-title" style="margin-bottom:0">Reorder Risk Concentration</div>
+        <button class="csv-btn" onclick="showCsvNote(this)">&#8595; Download CSV<span class="csv-note">Works in the real app &mdash; downloads are sandboxed in this preview</span></button>
+      </div>
+      <div class="panel-sub">Replaces the old top-10 bar chart and both drill-through popups &mdash; this view already shows rank, $ value, and cumulative % for every item. Click a bar to find it in the table.</div>
+      <div class="pareto-head">
+        <div class="pareto-headline"><span class="n" id="pareto-headline-pct">80</span>% of at-risk reorder value is generated by <span class="n" id="pareto-headline-n">34</span> items</div>
+        <div class="slider-wrap">
+          <label for="cutoff-slider">Cutoff</label>
+          <input type="range" id="cutoff-slider" min="10" max="100" value="80" oninput="onSlider(this.value)">
+          <span class="slider-val" id="slider-readout">80%</span>
+        </div>
+      </div>
+      <div class="pareto-grid">
+        <div>
+          <div class="chart-area" id="chart-area"></div>
+          <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--color-muted-foreground); margin-top:4px;">
+            <span>Rank 1</span><span>Rank 20 (illustrative sample)</span>
+          </div>
+        </div>
+        <div><table class="pareto-table" id="pareto-table"></table></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="page" id="page-action">
+    <div class="ac-grid">
+      <div class="panel"><span class="badge modified">Tier column added</span>
+        <div class="panel-header-row">
+          <div class="panel-title" style="margin-bottom:0">Ranked At-Risk Items</div>
+          <button class="csv-btn" onclick="showCsvNote(this)">&#8595; Download CSV<span class="csv-note">Works in the real app &mdash; downloads are sandboxed in this preview</span></button>
+        </div>
+        <input id="ac-search" type="text" placeholder="Search items by name…" style="width:100%; margin-top:12px; font-size:12.5px; padding:7px 10px; border-radius:5px; border:1px solid var(--color-border); background:var(--color-background); color:var(--color-foreground); font-family:inherit;" oninput="renderAcList(this.value)">
+        <div class="filter-chips" style="margin-top:10px"><span class="active">All</span><span>Tier A</span><span>Tier B</span><span>Tier C</span></div>
+        <div id="ac-list"></div>
+      </div>
+
+      <div>
+        <div class="panel detail-block"><span class="badge reused">Unchanged</span>
+          <div class="panel-title">Item Detail</div>
+          <div class="detail-title">Shipping Carton (Brown) 413x285x187mm</div>
+          <div class="detail-rationale">Tier A &middot; rank 3 of 672. Sales rate accelerating 18% vs. the prior 30 days, against a 14-day lead time &mdash; the combination that puts it in the top concentration band.</div>
+          <div class="chart-options">
+            <div class="chart-option">
+              <div class="option-label">Option A &mdash; gridded axis</div>
+              <svg id="detail-spark-a" viewBox="0 0 400 100" width="100%" height="100" preserveAspectRatio="none"></svg>
+            </div>
+            <div class="chart-option">
+              <div class="option-label">Option B &mdash; minimal, range as text</div>
+              <svg id="detail-spark-b" viewBox="0 0 400 70" width="100%" height="70" preserveAspectRatio="none"></svg>
+              <div class="option-caption" id="spark-b-caption"></div>
+            </div>
+          </div>
+          <div class="trend-caption">Historical daily sales only &mdash; no forward projection. This dataset's DAX has no forecast measure, so we don't draw one.</div>
+
+          <div class="reorder-note">No stock-on-hand figure exists anywhere in this dataset &mdash; "days of stock left" can't be shown honestly. <b>Suggested Reorder Qty</b> below is a formula (recent daily sales rate &times; lead time &times; safety buffer), not a prediction.</div>
+
+          <div class="stat-grid">
+            <div><div class="stat-label">Unit Price</div><div class="stat-val">$1.05</div></div>
+            <div><div class="stat-label">Recent Daily Sales</div><div class="stat-val">183,766.7</div></div>
+            <div><div class="stat-label">Suggested Reorder Qty</div><div class="stat-val">3,087,280</div></div>
+          </div>
+        </div>
+
+        <div class="panel detail-block"><span class="badge modified">Write hook added</span>
+          <div class="panel-title">Log Reorder Action</div>
+          <div class="form-row">
+            <div><label>Quantity</label><input value="1,240" /></div>
+            <div><label>Supplier</label><input value="Northwind Packaging" /></div>
+          </div>
+          <div class="form-row">
+            <div><label>Status</label><select><option>Pending Review</option></select></div>
+            <div><label>Assigned To</label><input value="—" /></div>
+          </div>
+          <button class="form-submit">Submit reorder action</button>
+        </div>
+
+        <div class="panel"><span class="badge new">New</span>
+          <div class="panel-title">Audit Trail</div>
+          <div class="panel-sub">Every change to this item's reorder action, append-only</div>
+          <div class="audit-row"><div class="audit-time mono">Aug 20, 14:02</div><div><div class="audit-diff"><span class="field">status:</span> <span class="old">Pending Review</span> &rarr; <span class="new">Approved</span></div><div class="audit-by">saidev@r4k5.onmicrosoft.com</div></div></div>
+          <div class="audit-row"><div class="audit-time mono">Aug 20, 09:41</div><div><div class="audit-diff"><span class="field">quantity:</span> <span class="old">1,000</span> &rarr; <span class="new">1,240</span></div><div class="audit-by">saidev@r4k5.onmicrosoft.com</div></div></div>
+          <div class="audit-row"><div class="audit-time mono">Aug 19, 16:15</div><div><div class="audit-diff"><span class="field">created</span></div><div class="audit-by">saidev@r4k5.onmicrosoft.com</div></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  function showPage(id, btn) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + id).classList.add('active');
+    document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', 'false'));
+    btn.setAttribute('aria-selected', 'true');
+  }
+  function toggleTheme() {
+    const root = document.documentElement;
+    const current = root.getAttribute('data-theme');
+    root.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+  }
+
+  const items = [
+    ["Shipping Carton (Brown) 413x285x187mm", 14.2], ["Stretch Wrap Film 500mm x 300m", 11.6],
+    ["Packing Tape - Clear 48mm", 9.8], ["Bubble Wrap Roll 750mm x 100m", 8.1],
+    ["Pallet Wrap Dispenser - Heavy Duty", 6.9], ["Void Fill Paper - Kraft 900mm", 5.4],
+    ["Corrugated Mailer Box - Medium", 4.7], ["Poly Strapping Roll 12mm", 4.0],
+    ["Foam Corner Protectors (Pack 50)", 3.4], ["Address Label Rolls - Thermal", 2.9],
+    ["Airbag Cushioning Film Roll", 2.5], ["Heavy Duty Box Cutter (Case 24)", 2.1],
+    ["Stretch Hood Film - Industrial", 1.8], ["Pallet Corner Boards", 1.5],
+    ["Custom Branded Tape - Black", 1.3], ["Anti-Static Bags - Large", 1.1],
+    ["Moisture Barrier Bags", 0.9], ["Reinforced Kraft Paper Tape", 0.7],
+    ["Wooden Pallets - Standard", 0.6], ["Desiccant Packets (Bulk)", 0.5],
+  ];
+  const total = items.reduce((s, i) => s + i[1], 0);
+  let running = 0;
+  const rows = items.map((it, idx) => {
+    running += it[1];
+    return { name: it[0], value: it[1], rank: idx + 1, valuePct: it[1] / total, cumPct: running / total };
+  });
+  function tierFor(cumPct) { return cumPct <= 0.80 ? 'A' : cumPct <= 0.95 ? 'B' : 'C'; }
+
+  // deterministic pseudo-random series per item, for illustrative sparklines only
+  function seededSeries(seed, n, trendUp) {
+    let s = seed;
+    const rand = () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
+    let v = 50 + rand() * 20;
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      v += (rand() - 0.42) * 10 + (trendUp ? 0.6 : 0);
+      v = Math.max(10, v);
+      out.push(v);
+    }
+    return out;
+  }
+  function hashStr(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h % 10000 || 1; }
+
+  function miniSparkSvg(series) {
+    const min = Math.min(...series), max = Math.max(...series);
+    const w = 56, h = 20;
+    const pts = series.map((v, i) => `${(i / (series.length - 1)) * w},${h - ((v - min) / (max - min || 1)) * h}`).join(' ');
+    return `<svg class="mini-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><title>${min.toFixed(0)}–${max.toFixed(0)} units/day</title><polyline points="${pts}" fill="none" stroke="var(--color-at-risk)" stroke-width="1.5"/></svg>`;
+  }
+
+  // Option A — gridded: y-axis reference lines (min/mid/max) + x-axis date range. No forecast.
+  function axisASvg(series, startLabel, endLabel) {
+    const w = 400, h = 100, padL = 30, padR = 10, padTop = 10, padBot = 22;
+    const min = Math.min(...series), max = Math.max(...series), mid = (min + max) / 2;
+    const plotW = w - padL - padR, plotH = h - padTop - padBot;
+    const scaleY = v => padTop + (1 - (v - min) / (max - min || 1)) * plotH;
+    const scaleX = i => padL + (i / (series.length - 1)) * plotW;
+    const pts = series.map((v, i) => `${scaleX(i)},${scaleY(v)}`).join(' ');
+    const grid = [min, mid, max].map(v => `
+      <line x1="${padL}" y1="${scaleY(v)}" x2="${w - padR}" y2="${scaleY(v)}" stroke="var(--color-border)" stroke-width="1"/>
+      <text x="${padL - 4}" y="${scaleY(v) + 3}" font-size="8" fill="var(--color-muted-foreground)" font-family="IBM Plex Mono" text-anchor="end">${Math.round(v)}</text>
+    `).join('');
+    const lastIdx = series.length - 1;
+    return `
+      ${grid}
+      <polyline points="${pts}" fill="none" stroke="var(--color-critical)" stroke-width="2"/>
+      <circle cx="${scaleX(lastIdx)}" cy="${scaleY(series[lastIdx])}" r="2.5" fill="var(--color-critical)"/>
+      <text x="${padL}" y="${h - 4}" font-size="8" fill="var(--color-muted-foreground)" font-family="IBM Plex Mono">${startLabel}</text>
+      <text x="${w - padR}" y="${h - 4}" font-size="8" fill="var(--color-muted-foreground)" font-family="IBM Plex Mono" text-anchor="end">${endLabel}</text>
+    `;
+  }
+
+  // Option B — minimal sparkline, no gridlines; range stated as text above the chart instead.
+  function axisBSvg(series) {
+    const w = 400, h = 70, padTop = 14, padBot = 14;
+    const min = Math.min(...series), max = Math.max(...series);
+    const scaleY = v => padTop + (1 - (v - min) / (max - min || 1)) * (h - padTop - padBot);
+    const pts = series.map((v, i) => `${(i / (series.length - 1)) * w},${scaleY(v)}`).join(' ');
+    const lastIdx = series.length - 1;
+    const latest = series[lastIdx];
+    return `
+      <polyline points="${pts}" fill="none" stroke="var(--color-critical)" stroke-width="2"/>
+      <circle cx="${w}" cy="${scaleY(latest)}" r="2.5" fill="var(--color-critical)"/>
+      <text x="${w - 4}" y="${scaleY(latest) - 7}" font-size="9" fill="var(--color-critical)" font-family="IBM Plex Mono" text-anchor="end" font-weight="600">${latest.toFixed(0)}</text>
+    `;
+  }
+
+  function showCsvNote(btn) {
+    const note = btn.querySelector('.csv-note');
+    note.classList.add('show');
+    setTimeout(() => note.classList.remove('show'), 2600);
+  }
+
+  let currentClosestIdx = 0;
+
+  function renderTable(closestIdx, highlightIdx) {
+    const table = document.getElementById('pareto-table');
+    let html = '<tr><th>Item</th><th>Rank</th><th>Cum. %</th></tr>';
+    rows.forEach((r, i) => {
+      if (r.rank <= 3 || i === closestIdx || i === highlightIdx) {
+        const cls = i === highlightIdx ? ' class="highlight"' : '';
+        html += `<tr${cls}><td class="name"><span class="tier-rail ${tierFor(r.cumPct)}"></span>${r.name}</td><td>#${r.rank}</td><td>${(r.cumPct*100).toFixed(0)}%</td></tr>`;
+      }
+    });
+    const tierACount = closestIdx + 1;
+    const tierBRows = rows.filter(r => tierFor(r.cumPct) === 'B').length;
+    const tierCRows = rows.filter(r => tierFor(r.cumPct) === 'C').length;
+    html += `<tr class="subtotal"><td colspan="2">Tier A total [${tierACount}]</td><td>${(rows[closestIdx].cumPct*100).toFixed(0)}%</td></tr>`;
+    html += `<tr class="subtotal"><td colspan="2">Tier B, collapsed [${tierBRows}]</td><td>95%</td></tr>`;
+    html += `<tr class="subtotal"><td colspan="2">Tier C, collapsed [${tierCRows}]</td><td>100%</td></tr>`;
+    table.innerHTML = html;
+  }
+
+  function render(cutoff) {
+    const target = cutoff / 100;
+    let closestIdx = 0, closestDiff = Infinity;
+    rows.forEach((r, i) => { const d = Math.abs(r.cumPct - target); if (d < closestDiff) { closestDiff = d; closestIdx = i; } });
+    currentClosestIdx = closestIdx;
+
+    document.getElementById('pareto-headline-pct').textContent = cutoff;
+    document.getElementById('pareto-headline-n').textContent = closestIdx + 1;
+    document.getElementById('kpi-cutoff-count').textContent = closestIdx + 1;
+    document.getElementById('kpi-cutoff-val').textContent = (total * target).toFixed(1);
+    document.getElementById('slider-readout').textContent = cutoff + '%';
+
+    const chart = document.getElementById('chart-area');
+    chart.innerHTML = '';
+    const maxVal = Math.max(...rows.map(r => r.value));
+    rows.forEach((r, i) => {
+      const bar = document.createElement('div');
+      bar.className = 'bar' + (i > closestIdx ? ' past-cutoff' : '');
+      bar.style.height = (r.value / maxVal * 100) + '%';
+      bar.title = r.name + ' — click to find it in the table';
+      bar.onclick = () => renderTable(currentClosestIdx, i);
+      chart.appendChild(bar);
+    });
+    const rule = document.createElement('div');
+    rule.className = 'cutoff-rule';
+    rule.style.left = ((closestIdx + 1) / rows.length * 100) + '%';
+    chart.appendChild(rule);
+
+    renderTable(closestIdx, null);
+  }
+  function onSlider(v) { render(Number(v)); }
+  render(80);
+
+  function renderAcList(query) {
+    const acList = document.getElementById('ac-list');
+    const q = (query || '').trim().toLowerCase();
+    const filtered = rows.filter(r => r.name.toLowerCase().includes(q));
+    if (filtered.length === 0) {
+      acList.innerHTML = `<div style="padding:16px 6px; font-size:12px; color:var(--color-muted-foreground)">No items match "${query}"</div>`;
+      return;
+    }
+    acList.innerHTML = filtered.slice(0, 8).map(r => {
+      const series = seededSeries(hashStr(r.name), 12, r.rank <= 5);
+      return `<div class="list-row"><span class="rank">#${r.rank}</span><span class="tier-rail ${tierFor(r.cumPct)}"></span><span class="name">${r.name}</span>${miniSparkSvg(series)}<span class="val">$${r.value.toFixed(1)}M</span></div>`;
+    }).join('');
+  }
+  renderAcList('');
+
+  const detailSeries = seededSeries(hashStr(rows[2].name), 16, true);
+  document.getElementById('detail-spark-a').innerHTML = axisASvg(detailSeries, 'Oct 1', 'Nov 30, 2000');
+  document.getElementById('detail-spark-b').innerHTML = axisBSvg(detailSeries);
+  const dMin = Math.min(...detailSeries), dMax = Math.max(...detailSeries);
+  document.getElementById('spark-b-caption').textContent = `Oct 1 – Nov 30, 2000 · range ${dMin.toFixed(0)}–${dMax.toFixed(0)} units/day`;
+</script>
+
+</body></html>
