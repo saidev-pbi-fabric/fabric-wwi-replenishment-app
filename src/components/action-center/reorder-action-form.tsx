@@ -101,6 +101,7 @@ function ReorderActionFormFields({
     const { session } = useAuth();
     const [suggestedReorderQty, setSuggestedReorderQty] = useState(defaultSuggestedReorderQty);
     const [currentStockOnHand, setCurrentStockOnHand] = useState(0);
+    const [supplierName, setSupplierName] = useState("");
     const [status, setStatus] = useState<ReorderActionRecord["status"]>("Pending Review");
     const [note, setNote] = useState("");
     const [assignedTo, setAssignedTo] = useState("");
@@ -118,6 +119,7 @@ function ReorderActionFormFields({
                 stockItemName,
                 currentStockOnHand,
                 suggestedReorderQty,
+                supplierName: supplierName || undefined,
                 status,
                 note: note || undefined,
                 assignedTo: assignedTo || undefined,
@@ -137,64 +139,70 @@ function ReorderActionFormFields({
         <form onSubmit={handleSubmit} className="flex flex-col gap-300 rounded-lg border border-border bg-card p-400 shadow-sm">
             <h3 className="flex items-center gap-200 font-heading text-400 font-semibold text-foreground">
                 <PackagePlus className="icon-size-300 text-muted-foreground" />
-                Record a Reorder Action
+                Log Reorder Action
             </h3>
 
             <div className="grid grid-cols-2 gap-300">
-                <label className="flex flex-col gap-100 font-base text-200 text-muted-foreground">
-                    Suggested Reorder Qty
+                <FormField label="Quantity">
                     <input
                         type="number"
                         value={suggestedReorderQty}
                         onChange={(e) => setSuggestedReorderQty(Number(e.target.value))}
-                        className="rounded-md border border-border bg-background px-200 py-100-nudge text-300 text-foreground"
+                        className="w-full rounded-md border border-border bg-background px-200 py-100-nudge text-300 text-foreground"
                     />
-                </label>
-                <label className="flex flex-col gap-100 font-base text-200 text-muted-foreground">
-                    Current Stock on Hand
+                </FormField>
+                <FormField label="Supplier">
+                    <input
+                        type="text"
+                        value={supplierName}
+                        onChange={(e) => setSupplierName(e.target.value)}
+                        className="w-full rounded-md border border-border bg-background px-200 py-100-nudge text-300 text-foreground"
+                    />
+                </FormField>
+            </div>
+
+            <div className="grid grid-cols-2 gap-300">
+                <FormField label="Current Stock on Hand">
                     <input
                         type="number"
                         value={currentStockOnHand}
                         onChange={(e) => setCurrentStockOnHand(Number(e.target.value))}
-                        className="rounded-md border border-border bg-background px-200 py-100-nudge text-300 text-foreground"
+                        className="w-full rounded-md border border-border bg-background px-200 py-100-nudge text-300 text-foreground"
                     />
-                </label>
+                </FormField>
+                <FormField label="Status">
+                    <select
+                        value={status}
+                        onChange={(e) => setStatus(e.target.value as ReorderActionRecord["status"])}
+                        className="w-full rounded-md border border-border bg-background px-200 py-100-nudge text-300 text-foreground"
+                    >
+                        {REORDER_ACTION_STATUSES.map((s) => (
+                            <option key={s} value={s}>
+                                {s}
+                            </option>
+                        ))}
+                    </select>
+                </FormField>
             </div>
 
-            <label className="flex flex-col gap-100 font-base text-200 text-muted-foreground">
-                Status
-                <select
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value as ReorderActionRecord["status"])}
-                    className="rounded-md border border-border bg-background px-200 py-100-nudge text-300 text-foreground"
-                >
-                    {REORDER_ACTION_STATUSES.map((s) => (
-                        <option key={s} value={s}>
-                            {s}
-                        </option>
-                    ))}
-                </select>
-            </label>
-
-            <label className="flex flex-col gap-100 font-base text-200 text-muted-foreground">
-                Assigned To
-                <input
-                    type="text"
-                    value={assignedTo}
-                    onChange={(e) => setAssignedTo(e.target.value)}
-                    className="rounded-md border border-border bg-background px-200 py-100-nudge text-300 text-foreground"
-                />
-            </label>
-
-            <label className="flex flex-col gap-100 font-base text-200 text-muted-foreground">
-                Note
-                <textarea
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    rows={3}
-                    className="rounded-md border border-border bg-background px-200 py-100-nudge text-300 text-foreground"
-                />
-            </label>
+            <div className="grid grid-cols-2 gap-300">
+                <FormField label="Assigned To">
+                    <input
+                        type="text"
+                        value={assignedTo}
+                        onChange={(e) => setAssignedTo(e.target.value)}
+                        className="w-full rounded-md border border-border bg-background px-200 py-100-nudge text-300 text-foreground"
+                    />
+                </FormField>
+                <FormField label="Note">
+                    <input
+                        type="text"
+                        value={note}
+                        onChange={(e) => setNote(e.target.value)}
+                        className="w-full rounded-md border border-border bg-background px-200 py-100-nudge text-300 text-foreground"
+                    />
+                </FormField>
+            </div>
 
             <motion.button
                 type="submit"
@@ -215,5 +223,14 @@ function ReorderActionFormFields({
                 </p>
             ) : null}
         </form>
+    );
+}
+
+function FormField({ label, children }: { label: string; children: React.ReactNode }) {
+    return (
+        <label className="flex flex-col gap-100">
+            <span className="font-base text-100 uppercase tracking-wide text-muted-foreground">{label}</span>
+            {children}
+        </label>
     );
 }

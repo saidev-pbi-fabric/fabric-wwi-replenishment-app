@@ -12,14 +12,16 @@ import { itemSalesTrend } from "@/queries/action-center/item-sales-trend";
 import { cn, formatShortDate } from "@/lib/utils";
 import { scalarByColumnName } from "@/lib/to-data-table";
 import { ITEM_DETAIL_FIXTURE, ITEM_SALES_TREND_FIXTURE } from "@/lib/dev-preview-fixtures";
-import { LEAD_TIME_RAIL_CLASS, LEAD_TIME_TEXT_CLASS } from "@/lib/severity";
+import type { ValueTier } from "@/lib/severity";
 import { ItemTrendChart } from "@/components/action-center/item-trend-chart";
 
 interface ItemDetailPanelProps {
     stockItemKey: number | null;
+    /** ABC value tier for the selected item, from the shared Pareto dataset (see action-center.tsx). */
+    tier: ValueTier | null;
 }
 
-export function ItemDetailPanel({ stockItemKey }: ItemDetailPanelProps) {
+export function ItemDetailPanel({ stockItemKey, tier }: ItemDetailPanelProps) {
     // Hooks run unconditionally — an empty connection/query is the hook's
     // own "skip" signal (see useSemanticModelQuery's `canExecute`), so this
     // stays a no-op query until a key is actually selected.
@@ -92,21 +94,24 @@ export function ItemDetailPanel({ stockItemKey }: ItemDetailPanelProps) {
     const isRefreshing = !usingDevFixture && panel.status === "refreshing";
 
     const name = String(scalarByColumnName(table, "Stock Item[Stock Item]") ?? "—");
-    const tier = String(scalarByColumnName(table, "Stock Item[Lead Time Priority Tier]") ?? "—");
-    const brand = String(scalarByColumnName(table, "Stock Item[Brand]") ?? "—");
-    const color = String(scalarByColumnName(table, "Stock Item[Color]") ?? "—");
     const leadTimeDays = String(scalarByColumnName(table, "Stock Item[Lead Time Days]") ?? "—");
     const unitPrice = Number(scalarByColumnName(table, "Stock Item[Unit Price]") ?? 0);
-    const rrp = Number(scalarByColumnName(table, "Stock Item[Recommended Retail Price]") ?? 0);
     const recentDailySales = Number(scalarByColumnName(table, "[Recent Daily Sales Rate]") ?? 0);
     const demandTrend = Number(scalarByColumnName(table, "[Demand Trend]") ?? 0);
     const suggestedReorderQty = Number(scalarByColumnName(table, "[Suggested Reorder Qty]") ?? 0);
     const atRiskRank = String(scalarByColumnName(table, "[At Risk Rank]") ?? "—");
 
     // Composed client-side from fields already on screen — not a new metric, just a plain-English
-    // read of them, so the "why" behind the rank doesn't require mentally parsing 5 separate cells.
+    // read of them, so the "why" behind the rank doesn't require mentally parsing separate cells.
+    // Matches the locked mockup's phrasing (docs/mockup-reference.html, #page-action rationale
+    // line), extended to read sensibly for tiers B/C too (the mockup only illustrates a Tier A row).
     const trendWord = demandTrend > 0.03 ? "accelerating" : demandTrend < -0.03 ? "declining" : "steady";
-    const rationale = `Sells ${recentDailySales.toFixed(1)}/day, restocks in ${leadTimeDays} days, demand ${trendWord} (${demandTrend >= 0 ? "+" : ""}${(demandTrend * 100).toFixed(0)}%), ranked #${atRiskRank} of 672.`;
+    const trendPct = `${demandTrend >= 0 ? "+" : ""}${(demandTrend * 100).toFixed(0)}%`;
+    const tierLabel = tier ?? "—";
+    const rationale =
+        `Tier ${tierLabel} · rank #${atRiskRank} of 672. Sales rate ${trendWord} ${trendPct} vs. the prior 30 days, ` +
+        `against a ${leadTimeDays}-day lead time` +
+        (tier === "A" ? " — the combination that puts it in the top concentration band." : ".");
 
     const usingTrendFixture = import.meta.env.DEV && !import.meta.env.VITEST && trendPanel.status === "error";
     const trendTable = usingTrendFixture
@@ -126,29 +131,17 @@ export function ItemDetailPanel({ stockItemKey }: ItemDetailPanelProps) {
               return trendTable.rows.map((row) => formatShortDate(String(row[dateIdx])));
           })()
         : [];
+
     return (
         <div
             className={cn(
-                "flex h-full min-h-[480px] flex-col rounded-lg border border-border bg-card shadow-sm transition-opacity duration-200",
+                "flex h-full min-h-[480px] flex-col rounded-lg border border-border bg-card p-400 shadow-sm transition-opacity duration-200",
                 isRefreshing ? "opacity-50" : "opacity-100",
             )}
         >
-            <div
-                className={cn(
-                    "flex items-start justify-between gap-300 border-b border-l-4 border-border bg-muted/40 p-400",
-                    LEAD_TIME_RAIL_CLASS[tier] ?? "border-l-transparent",
-                )}
-            >
+            <div className="flex items-start justify-between gap-300">
                 <div>
                     <h2 className="font-heading text-400 font-semibold text-foreground">{name}</h2>
-                    <p className="mt-100 font-base text-200 text-muted-foreground">
-                        {brand !== "N/A" || color !== "N/A" ? (
-                            <>
-                                <span>{brand}</span> · <span>{color}</span> ·{" "}
-                            </>
-                        ) : null}
-                        Rank #{atRiskRank}
-                    </p>
                     <p className="mt-100 font-base text-200 text-muted-foreground">{rationale}</p>
                 </div>
                 {isRefreshing ? (
@@ -162,54 +155,46 @@ export function ItemDetailPanel({ stockItemKey }: ItemDetailPanelProps) {
                     </span>
                 ) : null}
             </div>
-            <dl className="grid grid-cols-2 gap-400 p-400">
-                <DetailField label="Lead Time" value={tier} />
-                <DetailField label="Lead Time (Days)" value={leadTimeDays} />
-                <DetailField label="Unit Price" value={`$${unitPrice.toFixed(2)}`} />
-                <DetailField label="Recommended Retail Price" value={`$${rrp.toFixed(2)}`} />
-                <DetailField label="Recent Daily Sales" value={recentDailySales.toFixed(1)} />
-                <DetailField label="Demand Trend" value={`${(demandTrend * 100).toFixed(0)}%`} />
-                <DetailField label="Suggested Reorder Qty" value={suggestedReorderQty.toLocaleString()} />
+
+            <div className="mt-300 rounded-md border border-border p-300">
+                {!usingTrendFixture && (trendPanel.status === "loading" || trendPanel.status === "refreshing") && salesTrendData.length === 0 ? (
+                    <div className="h-[100px] w-full animate-pulse rounded-md bg-muted" />
+                ) : salesTrendData.length > 0 ? (
+                    <ItemTrendChart
+                        data={salesTrendData}
+                        startLabel={salesTrendDates[0] ?? ""}
+                        endLabel={salesTrendDates[salesTrendDates.length - 1] ?? ""}
+                        className="text-critical"
+                        ariaLabel="Daily units sold, last 60 days"
+                    />
+                ) : (
+                    <p className="text-200 text-muted-foreground">No recent sales history for this item.</p>
+                )}
+            </div>
+            <p className="mt-100 font-base text-100 text-muted-foreground">
+                Historical daily sales only — no forward projection. This dataset's DAX has no forecast
+                measure, so we don't draw one.
+            </p>
+
+            <p className="mt-300 rounded-md border border-border bg-accent px-300 py-200 font-base text-100 text-muted-foreground">
+                No stock-on-hand figure exists anywhere in this dataset — "days of stock left" can't be
+                shown honestly. <strong className="text-foreground">Suggested Reorder Qty</strong> below is a
+                formula (recent daily sales rate &times; lead time &times; safety buffer), not a prediction.
+            </p>
+
+            <dl className="mt-300 grid grid-cols-3 gap-300">
+                <DetailStat label="Unit Price" value={`$${unitPrice.toFixed(2)}`} />
+                <DetailStat label="Recent Daily Sales" value={recentDailySales.toLocaleString(undefined, { maximumFractionDigits: 1 })} />
+                <DetailStat label="Suggested Reorder Qty" value={suggestedReorderQty.toLocaleString()} />
             </dl>
-            <div className="border-t border-border px-400 py-300">
-                <p className="font-base text-200 uppercase tracking-wide text-muted-foreground">
-                    Sales Trend · 60 Days
-                </p>
-                <div className="mt-200">
-                    {!usingTrendFixture && (trendPanel.status === "loading" || trendPanel.status === "refreshing") && salesTrendData.length === 0 ? (
-                        <div className="h-[100px] w-full animate-pulse rounded-md bg-muted" />
-                    ) : salesTrendData.length > 0 ? (
-                        <ItemTrendChart
-                            data={salesTrendData}
-                            startLabel={salesTrendDates[0] ?? ""}
-                            endLabel={salesTrendDates[salesTrendDates.length - 1] ?? ""}
-                            className={LEAD_TIME_TEXT_CLASS[tier] ?? "text-muted-foreground"}
-                            ariaLabel="Daily units sold, last 60 days"
-                        />
-                    ) : (
-                        <p className="text-200 text-muted-foreground">No recent sales history for this item.</p>
-                    )}
-                </div>
-                <p className="mt-200 font-base text-100 text-muted-foreground">
-                    Historical daily sales only — no forward projection. This dataset's DAX has no forecast
-                    measure, so we don't draw one.
-                </p>
-            </div>
-            <div className="border-t border-border px-400 py-300">
-                <p className="rounded-md border border-border bg-accent px-300 py-200 font-base text-100 text-muted-foreground">
-                    No stock-on-hand figure exists anywhere in this dataset — "days of stock left" can't be
-                    shown honestly. <strong className="text-foreground">Suggested Reorder Qty</strong> above is a
-                    formula (recent daily sales rate &times; lead time &times; safety buffer), not a prediction.
-                </p>
-            </div>
         </div>
     );
 }
 
-function DetailField({ label, value }: { label: string; value: string }) {
+function DetailStat({ label, value }: { label: string; value: string }) {
     return (
         <div>
-            <dt className="font-base text-200 uppercase tracking-wide text-muted-foreground">{label}</dt>
+            <dt className="font-base text-100 uppercase tracking-wide text-muted-foreground">{label}</dt>
             <dd className="mt-100 font-numeric text-300 text-foreground">{value}</dd>
         </div>
     );

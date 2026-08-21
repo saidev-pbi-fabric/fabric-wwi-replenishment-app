@@ -62,38 +62,47 @@ describe("ItemDetailPanel", () => {
     });
 
     it("shows a placeholder prompt when nothing is selected", () => {
-        render(<ItemDetailPanel stockItemKey={null} />);
+        render(<ItemDetailPanel stockItemKey={null} tier={null} />);
         expect(screen.getByText(/select an item/i)).toBeInTheDocument();
     });
 
     it("shows a loading skeleton while the query is in flight", () => {
         mockQuery.mockReturnValue(new Promise(() => {}));
-        render(<ItemDetailPanel stockItemKey={17} />);
+        render(<ItemDetailPanel stockItemKey={17} tier="A" />);
         expect(screen.getByTestId("item-detail-loading")).toBeInTheDocument();
     });
 
-    it("renders the item's name, tier, and key fields once loaded", async () => {
+    it("renders the item's name and key stats once loaded", async () => {
         mockBothQueries();
-        render(<ItemDetailPanel stockItemKey={17} />);
+        render(<ItemDetailPanel stockItemKey={17} tier="A" />);
 
         expect(await screen.findByText("Shipping carton (Brown)")).toBeInTheDocument();
-        expect(screen.getByText("Long Lead Time")).toBeInTheDocument();
-        expect(screen.getByText("18")).toBeInTheDocument();
         expect(screen.getByText("1,840")).toBeInTheDocument();
+        expect(screen.getByText("$4.25")).toBeInTheDocument();
     });
 
-    it("renders a plain-English rationale sentence composed from the same fields", async () => {
+    it("renders a plain-English rationale sentence with the tier, rank, trend, and lead time", async () => {
         mockBothQueries();
-        render(<ItemDetailPanel stockItemKey={17} />);
+        render(<ItemDetailPanel stockItemKey={17} tier="A" />);
 
         expect(
-            await screen.findByText(/Sells 62\.4\/day, restocks in 18 days, demand accelerating \(\+34%\), ranked #1 of 672\./),
+            await screen.findByText(
+                /Tier A · rank #1 of 672\. Sales rate accelerating \+34% vs\. the prior 30 days, against a 18-day lead time — the combination that puts it in the top concentration band\./,
+            ),
         ).toBeInTheDocument();
     });
 
-    it("renders the sales-trend sparkline once the trend query loads", async () => {
+    it("omits the top-concentration-band clause for tiers B and C", async () => {
         mockBothQueries();
-        render(<ItemDetailPanel stockItemKey={17} />);
+        render(<ItemDetailPanel stockItemKey={17} tier="B" />);
+
+        expect(await screen.findByText(/against a 18-day lead time\./)).toBeInTheDocument();
+        expect(screen.queryByText(/top concentration band/)).not.toBeInTheDocument();
+    });
+
+    it("renders the sales-trend chart once the trend query loads", async () => {
+        mockBothQueries();
+        render(<ItemDetailPanel stockItemKey={17} tier="A" />);
 
         await screen.findByText("Shipping carton (Brown)");
         expect(await screen.findByRole("img", { name: /daily units sold/i })).toBeInTheDocument();
@@ -101,17 +110,17 @@ describe("ItemDetailPanel", () => {
 
     it("shows an error banner when the query fails", async () => {
         mockQuery.mockResolvedValue({ status: "error", error: { message: "401 Unauthorized" } });
-        render(<ItemDetailPanel stockItemKey={17} />);
+        render(<ItemDetailPanel stockItemKey={17} tier="A" />);
 
         expect(await screen.findByRole("alert")).toHaveTextContent("401 Unauthorized");
     });
 
     it("re-queries both the detail and trend data when the selected key changes", async () => {
         mockBothQueries();
-        const { rerender } = render(<ItemDetailPanel stockItemKey={17} />);
+        const { rerender } = render(<ItemDetailPanel stockItemKey={17} tier="A" />);
         await screen.findByText("Shipping carton (Brown)");
 
-        rerender(<ItemDetailPanel stockItemKey={126} />);
+        rerender(<ItemDetailPanel stockItemKey={126} tier="B" />);
 
         // One call each for item-detail and item-sales-trend, per key.
         await waitFor(() => expect(mockQuery).toHaveBeenCalledTimes(4));
@@ -134,10 +143,10 @@ describe("ItemDetailPanel", () => {
             }
             return new Promise((resolve) => (resolveSecondDetail = resolve));
         });
-        const { rerender } = render(<ItemDetailPanel stockItemKey={17} />);
+        const { rerender } = render(<ItemDetailPanel stockItemKey={17} tier="A" />);
 
         await screen.findByText("Shipping carton (Brown)");
-        rerender(<ItemDetailPanel stockItemKey={126} />);
+        rerender(<ItemDetailPanel stockItemKey={126} tier="A" />);
 
         expect(await screen.findByLabelText("Updating")).toBeInTheDocument();
         expect(screen.getByText("Shipping carton (Brown)")).toBeInTheDocument();
@@ -145,24 +154,5 @@ describe("ItemDetailPanel", () => {
 
         resolveSecondDetail({ status: "success", table: TABLE, fromCache: false });
         await waitFor(() => expect(screen.queryByLabelText("Updating")).not.toBeInTheDocument());
-    });
-
-    it("omits the brand/color line when the source data has no real brand or color", async () => {
-        const tableWithoutBrandColor = {
-            columns: TABLE.columns,
-            rows: [[17, "Shipping carton (Brown)", "N/A", "N/A", 18, "Long Lead Time", 4.25, 6.5, 62.4, 0.34, 1840, 1]],
-        };
-        mockQuery.mockImplementation((query: string) =>
-            Promise.resolve(
-                query.includes("Quantity")
-                    ? { status: "success", table: TREND_TABLE, fromCache: false }
-                    : { status: "success", table: tableWithoutBrandColor, fromCache: false },
-            ),
-        );
-        render(<ItemDetailPanel stockItemKey={17} />);
-
-        await screen.findByText("Shipping carton (Brown)");
-
-        expect(screen.queryByText("N/A", { exact: false })).not.toBeInTheDocument();
     });
 });

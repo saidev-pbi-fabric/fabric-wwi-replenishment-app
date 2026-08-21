@@ -5,105 +5,52 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { motion } from "framer-motion";
-import { AlertTriangle, Download, Loader2 } from "lucide-react";
-import type { QueryTable } from "@microsoft/fabric-app-data";
-import { useQueryPanel } from "@/hooks/use-query-panel";
-import { rankedAtRiskList } from "@/queries/action-center/ranked-at-risk-list";
+import { useEffect, useRef, useState } from "react";
+import { AlertTriangle, Download } from "lucide-react";
 import { itemSalesTrend } from "@/queries/action-center/item-sales-trend";
 import { getFabricClient } from "@/lib/fabric-client";
 import { downloadCsv } from "@/lib/csv-export";
 import { cn, formatShortDate } from "@/lib/utils";
-import { fadeInUp, staggerContainer } from "@/lib/motion";
-import { RANKED_AT_RISK_LIST_FIXTURE, ITEM_SALES_TREND_FIXTURE } from "@/lib/dev-preview-fixtures";
+import { ITEM_SALES_TREND_FIXTURE } from "@/lib/dev-preview-fixtures";
 import { Sparkline } from "@/components/shared/sparkline";
-import {
-    LEAD_TIME_RAIL_CLASS,
-    LEAD_TIME_TEXT_CLASS,
-    TIER_FILTERS,
-    tierDistributionCaption,
-    tierFilterLabel,
-} from "@/lib/severity";
+import { VALUE_TIER_FILTERS, VALUE_TIER_RAIL_CLASS, valueTierFilterLabel, valueTierFor, type ValueTier } from "@/lib/severity";
+import type { ParetoDataset, ParetoRow } from "@/hooks/use-pareto-dataset";
 
-interface Row {
-    key: number;
-    name: string;
-    tier: string;
-    suggestedReorderQty: number;
-    atRiskRank: number;
-}
-
-function rowsFromTable(table: QueryTable): Row[] {
-    const idx = (name: string) => table.columns.findIndex((col) => col.name === name);
-    const keyIdx = idx("Stock Item[Stock Item Key]");
-    const nameIdx = idx("Stock Item[Stock Item]");
-    const tierIdx = idx("Stock Item[Lead Time Priority Tier]");
-    const qtyIdx = idx("[Suggested Reorder Qty]");
-    const rankIdx = idx("[At Risk Rank]");
-
-    return table.rows.map((row) => ({
-        key: Number(row[keyIdx]),
-        name: String(row[nameIdx]),
-        tier: String(row[tierIdx]),
-        suggestedReorderQty: Number(row[qtyIdx]),
-        atRiskRank: Number(row[rankIdx]),
-    }));
+function formatCompactCurrency(value: number): string {
+    if (!Number.isFinite(value)) return "—";
+    const abs = Math.abs(value);
+    if (abs >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
+    if (abs >= 1_000) return `$${(value / 1_000).toFixed(1)}K`;
+    return `$${value.toFixed(0)}`;
 }
 
 interface RankedListPanelProps {
+    dataset: ParetoDataset;
     selectedStockItemKey: number | null;
-    onSelectItem: (stockItemKey: number, stockItemName: string, tier: string) => void;
+    onSelectItem: (stockItemKey: number, stockItemName: string, tier: ValueTier) => void;
     /** Name handed off from Page 1's click-through; auto-selected once the list loads, then ignored. */
     initialSelectedItemName?: string | null;
 }
 
 export function RankedListPanel({
+    dataset,
     selectedStockItemKey,
     onSelectItem,
     initialSelectedItemName,
 }: RankedListPanelProps) {
-    const [tierFilter, setTierFilter] = useState<(typeof TIER_FILTERS)[number]>("All");
+    const { rows, status, usingDevFixture } = dataset;
+    const [tierFilter, setTierFilter] = useState<(typeof VALUE_TIER_FILTERS)[number]>("All");
     const [nameQuery, setNameQuery] = useState("");
-    const panel = useQueryPanel(rankedAtRiskList(tierFilter));
     const autoSelectedRef = useRef(false);
 
-    // Dev-only fallback so `npm run dev` can render the ready state without
-    // a Fabric embed. See use-query-panel.ts for why this stays a literal
-    // `import.meta.env.DEV` check in this module rather than a hook param.
-    const usingDevFixture = import.meta.env.DEV && !import.meta.env.VITEST && panel.status === "error";
-
-    const loadedTable = useMemo(() => {
-        if (usingDevFixture) {
-            return {
-                columns: RANKED_AT_RISK_LIST_FIXTURE.columns,
-                rows: RANKED_AT_RISK_LIST_FIXTURE.rows.filter(
-                    (row) => tierFilter === "All" || row[2] === tierFilter,
-                ),
-            };
-        }
-        if (panel.status === "ready" || panel.status === "refreshing") return panel.table;
-        if (panel.status === "empty") return { columns: [], rows: [] };
-        return undefined;
-        // eslint-disable-next-line react-hooks/exhaustive-deps -- panel.table/panel.status cover the panel branches
-    }, [usingDevFixture, tierFilter, panel.status]);
-
-    // A filter change re-queries; keep the previous rows visible (dimmed)
-    // instead of swapping to a blank skeleton on every change — the abrupt
-    // swap was flagged directly by the user ("the transition ... goes blank").
-    const isRefreshing = !usingDevFixture && panel.status === "refreshing";
-
-    // Per-row sparklines: reuses itemSalesTrend (already proven in ItemDetailPanel) fired once
-    // per visible row instead of one new composite item×date DAX query — N small, independently
-    // cacheable calls beat one query that's harder to get right and can't be spot-checked per
-    // item. Fetched directly via the Fabric client (not useQueryPanel, which is one-query-per-
-    // component) so all rows' requests fire in parallel and each fills in as it resolves rather
-    // than blocking the whole list on the slowest row.
+    // Per-row sparklines: one small itemSalesTrend fetch per visible row, fired directly via the
+    // Fabric client (not a hook) so all rows' requests run in parallel and each fills in as it
+    // resolves rather than blocking the whole list on the slowest row.
     const [sparklineData, setSparklineData] = useState<Record<number, { qty: number[]; dates: string[] }>>({});
 
     useEffect(() => {
-        if (!loadedTable) return;
-        const keys = rowsFromTable(loadedTable).map((row) => row.key);
+        if (rows.length === 0) return;
+        const keys = rows.slice(0, 40).map((row) => row.stockItemKey);
         let cancelled = false;
 
         if (usingDevFixture) {
@@ -112,14 +59,12 @@ export function RankedListPanel({
             const fixtureQty = ITEM_SALES_TREND_FIXTURE.rows.map((row) => Number(row[qtyIdx] ?? 0));
             const fixtureDates = ITEM_SALES_TREND_FIXTURE.rows.map((row) => formatShortDate(String(row[dateIdx])));
             // eslint-disable-next-line react-hooks/set-state-in-effect -- dev-only fixture fill, mirrors the real fetch branch below which is necessarily async
-            setSparklineData(
-                Object.fromEntries(keys.map((key) => [key, { qty: fixtureQty, dates: fixtureDates }])),
-            );
+            setSparklineData(Object.fromEntries(keys.map((key) => [key, { qty: fixtureQty, dates: fixtureDates }])));
             return;
         }
 
         keys.forEach((key) => {
-            if (sparklineData[key]) return; // already fetched (e.g. still cached from a prior tier view)
+            if (sparklineData[key]) return; // already fetched
             const { connection, query } = itemSalesTrend(key);
             getFabricClient()
                 .semanticModel(connection)
@@ -133,38 +78,37 @@ export function RankedListPanel({
                     setSparklineData((prev) => ({ ...prev, [key]: { qty, dates } }));
                 })
                 .catch(() => {
-                    // A missing sparkline for one row isn't worth surfacing as a panel-level error —
-                    // the row still shows its name/rank/qty fine without it.
+                    // A missing sparkline for one row isn't worth surfacing as a panel-level error.
                 });
         });
 
         return () => {
             cancelled = true;
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps -- sparklineData deliberately excluded: this only skips re-fetching rows already cached, it's not the effect's trigger
-    }, [loadedTable, usingDevFixture]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- sparklineData deliberately excluded: this only skips re-fetching rows already cached
+    }, [rows, usingDevFixture]);
 
     useEffect(() => {
-        if (autoSelectedRef.current || !initialSelectedItemName || !loadedTable) return;
-        const match = rowsFromTable(loadedTable).find((row) => row.name === initialSelectedItemName);
+        if (autoSelectedRef.current || !initialSelectedItemName || rows.length === 0) return;
+        const match = rows.find((row) => row.stockItem === initialSelectedItemName);
         if (match) {
             autoSelectedRef.current = true;
-            onSelectItem(match.key, match.name, match.tier);
+            onSelectItem(match.stockItemKey, match.stockItem, valueTierFor(match.cumulativeValuePct));
         }
-    }, [loadedTable, initialSelectedItemName, onSelectItem]);
+    }, [rows, initialSelectedItemName, onSelectItem]);
 
-    if (panel.status === "error" && !usingDevFixture) {
+    if (status === "error" && !usingDevFixture) {
         return (
             <div
                 role="alert"
                 className="flex h-full min-h-[480px] items-center justify-center rounded-lg border border-destructive bg-destructive/10 px-400 py-300 text-300 text-destructive"
             >
-                Couldn't load at-risk items: {panel.message}
+                Couldn't load at-risk items.
             </div>
         );
     }
 
-    if (!usingDevFixture && panel.status === "loading") {
+    if (!usingDevFixture && status === "loading") {
         return (
             <div
                 data-testid="ranked-list-loading"
@@ -173,19 +117,17 @@ export function RankedListPanel({
         );
     }
 
-    if (!loadedTable) return null;
-
-    const allRows = rowsFromTable(loadedTable);
     const trimmedQuery = nameQuery.trim().toLowerCase();
-    const rows = trimmedQuery
-        ? allRows.filter((row) => row.name.toLowerCase().includes(trimmedQuery))
-        : allRows;
+    const filteredByTier = tierFilter === "All" ? rows : rows.filter((r) => valueTierFor(r.cumulativeValuePct) === tierFilter);
+    const visibleRows = trimmedQuery
+        ? filteredByTier.filter((r) => r.stockItem.toLowerCase().includes(trimmedQuery))
+        : filteredByTier;
 
     function handleDownloadCsv() {
         downloadCsv(
             "at-risk-items.csv",
-            ["Rank", "Item", "Lead Time Tier", "Suggested Reorder Qty"],
-            rows.map((row) => [row.atRiskRank, row.name, row.tier, row.suggestedReorderQty]),
+            ["Rank", "Item", "Value Tier", "Reorder Value"],
+            visibleRows.map((r) => [r.atRiskRank, r.stockItem, valueTierFor(r.cumulativeValuePct), r.reorderValue.toFixed(2)]),
         );
     }
 
@@ -194,42 +136,19 @@ export function RankedListPanel({
             <div className="flex items-center justify-between gap-300 border-b border-border p-400">
                 <h2 className="flex items-center gap-200 font-heading text-400 font-semibold text-foreground">
                     <AlertTriangle className="icon-size-300 text-muted-foreground" />
-                    At-Risk Items
+                    Ranked At-Risk Items
                 </h2>
-                <div className="flex items-center gap-300">
-                    <label className="flex items-center gap-200 font-base text-200 text-muted-foreground">
-                        Filter by lead time
-                        <select
-                            aria-label="Filter by lead time"
-                            value={tierFilter}
-                            onChange={(e) => setTierFilter(e.target.value as (typeof TIER_FILTERS)[number])}
-                            className="rounded-md border border-border bg-background px-200 py-100-nudge text-200 text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                        >
-                            {TIER_FILTERS.map((tier) => (
-                                <option key={tier} value={tier}>
-                                    {tierFilterLabel(tier)}
-                                </option>
-                            ))}
-                        </select>
-                        {isRefreshing ? (
-                            <Loader2
-                                className="icon-size-300 animate-spin text-muted-foreground"
-                                aria-label="Updating"
-                            />
-                        ) : null}
-                    </label>
-                    <button
-                        type="button"
-                        onClick={handleDownloadCsv}
-                        disabled={rows.length === 0}
-                        className="flex items-center gap-100 rounded-md border border-border bg-secondary px-200 py-100-nudge font-base text-200 text-foreground hover:bg-accent disabled:opacity-50"
-                    >
-                        <Download className="icon-size-200" />
-                        CSV
-                    </button>
-                </div>
+                <button
+                    type="button"
+                    onClick={handleDownloadCsv}
+                    disabled={visibleRows.length === 0}
+                    className="flex items-center gap-100 rounded-md border border-border bg-secondary px-200 py-100-nudge font-base text-200 text-foreground hover:bg-accent disabled:opacity-50"
+                >
+                    <Download className="icon-size-200" />
+                    CSV
+                </button>
             </div>
-            <div className="border-b border-border px-400 py-200">
+            <div className="flex flex-col gap-200 border-b border-border px-400 py-300">
                 <input
                     type="text"
                     value={nameQuery}
@@ -238,87 +157,105 @@ export function RankedListPanel({
                     aria-label="Search items by name"
                     className="w-full rounded-md border border-border bg-background px-200 py-100-nudge text-200 text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 />
+                <div className="flex gap-100" role="group" aria-label="Filter by value tier">
+                    {VALUE_TIER_FILTERS.map((tier) => (
+                        <button
+                            key={tier}
+                            type="button"
+                            onClick={() => setTierFilter(tier)}
+                            aria-pressed={tierFilter === tier}
+                            className={cn(
+                                "rounded-full border px-200 py-100-nudge font-base text-100 transition-colors",
+                                tierFilter === tier
+                                    ? "border-primary text-primary"
+                                    : "border-border text-muted-foreground hover:text-foreground",
+                            )}
+                        >
+                            {valueTierFilterLabel(tier)}
+                        </button>
+                    ))}
+                </div>
             </div>
-            <p className="px-400 pt-200 font-base text-100 text-muted-foreground">
-                {tierDistributionCaption(tierFilter)}
-            </p>
             {usingDevFixture ? (
                 <p className="px-400 pt-200 text-200 text-muted-foreground">
                     Sample data · dev preview (no Fabric embed)
                 </p>
             ) : null}
-            <div
+            {visibleRows.length === 0 ? (
+                <div className="flex flex-1 items-center justify-center px-400 py-300 text-300 text-muted-foreground">
+                    {trimmedQuery
+                        ? `No items match "${nameQuery}".`
+                        : tierFilter === "All"
+                          ? "No at-risk items right now."
+                          : `No items in ${valueTierFilterLabel(tierFilter)}.`}
+                </div>
+            ) : (
+                <ul className="flex-1 overflow-y-auto">
+                    {visibleRows.map((r) => (
+                        <ListRow
+                            key={r.stockItemKey}
+                            row={r}
+                            isSelected={r.stockItemKey === selectedStockItemKey}
+                            sparkline={sparklineData[r.stockItemKey]}
+                            onSelect={() => onSelectItem(r.stockItemKey, r.stockItem, valueTierFor(r.cumulativeValuePct))}
+                        />
+                    ))}
+                </ul>
+            )}
+        </div>
+    );
+}
+
+function ListRow({
+    row,
+    isSelected,
+    sparkline,
+    onSelect,
+}: {
+    row: ParetoRow;
+    isSelected: boolean;
+    sparkline: { qty: number[]; dates: string[] } | undefined;
+    onSelect: () => void;
+}) {
+    return (
+        <li>
+            <button
+                type="button"
+                onClick={onSelect}
+                aria-current={isSelected ? "true" : undefined}
                 className={cn(
-                    "flex flex-1 flex-col transition-opacity duration-200",
-                    isRefreshing ? "opacity-50" : "opacity-100",
+                    "flex w-full items-center gap-200 border-b border-border px-400 py-200 text-left transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+                    isSelected ? "bg-accent" : undefined,
                 )}
             >
-                {rows.length === 0 ? (
-                    <div className="flex flex-1 items-center justify-center px-400 py-300 text-300 text-muted-foreground">
-                        {trimmedQuery
-                            ? `No items match "${nameQuery}".`
-                            : tierFilter === "All"
-                              ? "No at-risk items right now."
-                              : `No at-risk items match "${tierFilterLabel(tierFilter)}" lead time.`}
-                    </div>
+                <span className="w-[28px] shrink-0 font-numeric text-100 text-muted-foreground">
+                    #{row.atRiskRank}
+                </span>
+                <span
+                    className={cn("h-[14px] w-[4px] shrink-0 rounded-sm", VALUE_TIER_RAIL_CLASS[valueTierFor(row.cumulativeValuePct)])}
+                    aria-hidden="true"
+                />
+                <span className="min-w-0 flex-1 truncate font-base text-200 text-foreground" title={row.stockItem}>
+                    {row.stockItem}
+                </span>
+                {sparkline ? (
+                    <span className="block h-[20px] w-[56px] shrink-0">
+                        <Sparkline
+                            data={sparkline.qty}
+                            labels={sparkline.dates}
+                            width={56}
+                            height={20}
+                            className="text-at-risk"
+                            ariaLabel={`${row.stockItem}: daily units sold, last 60 days`}
+                        />
+                    </span>
                 ) : (
-                    <motion.ul
-                        key={tierFilter}
-                        className="flex-1 overflow-y-auto"
-                        initial="hidden"
-                        animate="visible"
-                        variants={staggerContainer}
-                    >
-                        {rows.map((row) => (
-                            <motion.li key={row.key} variants={fadeInUp}>
-                                <button
-                                    type="button"
-                                    onClick={() => onSelectItem(row.key, row.name, row.tier)}
-                                    aria-current={row.key === selectedStockItemKey ? "true" : undefined}
-                                    className={cn(
-                                        "flex w-full items-center justify-between gap-300 border-b border-l-4 border-border px-400 py-300 text-left transition-all hover:-translate-y-px hover:bg-accent hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
-                                        LEAD_TIME_RAIL_CLASS[row.tier] ?? "border-l-transparent",
-                                        row.key === selectedStockItemKey ? "bg-accent" : undefined,
-                                    )}
-                                >
-                                    <span className="min-w-0 flex-1">
-                                        <span
-                                            className="block truncate font-base text-300 text-foreground"
-                                            title={row.name}
-                                        >
-                                            {row.name}
-                                        </span>
-                                        <span className="block font-base text-200 text-muted-foreground">
-                                            Rank #{row.atRiskRank} · Suggested reorder {row.suggestedReorderQty}
-                                        </span>
-                                    </span>
-                                    {sparklineData[row.key] ? (
-                                        // Sparkline's <svg> sets width="100%" internally (fills whatever box it's
-                                        // given) -- without this fixed-size wrapper, that 100% resolves against
-                                        // the flex row itself and the sparkline claims nearly all the row's width,
-                                        // squeezing the name span next to it down to ~0.
-                                        <span className="block h-[28px] w-[72px] shrink-0">
-                                            <Sparkline
-                                                data={sparklineData[row.key].qty}
-                                                labels={sparklineData[row.key].dates}
-                                                width={72}
-                                                height={28}
-                                                className={LEAD_TIME_TEXT_CLASS[row.tier] ?? "text-muted-foreground"}
-                                                ariaLabel={`${row.name}: daily units sold, last 60 days`}
-                                            />
-                                        </span>
-                                    ) : (
-                                        <span
-                                            aria-hidden="true"
-                                            className="block h-[28px] w-[72px] shrink-0 animate-pulse rounded-md bg-muted"
-                                        />
-                                    )}
-                                </button>
-                            </motion.li>
-                        ))}
-                    </motion.ul>
+                    <span aria-hidden="true" className="block h-[20px] w-[56px] shrink-0 animate-pulse rounded-md bg-muted" />
                 )}
-            </div>
-        </div>
+                <span className="w-[56px] shrink-0 text-right font-numeric text-100 text-foreground">
+                    {formatCompactCurrency(row.reorderValue)}
+                </span>
+            </button>
+        </li>
     );
 }

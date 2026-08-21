@@ -72,14 +72,14 @@ describe("ReorderActionForm", () => {
         mockQuery.mockResolvedValue({ status: "success", table: DETAIL_TABLE, fromCache: false });
         render(<ReorderActionForm stockItemKey={17} stockItemName="Shipping carton (Brown)" />);
 
-        expect(await screen.findByLabelText(/suggested reorder qty/i)).toHaveValue(1840);
+        expect(await screen.findByLabelText(/quantity/i)).toHaveValue(1840);
     });
 
     it("lists all five status values in the status dropdown", async () => {
         mockQuery.mockResolvedValue({ status: "success", table: DETAIL_TABLE, fromCache: false });
         render(<ReorderActionForm stockItemKey={17} stockItemName="Shipping carton (Brown)" />);
 
-        await screen.findByLabelText(/suggested reorder qty/i);
+        await screen.findByLabelText(/quantity/i);
         const options = screen.getAllByRole("option").map((o) => (o as HTMLOptionElement).value);
         expect(options).toEqual(["Pending Review", "Approved", "Ordered", "Received", "Dismissed"]);
     });
@@ -89,8 +89,9 @@ describe("ReorderActionForm", () => {
         mockCreate.mockResolvedValue({ id: "new-id" });
         render(<ReorderActionForm stockItemKey={17} stockItemName="Shipping carton (Brown)" />);
 
-        await screen.findByLabelText(/suggested reorder qty/i);
+        await screen.findByLabelText(/quantity/i);
         fireEvent.change(screen.getByLabelText(/current stock on hand/i), { target: { value: "50" } });
+        fireEvent.change(screen.getByLabelText(/supplier/i), { target: { value: "Northwind Packaging" } });
         fireEvent.change(screen.getByLabelText(/assigned to/i), { target: { value: "Priya" } });
         fireEvent.click(screen.getByRole("button", { name: /submit reorder action/i }));
 
@@ -101,6 +102,7 @@ describe("ReorderActionForm", () => {
                 stockItemName: "Shipping carton (Brown)",
                 currentStockOnHand: 50,
                 suggestedReorderQty: 1840,
+                supplierName: "Northwind Packaging",
                 status: "Pending Review",
                 assignedTo: "Priya",
                 createdBy: "sai@r4k5.onmicrosoft.com",
@@ -114,7 +116,7 @@ describe("ReorderActionForm", () => {
         mockAuditCreate.mockResolvedValue({ id: "audit-1" });
         render(<ReorderActionForm stockItemKey={17} stockItemName="Shipping carton (Brown)" />);
 
-        await screen.findByLabelText(/suggested reorder qty/i);
+        await screen.findByLabelText(/quantity/i);
         fireEvent.click(screen.getByRole("button", { name: /submit reorder action/i }));
 
         await waitFor(() =>
@@ -133,7 +135,7 @@ describe("ReorderActionForm", () => {
         mockCreate.mockResolvedValue({ id: "new-id" });
         render(<ReorderActionForm stockItemKey={17} stockItemName="Shipping carton (Brown)" />);
 
-        await screen.findByLabelText(/suggested reorder qty/i);
+        await screen.findByLabelText(/quantity/i);
         fireEvent.click(screen.getByRole("button", { name: /submit reorder action/i }));
 
         expect(await screen.findByText(/reorder action recorded/i)).toBeInTheDocument();
@@ -144,7 +146,7 @@ describe("ReorderActionForm", () => {
         mockCreate.mockRejectedValue(new Error("403 Forbidden"));
         render(<ReorderActionForm stockItemKey={17} stockItemName="Shipping carton (Brown)" />);
 
-        await screen.findByLabelText(/suggested reorder qty/i);
+        await screen.findByLabelText(/quantity/i);
         fireEvent.click(screen.getByRole("button", { name: /submit reorder action/i }));
 
         expect(await screen.findByRole("alert")).toHaveTextContent("403 Forbidden");

@@ -40,18 +40,19 @@ vi.mock("@/hooks/auth.context", () => ({
     }),
 }));
 
-const LIST_TABLE = {
+const PARETO_TABLE = {
     columns: [
         { name: "Stock Item[Stock Item Key]" },
         { name: "Stock Item[Stock Item]" },
         { name: "Stock Item[Lead Time Priority Tier]" },
-        { name: "[Suggested Reorder Qty]" },
-        { name: "[Demand Trend]" },
+        { name: "[Reorder Value]" },
+        { name: "[Value Share %]" },
+        { name: "[Cumulative Value %]" },
         { name: "[At Risk Rank]" },
     ],
     rows: [
-        [17, "Shipping carton (Brown)", "Long Lead Time", 1840, 0.34, 1],
-        [126, "Pallet wrap 500mm x 300m", "Short Lead Time", 940, 0.15, 5],
+        [17, "Shipping carton (Brown)", "Long Lead Time", 3200000, 0.5, 0.5, 1],
+        [126, "Pallet wrap 500mm x 300m", "Short Lead Time", 940000, 0.1, 0.97, 5],
     ],
 };
 
@@ -73,13 +74,27 @@ const DETAIL_TABLE = {
     rows: [[126, "Pallet wrap 500mm x 300m", "Contoso", "Clear", 6, "Short Lead Time", 2.1, 3.4, 20.1, 0.15, 940, 5]],
 };
 
+const EMPTY_TREND_TABLE = { columns: [{ name: "Date[Date]" }, { name: "[Quantity]" }], rows: [] };
+
+function mockAllQueries() {
+    mockQuery.mockImplementation((query: string) => {
+        if (query.includes("Quantity")) {
+            return Promise.resolve({ status: "success", table: EMPTY_TREND_TABLE, fromCache: false });
+        }
+        if (query.includes("126")) {
+            return Promise.resolve({ status: "success", table: DETAIL_TABLE, fromCache: false });
+        }
+        return Promise.resolve({ status: "success", table: PARETO_TABLE, fromCache: false });
+    });
+}
+
 describe("ActionCenter", () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });
 
     it("shows the detail placeholder when nothing is selected yet", async () => {
-        mockQuery.mockResolvedValue({ status: "success", table: LIST_TABLE, fromCache: false });
+        mockAllQueries();
         render(<ActionCenter initialSelectedItemName={null} />);
 
         await screen.findByText("Shipping carton (Brown)");
@@ -87,31 +102,19 @@ describe("ActionCenter", () => {
     });
 
     it("selects the item clicked in the list and shows its detail", async () => {
-        mockQuery.mockImplementation((query: string) =>
-            Promise.resolve({
-                status: "success",
-                table: query.includes("126") ? DETAIL_TABLE : LIST_TABLE,
-                fromCache: false,
-            }),
-        );
+        mockAllQueries();
         render(<ActionCenter initialSelectedItemName={null} />);
 
         const row = await screen.findByText("Pallet wrap 500mm x 300m");
         fireEvent.click(row);
 
-        expect(await screen.findByText("Contoso")).toBeInTheDocument();
+        expect(await screen.findByText(/Tier C · rank #5 of 672/)).toBeInTheDocument();
     });
 
     it("auto-selects the item handed off from Page 1's click-through", async () => {
-        mockQuery.mockImplementation((query: string) =>
-            Promise.resolve({
-                status: "success",
-                table: query.includes("126") ? DETAIL_TABLE : LIST_TABLE,
-                fromCache: false,
-            }),
-        );
+        mockAllQueries();
         render(<ActionCenter initialSelectedItemName="Pallet wrap 500mm x 300m" />);
 
-        expect(await screen.findByText("Contoso")).toBeInTheDocument();
+        expect(await screen.findByText(/Tier C · rank #5 of 672/)).toBeInTheDocument();
     });
 });

@@ -6,96 +6,13 @@
 //-----------------------------------------------------------------------
 
 /**
- * Maps `Stock Item[Lead Time Priority Tier]` values to the severity-rail
- * Tailwind class from the locked severity scale (see global.css).
- *
- * Keys are the real values as verified live against the semantic model
- * ("Short Lead Time" / "Medium Lead Time" / "Long Lead Time") — an earlier
- * version used bare "Short"/"Medium"/"Long", which never matched a real row
- * and silently fell back to no rail color at all.
- */
-export const LEAD_TIME_RAIL_CLASS: Record<string, string> = {
-    "Long Lead Time": "border-l-critical",
-    "Medium Lead Time": "border-l-at-risk",
-    "Short Lead Time": "border-l-on-track",
-};
-
-/** Same tiers, as a solid dot fill — for compact previews (e.g. the landing page glimpse list). */
-export const LEAD_TIME_DOT_CLASS: Record<string, string> = {
-    "Long Lead Time": "bg-critical",
-    "Medium Lead Time": "bg-at-risk",
-    "Short Lead Time": "bg-on-track",
-};
-
-/**
- * Same tiers, as a text/currentColor class — for inline SVG (e.g. <Sparkline>) where `fill`/
- * `stroke="currentColor"` picks up the token automatically in both themes, no hardcoded hex
- * needed (unlike the Vega-rendered charts, which can't resolve `var(--color-*)` at all).
- */
-export const LEAD_TIME_TEXT_CLASS: Record<string, string> = {
-    "Long Lead Time": "text-critical",
-    "Medium Lead Time": "text-at-risk",
-    "Short Lead Time": "text-on-track",
-};
-
-/**
- * Shared "Filter by lead time" dropdown values, reused by both Page 1's chart
- * and Page 2's ranked list so the two pages offer the same filter axis. Values
- * are the real Stock Item[Lead Time Priority Tier] strings, verified live
- * against the semantic model.
- */
-export const TIER_FILTERS = ["All", "Short Lead Time", "Medium Lead Time", "Long Lead Time"] as const;
-
-export function tierFilterLabel(tier: (typeof TIER_FILTERS)[number]): string {
-    return tier === "All" ? "All" : tier.replace(" Lead Time", "");
-}
-
-/**
- * Real Stock Item[Lead Time Priority Tier] distribution, verified live against
- * the semantic model 2026-08-19 (`SUMMARIZECOLUMNS('Stock Item'[Lead Time
- * Priority Tier], "Count", COUNTROWS('Stock Item'))`). Medium dominates the
- * catalog (582 of 672 items) — this is why an unfiltered "All" view is mostly
- * Medium-tier rows, not a filter bug. Shown as a caption so the skew reads as
- * a disclosed data fact instead of looking broken.
- */
-export const TIER_COUNTS: Record<Exclude<(typeof TIER_FILTERS)[number], "All">, number> = {
-    "Short Lead Time": 78,
-    "Medium Lead Time": 582,
-    "Long Lead Time": 12,
-};
-
-export function tierDistributionCaption(tier: (typeof TIER_FILTERS)[number]): string {
-    const total = Object.values(TIER_COUNTS).reduce((sum, n) => sum + n, 0);
-    if (tier === "All") {
-        return `${total} items tracked · ${TIER_COUNTS["Medium Lead Time"]} Medium · ${TIER_COUNTS["Short Lead Time"]} Short · ${TIER_COUNTS["Long Lead Time"]} Long`;
-    }
-    return `${TIER_COUNTS[tier]} of ${total} items are ${tierFilterLabel(tier)} lead time`;
-}
-
-/**
- * DAX SUMMARIZECOLUMNS filter-table argument for a lead-time tier, substituted
- * into the `{{TIER_FILTER}}` placeholder in ranked-at-risk-list.dax and
- * top-at-risk-items.dax. Safe to interpolate directly: `tier` only ever comes
- * from the fixed TIER_FILTERS union (a compile-time enum), never free text.
- *
- * This exists because filtering a single globally-ranked TOPN client-side was
- * wrong on the real data: Medium Lead Time items dominate the top of At Risk
- * Rank (582 of 672 stock items are Medium tier), so Long doesn't appear until
- * rank 27 and Short not until rank 43 — a TOPN(25) global cap silently
- * excluded both, making the "Short"/"Long" filter options show zero rows.
- * Each tier now gets its own ranked query instead of a slice of one shared list.
- */
-export function tierFilterClause(tier: (typeof TIER_FILTERS)[number]): string {
-    if (tier === "All") return "";
-    return `,\n        FILTER(ALL('Stock Item'[Lead Time Priority Tier]), 'Stock Item'[Lead Time Priority Tier] = "${tier}")`;
-}
-
-/**
  * ABC value-concentration tier, per the locked mockup (docs/mockup-reference.html,
- * `tierFor`) — distinct from Lead Time Priority Tier above. A = cumulative reorder
- * value share up to 80%, B = up to 95%, C = the remainder. Pure client-side bucketing
- * off a row's own `cumulativeValuePct`, no new DAX measure needed (matches SPEC.md's
- * "No fixed ABC-tier measure is needed on the model side" note).
+ * `tierFor`). A = cumulative reorder value share up to 80%, B = up to 95%, C = the
+ * remainder. Pure client-side bucketing off a row's own `cumulativeValuePct`, no
+ * new DAX measure needed (matches SPEC.md's "No fixed ABC-tier measure is needed
+ * on the model side" note). This is the one tier concept used app-wide now — it
+ * replaced Lead Time Priority Tier as the filter/color axis on both the Overview
+ * Pareto view and the Action Center ranked list and item detail, per the mockup.
  */
 export type ValueTier = "A" | "B" | "C";
 
@@ -110,3 +27,10 @@ export const VALUE_TIER_RAIL_CLASS: Record<ValueTier, string> = {
     B: "bg-at-risk",
     C: "bg-on-track",
 };
+
+export const VALUE_TIER_FILTERS = ["All", "A", "B", "C"] as const;
+export type ValueTierFilter = (typeof VALUE_TIER_FILTERS)[number];
+
+export function valueTierFilterLabel(filter: ValueTierFilter): string {
+    return filter === "All" ? "All" : `Tier ${filter}`;
+}

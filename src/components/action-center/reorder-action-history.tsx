@@ -104,21 +104,21 @@ export function ReorderActionHistory({ stockItemKey, refreshKey, onStatusChanged
         <div className="flex flex-col gap-200 rounded-lg border border-border bg-card p-400 shadow-sm">
             <h3 className="flex items-center gap-200 font-heading text-400 font-semibold text-foreground">
                 <History className="icon-size-300 text-muted-foreground" />
-                Reorder Action History
+                Reorder Actions
             </h3>
             {updateError ? (
                 <p role="alert" className="font-base text-300 text-destructive">
                     Couldn't update status: {updateError}
                 </p>
             ) : null}
-            <ul className="flex flex-col gap-200">
+            <ul className="flex flex-col">
                 {actions.map((action) => (
                     <li
                         key={action.id}
-                        className="flex items-center justify-between gap-300 border-b border-border pb-200 last:border-b-0 last:pb-0"
+                        className="flex items-center justify-between gap-300 border-b border-border py-200 text-100 last:border-b-0"
                     >
                         <div className="min-w-0 flex-1">
-                            <p className="font-base text-200 text-muted-foreground">
+                            <p className="font-base text-100 text-muted-foreground">
                                 {new Date(action.createdAt).toLocaleString()} · Qty {action.suggestedReorderQty}
                                 {action.assignedTo ? (
                                     <>
@@ -137,7 +137,7 @@ export function ReorderActionHistory({ stockItemKey, refreshKey, onStatusChanged
                                 onChange={(e) =>
                                     handleStatusChange(action.id, e.target.value as ReorderActionRecord["status"])
                                 }
-                                className="rounded-md border border-border bg-background px-200 py-100-nudge text-200 text-foreground"
+                                className="rounded-md border border-border bg-background px-200 py-100-nudge text-100 text-foreground"
                             >
                                 {REORDER_ACTION_STATUSES.map((s) => (
                                     <option key={s} value={s}>

@@ -92,28 +92,31 @@ export function ReorderActionAuditLogPanel({ stockItemKey, refreshKey }: Reorder
         <div className="flex flex-col gap-200 rounded-lg border border-border bg-card p-400 shadow-sm">
             <h3 className="flex items-center gap-200 font-heading text-400 font-semibold text-foreground">
                 <ScrollText className="icon-size-300 text-muted-foreground" />
-                Audit Log
+                Audit Trail
             </h3>
             <p className="font-base text-200 text-muted-foreground">
-                Every change to this item's reorder actions, append-only.
+                Every change to this item's reorder actions, append-only
             </p>
-            <ul className="flex flex-col gap-200">
+            <ul className="flex flex-col">
                 {entries.map((entry) => (
-                    <li key={entry.id} className="border-b border-border pb-200 last:border-b-0 last:pb-0">
-                        <p className="font-base text-200 text-foreground">
-                            {entry.fieldName === "created" ? (
-                                <span>created</span>
-                            ) : (
-                                <>
-                                    <span className="text-muted-foreground">{entry.fieldName}:</span>{" "}
-                                    <span className="text-muted-foreground line-through">{entry.oldValue}</span>{" "}
-                                    &rarr; <span className="font-semibold">{entry.newValue}</span>
-                                </>
-                            )}
-                        </p>
-                        <p className="font-base text-100 text-muted-foreground">
-                            {new Date(entry.changedAt).toLocaleString()} &middot; {entry.changedBy}
-                        </p>
+                    <li key={entry.id} className="flex gap-200 border-b border-border py-200 text-100 last:border-b-0">
+                        <span className="w-[92px] shrink-0 font-numeric text-100 text-muted-foreground">
+                            {new Date(entry.changedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                        </span>
+                        <div className="min-w-0">
+                            <p className="font-base text-100 text-foreground">
+                                {entry.fieldName === "created" ? (
+                                    <span>created</span>
+                                ) : (
+                                    <>
+                                        <span className="text-muted-foreground">{entry.fieldName}:</span>{" "}
+                                        <span className="text-muted-foreground line-through">{entry.oldValue}</span>{" "}
+                                        &rarr; <span className="font-semibold">{entry.newValue}</span>
+                                    </>
+                                )}
+                            </p>
+                            <p className="font-base text-100 text-muted-foreground">{entry.changedBy}</p>
+                        </div>
                     </li>
                 ))}
             </ul>
