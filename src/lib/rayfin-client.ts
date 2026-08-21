@@ -11,7 +11,10 @@ import { RayfinClient } from "@microsoft/rayfin-client";
  * Frontend-facing mirror of `rayfin/data/reorder-action.ts`'s `ReorderAction` entity.
  * Kept as a plain interface here (not imported from `rayfin/data/`) since that file is
  * server-side, decorated with `@microsoft/rayfin-core` decorators not meant for the client
- * bundle. Field types match the entity's GraphQL wire shape (dates as ISO strings).
+ * bundle. `createdAt` is `string | Date` (not just `string`) because the Rayfin SDK's own
+ * `deserializeDabResponse` auto-converts any ISO-8601-shaped string field to a real `Date` on
+ * read, while a `.create()` call still sends a plain ISO string on write -- both shapes are real,
+ * see `parseApiDate` in `src/lib/utils.ts`.
  */
 export interface ReorderActionRecord {
     id: string;
@@ -24,7 +27,7 @@ export interface ReorderActionRecord {
     status: "Pending Review" | "Approved" | "Ordered" | "Received" | "Dismissed";
     note?: string;
     assignedTo?: string;
-    createdAt: string;
+    createdAt: string | Date;
     createdBy: string;
 }
 
@@ -41,7 +44,7 @@ export interface ReorderActionAuditLogRecord {
     fieldName: string;
     oldValue?: string;
     newValue?: string;
-    changedAt: string;
+    changedAt: string | Date;
     changedBy: string;
 }
 

@@ -29,16 +29,18 @@ export function formatShortDate(isoDate: string): string {
 }
 
 /**
- * Parses a datetime string from the Rayfin data API (ReorderAction.createdAt,
- * ReorderActionAuditLog.changedAt). These round-trip through Data API Builder's SQL Server
- * `datetime2` column as `"YYYY-MM-DD HH:mm:ss.fffffff"` — a space separator, up to 7 fractional
- * digits, and no timezone marker — which the native `Date` constructor can't parse (it silently
- * returns Invalid Date instead of throwing, which is why the UI showed "Invalid Date" for every
- * timestamp rather than erroring). Normalizes to proper ISO-8601 before parsing; a value that's
- * already valid ISO passes through unchanged.
+ * Parses a datetime value from the Rayfin data API (ReorderAction.createdAt,
+ * ReorderActionAuditLog.changedAt). Accepts either shape the SDK can hand back: the Rayfin
+ * client's own `deserializeDabResponse` already auto-converts any ISO-8601-shaped string field
+ * to a real `Date` (crashed here with "value.includes is not a function" once these fields
+ * actually started returning data — that fix made this path reachable for the first time), but
+ * a raw SQL Server `datetime2` string (`"YYYY-MM-DD HH:mm:ss.fffffff"`, space separator, no
+ * timezone marker) doesn't match that auto-conversion and arrives as a plain string instead, so
+ * both shapes have to be handled rather than assuming one.
  */
-export function parseApiDate(value: string | null | undefined): Date | null {
+export function parseApiDate(value: string | Date | null | undefined): Date | null {
     if (!value) return null;
+    if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
     const isoLike = value.includes("T") ? value : value.replace(" ", "T");
     const msPrecision = isoLike.replace(/(\.\d{3})\d*$/, "$1");
     const withZone = /[Zz]|[+-]\d{2}:?\d{2}$/.test(msPrecision) ? msPrecision : `${msPrecision}Z`;
@@ -47,7 +49,7 @@ export function parseApiDate(value: string | null | undefined): Date | null {
 }
 
 /** `parseApiDate` + a locale-formatted string, falling back to a plain label instead of "Invalid Date". */
-export function formatApiDateTime(value: string | null | undefined): string {
+export function formatApiDateTime(value: string | Date | null | undefined): string {
     return parseApiDate(value)?.toLocaleString() ?? "Unknown date";
 }
 
