@@ -7,7 +7,11 @@
 
 import { useEffect, useState } from "react";
 import { ScrollText } from "lucide-react";
-import { getRayfinClient, type ReorderActionAuditLogRecord } from "@/lib/rayfin-client";
+import {
+    getRayfinClient,
+    REORDER_ACTION_AUDIT_LOG_FIELDS,
+    type ReorderActionAuditLogRecord,
+} from "@/lib/rayfin-client";
 import { parseApiDate } from "@/lib/utils";
 
 interface ReorderActionAuditLogPanelProps {
@@ -35,11 +39,18 @@ export function ReorderActionAuditLogPanel({ stockItemKey, refreshKey }: Reorder
         setStatus("loading");
 
         getRayfinClient()
-            .data.ReorderAction.findMany({ stockItemKey })
+            .data.ReorderAction.select(["id"])
+            .where({ stockItemKey })
+            .execute()
             .then((actions) => {
                 if (cancelled) return Promise.resolve([]);
                 return Promise.all(
-                    actions.map((action) => getRayfinClient().data.ReorderActionAuditLog.findMany({ reorderActionId: action.id })),
+                    actions.map((action) =>
+                        getRayfinClient()
+                            .data.ReorderActionAuditLog.select(REORDER_ACTION_AUDIT_LOG_FIELDS)
+                            .where({ reorderActionId: action.id })
+                            .execute(),
+                    ),
                 );
             })
             .then((groups) => {

@@ -15,10 +15,13 @@ const mockAuditFindMany = vi.fn();
 vi.mock("@/lib/rayfin-client", () => ({
     getRayfinClient: () => ({
         data: {
-            ReorderAction: { findMany: mockActionFindMany },
-            ReorderActionAuditLog: { findMany: mockAuditFindMany },
+            ReorderAction: { select: vi.fn(() => ({ where: vi.fn(() => ({ execute: mockActionFindMany })) })) },
+            ReorderActionAuditLog: {
+                select: vi.fn(() => ({ where: vi.fn(() => ({ execute: mockAuditFindMany })) })),
+            },
         },
     }),
+    REORDER_ACTION_AUDIT_LOG_FIELDS: ["id", "reorderActionId", "fieldName", "oldValue", "newValue", "changedAt", "changedBy"],
 }));
 
 const ACTION = { id: "action-1", stockItemKey: 17 };

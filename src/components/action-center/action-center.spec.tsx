@@ -23,12 +23,37 @@ vi.mock("@/lib/rayfin-client", () => ({
         data: {
             ReorderAction: {
                 create: vi.fn(),
-                findMany: vi.fn().mockResolvedValue([]),
+                select: vi.fn(() => ({ where: vi.fn(() => ({ execute: vi.fn().mockResolvedValue([]) })) })),
                 update: vi.fn(),
+            },
+            ReorderActionAuditLog: {
+                select: vi.fn(() => ({ where: vi.fn(() => ({ execute: vi.fn().mockResolvedValue([]) })) })),
             },
         },
     }),
+    REORDER_ACTION_FIELDS: [
+        "id",
+        "stockItemKey",
+        "stockItemName",
+        "currentStockOnHand",
+        "suggestedReorderQty",
+        "supplierKey",
+        "supplierName",
+        "status",
+        "note",
+        "assignedTo",
+        "createdAt",
+        "createdBy",
+    ],
+    REORDER_ACTION_AUDIT_LOG_FIELDS: ["id", "reorderActionId", "fieldName", "oldValue", "newValue", "changedAt", "changedBy"],
     REORDER_ACTION_STATUSES: ["Pending Review", "Approved", "Ordered", "Received", "Dismissed"],
+    ASSIGNED_TO_OPTIONS: [
+        { email: "sai@r4k5.onmicrosoft.com", name: "Sai Dev" },
+        { email: "adh@r4k5.onmicrosoft.com", name: "Santosh Pothnak" },
+        { email: "bharath@r4k5.onmicrosoft.com", name: "Bharath Thodupunuri" },
+        { email: "lahari@r4k5.onmicrosoft.com", name: "Lahari Reddy" },
+    ],
+    SUPPLIER_OPTIONS: ["Contoso Wholesale", "Fabrikam Distribution", "Northwind Traders", "Tailwind Supply Co.", "Wide World Suppliers"],
 }));
 
 vi.mock("@/hooks/auth.context", () => ({

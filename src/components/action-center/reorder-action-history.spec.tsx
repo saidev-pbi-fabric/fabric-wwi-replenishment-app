@@ -12,14 +12,35 @@ import { ReorderActionHistory } from "@/components/action-center/reorder-action-
 const mockFindMany = vi.fn();
 const mockUpdate = vi.fn();
 const mockAuditCreate = vi.fn();
+const mockSelect = vi.fn(() => ({ where: vi.fn(() => ({ execute: mockFindMany })) }));
 
 vi.mock("@/lib/rayfin-client", () => ({
     getRayfinClient: () => ({
         data: {
-            ReorderAction: { findMany: mockFindMany, update: mockUpdate },
+            ReorderAction: { select: mockSelect, update: mockUpdate },
             ReorderActionAuditLog: { create: mockAuditCreate },
         },
     }),
+    ASSIGNED_TO_OPTIONS: [
+        { email: "sai@r4k5.onmicrosoft.com", name: "Sai Dev" },
+        { email: "adh@r4k5.onmicrosoft.com", name: "Santosh Pothnak" },
+        { email: "bharath@r4k5.onmicrosoft.com", name: "Bharath Thodupunuri" },
+        { email: "lahari@r4k5.onmicrosoft.com", name: "Lahari Reddy" },
+    ],
+    REORDER_ACTION_FIELDS: [
+        "id",
+        "stockItemKey",
+        "stockItemName",
+        "currentStockOnHand",
+        "suggestedReorderQty",
+        "supplierKey",
+        "supplierName",
+        "status",
+        "note",
+        "assignedTo",
+        "createdAt",
+        "createdBy",
+    ],
     REORDER_ACTION_STATUSES: ["Pending Review", "Approved", "Ordered", "Received", "Dismissed"],
 }));
 

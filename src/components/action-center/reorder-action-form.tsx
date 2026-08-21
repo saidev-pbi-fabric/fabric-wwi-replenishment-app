@@ -11,7 +11,13 @@ import { PackagePlus } from "lucide-react";
 import { useQueryPanel } from "@/hooks/use-query-panel";
 import { itemDetail } from "@/queries/action-center/item-detail";
 import { useAuth } from "@/hooks/auth.context";
-import { getRayfinClient, REORDER_ACTION_STATUSES, type ReorderActionRecord } from "@/lib/rayfin-client";
+import {
+    ASSIGNED_TO_OPTIONS,
+    getRayfinClient,
+    REORDER_ACTION_STATUSES,
+    SUPPLIER_OPTIONS,
+    type ReorderActionRecord,
+} from "@/lib/rayfin-client";
 import { logReorderActionCreated } from "@/lib/reorder-action-audit";
 import { scalarByColumnName } from "@/lib/to-data-table";
 import { ITEM_DETAIL_FIXTURE } from "@/lib/dev-preview-fixtures";
@@ -100,11 +106,10 @@ function ReorderActionFormFields({
 }: ReorderActionFormFieldsProps) {
     const { session } = useAuth();
     const [suggestedReorderQty, setSuggestedReorderQty] = useState(defaultSuggestedReorderQty);
-    const [currentStockOnHand, setCurrentStockOnHand] = useState(0);
-    const [supplierName, setSupplierName] = useState("");
+    const [supplierName, setSupplierName] = useState(SUPPLIER_OPTIONS[0]);
     const [status, setStatus] = useState<ReorderActionRecord["status"]>("Pending Review");
     const [note, setNote] = useState("");
-    const [assignedTo, setAssignedTo] = useState("");
+    const [assignedTo, setAssignedTo] = useState(session?.user?.email ?? ASSIGNED_TO_OPTIONS[0].email);
     const [submitState, setSubmitState] = useState<"idle" | "submitting" | "success" | "error">("idle");
     const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -117,12 +122,16 @@ function ReorderActionFormFields({
             const created = await getRayfinClient().data.ReorderAction.create({
                 stockItemKey,
                 stockItemName,
-                currentStockOnHand,
+                // No stock-on-hand figure exists anywhere in this dataset (see the item detail
+                // panel's own disclosure) -- there's nothing honest to ask the user for here, so
+                // this stays a fixed 0 rather than a form field. currentStockOnHand is still a
+                // required (non-nullable) column on the locked ReorderAction entity.
+                currentStockOnHand: 0,
                 suggestedReorderQty,
-                supplierName: supplierName || undefined,
+                supplierName,
                 status,
                 note: note || undefined,
-                assignedTo: assignedTo || undefined,
+                assignedTo,
                 createdAt: new Date().toISOString(),
                 createdBy,
             });
@@ -152,24 +161,21 @@ function ReorderActionFormFields({
                     />
                 </FormField>
                 <FormField label="Supplier">
-                    <input
-                        type="text"
+                    <select
                         value={supplierName}
                         onChange={(e) => setSupplierName(e.target.value)}
                         className="w-full rounded-md border border-border bg-background px-200 py-100-nudge text-300 text-foreground"
-                    />
+                    >
+                        {SUPPLIER_OPTIONS.map((s) => (
+                            <option key={s} value={s}>
+                                {s}
+                            </option>
+                        ))}
+                    </select>
                 </FormField>
             </div>
 
             <div className="grid grid-cols-2 gap-300">
-                <FormField label="Current Stock on Hand">
-                    <input
-                        type="number"
-                        value={currentStockOnHand}
-                        onChange={(e) => setCurrentStockOnHand(Number(e.target.value))}
-                        className="w-full rounded-md border border-border bg-background px-200 py-100-nudge text-300 text-foreground"
-                    />
-                </FormField>
                 <FormField label="Status">
                     <select
                         value={status}
@@ -183,26 +189,29 @@ function ReorderActionFormFields({
                         ))}
                     </select>
                 </FormField>
-            </div>
-
-            <div className="grid grid-cols-2 gap-300">
                 <FormField label="Assigned To">
-                    <input
-                        type="text"
+                    <select
                         value={assignedTo}
                         onChange={(e) => setAssignedTo(e.target.value)}
                         className="w-full rounded-md border border-border bg-background px-200 py-100-nudge text-300 text-foreground"
-                    />
-                </FormField>
-                <FormField label="Note">
-                    <input
-                        type="text"
-                        value={note}
-                        onChange={(e) => setNote(e.target.value)}
-                        className="w-full rounded-md border border-border bg-background px-200 py-100-nudge text-300 text-foreground"
-                    />
+                    >
+                        {ASSIGNED_TO_OPTIONS.map((a) => (
+                            <option key={a.email} value={a.email}>
+                                {a.name}
+                            </option>
+                        ))}
+                    </select>
                 </FormField>
             </div>
+
+            <FormField label="Note">
+                <input
+                    type="text"
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    className="w-full rounded-md border border-border bg-background px-200 py-100-nudge text-300 text-foreground"
+                />
+            </FormField>
 
             <motion.button
                 type="submit"

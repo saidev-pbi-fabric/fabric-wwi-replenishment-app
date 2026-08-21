@@ -28,6 +28,13 @@ vi.mock("@/lib/rayfin-client", () => ({
         },
     }),
     REORDER_ACTION_STATUSES: ["Pending Review", "Approved", "Ordered", "Received", "Dismissed"],
+    ASSIGNED_TO_OPTIONS: [
+        { email: "sai@r4k5.onmicrosoft.com", name: "Sai Dev" },
+        { email: "adh@r4k5.onmicrosoft.com", name: "Santosh Pothnak" },
+        { email: "bharath@r4k5.onmicrosoft.com", name: "Bharath Thodupunuri" },
+        { email: "lahari@r4k5.onmicrosoft.com", name: "Lahari Reddy" },
+    ],
+    SUPPLIER_OPTIONS: ["Contoso Wholesale", "Fabrikam Distribution", "Northwind Traders", "Tailwind Supply Co.", "Wide World Suppliers"],
 }));
 
 vi.mock("@/hooks/auth.context", () => ({
@@ -80,19 +87,28 @@ describe("ReorderActionForm", () => {
         render(<ReorderActionForm stockItemKey={17} stockItemName="Shipping carton (Brown)" />);
 
         await screen.findByLabelText(/quantity/i);
-        const options = screen.getAllByRole("option").map((o) => (o as HTMLOptionElement).value);
+        const options = Array.from(screen.getByLabelText(/status/i).querySelectorAll("option")).map(
+            (o) => (o as HTMLOptionElement).value,
+        );
         expect(options).toEqual(["Pending Review", "Approved", "Ordered", "Received", "Dismissed"]);
     });
 
-    it("submits a create call with the entered fields and the signed-in user as createdBy", async () => {
+    it("prefills supplier and assigned-to from their fixed option lists, defaulting assigned-to to the signed-in user", async () => {
+        mockQuery.mockResolvedValue({ status: "success", table: DETAIL_TABLE, fromCache: false });
+        render(<ReorderActionForm stockItemKey={17} stockItemName="Shipping carton (Brown)" />);
+
+        expect(await screen.findByLabelText(/supplier/i)).toHaveValue("Contoso Wholesale");
+        expect(screen.getByLabelText(/assigned to/i)).toHaveValue("sai@r4k5.onmicrosoft.com");
+    });
+
+    it("submits a create call with the entered fields, a fixed 0 for current stock on hand, and the signed-in user as createdBy", async () => {
         mockQuery.mockResolvedValue({ status: "success", table: DETAIL_TABLE, fromCache: false });
         mockCreate.mockResolvedValue({ id: "new-id" });
         render(<ReorderActionForm stockItemKey={17} stockItemName="Shipping carton (Brown)" />);
 
         await screen.findByLabelText(/quantity/i);
-        fireEvent.change(screen.getByLabelText(/current stock on hand/i), { target: { value: "50" } });
-        fireEvent.change(screen.getByLabelText(/supplier/i), { target: { value: "Northwind Packaging" } });
-        fireEvent.change(screen.getByLabelText(/assigned to/i), { target: { value: "Priya" } });
+        fireEvent.change(screen.getByLabelText(/supplier/i), { target: { value: "Tailwind Supply Co." } });
+        fireEvent.change(screen.getByLabelText(/assigned to/i), { target: { value: "lahari@r4k5.onmicrosoft.com" } });
         fireEvent.click(screen.getByRole("button", { name: /submit reorder action/i }));
 
         await waitFor(() => expect(mockCreate).toHaveBeenCalledTimes(1));
@@ -100,11 +116,11 @@ describe("ReorderActionForm", () => {
             expect.objectContaining({
                 stockItemKey: 17,
                 stockItemName: "Shipping carton (Brown)",
-                currentStockOnHand: 50,
+                currentStockOnHand: 0,
                 suggestedReorderQty: 1840,
-                supplierName: "Northwind Packaging",
+                supplierName: "Tailwind Supply Co.",
                 status: "Pending Review",
-                assignedTo: "Priya",
+                assignedTo: "lahari@r4k5.onmicrosoft.com",
                 createdBy: "sai@r4k5.onmicrosoft.com",
             }),
         );

@@ -58,6 +58,65 @@ export const REORDER_ACTION_STATUSES: ReorderActionRecord["status"][] = [
     "Dismissed",
 ];
 
+/**
+ * Fixed list of everyone with access to the Fabric workspace (live-verified via
+ * `az rest .../roleAssignments` against the Fabric REST API, 2026-08-21 -- not guessed), used
+ * for the Reorder Action form's "Assigned To" dropdown instead of free text.
+ */
+export const ASSIGNED_TO_OPTIONS: { email: string; name: string }[] = [
+    { email: "sai@r4k5.onmicrosoft.com", name: "Sai Dev" },
+    { email: "adh@r4k5.onmicrosoft.com", name: "Santosh Pothnak" },
+    { email: "bharath@r4k5.onmicrosoft.com", name: "Bharath Thodupunuri" },
+    { email: "lahari@r4k5.onmicrosoft.com", name: "Lahari Reddy" },
+];
+
+/**
+ * Fixed illustrative supplier list for the "Supplier" dropdown. This dataset's loaded WWI
+ * sample has no Dimension.Supplier table (see docs/wwi-schema-reference.md) -- there's no real
+ * supplier data to draw from, so this is deliberately superficial, same spirit as the fixed
+ * REORDER_ACTION_STATUSES enum, not a claim of real sourcing data.
+ */
+export const SUPPLIER_OPTIONS: string[] = [
+    "Contoso Wholesale",
+    "Fabrikam Distribution",
+    "Northwind Traders",
+    "Tailwind Supply Co.",
+    "Wide World Suppliers",
+];
+
+/**
+ * Explicit field list for `.select()` on ReorderAction queries. The Rayfin SDK's
+ * `findMany()` builds a GraphQL query with no field selection at all when `.select()` isn't
+ * called, defaulting to `id` only -- every other field silently comes back `undefined` (this
+ * was the real cause of "Unknown date"/blank Qty in Reorder Actions, not a date-format issue).
+ * Always select explicitly instead of using the bare `findMany()` shorthand.
+ */
+export const REORDER_ACTION_FIELDS: (keyof ReorderActionRecord)[] = [
+    "id",
+    "stockItemKey",
+    "stockItemName",
+    "currentStockOnHand",
+    "suggestedReorderQty",
+    "supplierKey",
+    "supplierName",
+    "status",
+    "note",
+    "assignedTo",
+    "createdAt",
+    "createdBy",
+];
+
+/** Same reasoning as REORDER_ACTION_FIELDS, for the audit log entity. */
+export const REORDER_ACTION_AUDIT_LOG_FIELDS: (keyof ReorderActionAuditLogRecord)[] = [
+    "id",
+    "reorderActionId",
+    "fieldName",
+    "oldValue",
+    "newValue",
+    "changedAt",
+    "changedBy",
+];
+
 let _client: RayfinClient<AppDataSchema> | undefined;
 
 /**

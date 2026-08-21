@@ -7,7 +7,13 @@
 
 import { useEffect, useState } from "react";
 import { History } from "lucide-react";
-import { getRayfinClient, REORDER_ACTION_STATUSES, type ReorderActionRecord } from "@/lib/rayfin-client";
+import {
+    ASSIGNED_TO_OPTIONS,
+    getRayfinClient,
+    REORDER_ACTION_FIELDS,
+    REORDER_ACTION_STATUSES,
+    type ReorderActionRecord,
+} from "@/lib/rayfin-client";
 import { logReorderActionFieldChange } from "@/lib/reorder-action-audit";
 import { useAuth } from "@/hooks/auth.context";
 import { formatApiDateTime } from "@/lib/utils";
@@ -33,7 +39,9 @@ export function ReorderActionHistory({ stockItemKey, refreshKey, onStatusChanged
         // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional fetch-on-mount/dep-change
         setStatus("loading");
         getRayfinClient()
-            .data.ReorderAction.findMany({ stockItemKey })
+            .data.ReorderAction.select(REORDER_ACTION_FIELDS)
+            .where({ stockItemKey })
+            .execute()
             .then((rows) => {
                 if (cancelled) return;
                 setActions(rows);
@@ -55,7 +63,10 @@ export function ReorderActionHistory({ stockItemKey, refreshKey, onStatusChanged
         setUpdateError(null);
         try {
             const updated = await getRayfinClient().data.ReorderAction.update({ id }, { status: nextStatus });
-            setActions((prev) => prev?.map((a) => (a.id === id ? updated : a)) ?? prev);
+            // Merge, don't replace: update()'s GraphQL selection is built only from the
+            // mutation's input keys ({ status }), so `updated` only carries id + status --
+            // replacing the cached row wholesale would silently wipe every other field.
+            setActions((prev) => prev?.map((a) => (a.id === id ? { ...a, ...updated } : a)) ?? prev);
             if (previous && previous.status !== nextStatus) {
                 void logReorderActionFieldChange(
                     id,
@@ -124,7 +135,10 @@ export function ReorderActionHistory({ stockItemKey, refreshKey, onStatusChanged
                                 {action.assignedTo ? (
                                     <>
                                         {" · "}
-                                        <span>{action.assignedTo}</span>
+                                        <span>
+                                            {ASSIGNED_TO_OPTIONS.find((a) => a.email === action.assignedTo)?.name ??
+                                                action.assignedTo}
+                                        </span>
                                     </>
                                 ) : null}
                             </p>
