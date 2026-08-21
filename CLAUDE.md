@@ -44,10 +44,30 @@ Microsoft Fabric Hackathon 2026 entry (Hyderabad Data & AI Community + India Fab
   interaction-polish animation work in `docs/wireframe-design-brief.md`, not before Phase 3-5's
   real data/write-back work is done.
 - **Tooling stack: standardized on `addyosmani/agent-skills` end-to-end** (8 slash commands:
-  `/spec /plan /build /test /review /webperf /code-simplify /ship`), plus `batch-grill-me` and
-  `ponytail`. Deliberately not mixing in other spec/design frameworks - one coherent system.
-  Frontend: `frontend-ui-engineering` + `dataviz` are the core skills to use; skip `ui-ux-pro-max`
-  (redundant, mobile-app-flavored); `impeccable`/`emil-design-eng` are optional, late-stage only.
+  `/spec /plan /build /test /review /webperf /code-simplify /ship` — all genuinely used across this
+  project's history, confirmed in this file's own status log). Deliberately not mixing in other
+  spec/design frameworks - one coherent system.
+  **Amended 2026-08-22, corrected against a live tooling audit** (`claude plugin list` +
+  filesystem check — the original text below was written 8/16, before the 8/18 design-tooling
+  pivot, and was never reconciled with what was actually installed/used since):
+  - `dataviz`/`impeccable`/`emil-design-eng` **do not exist on this machine** — not installed
+    under those names anywhere (checked both the `agent-skills` plugin bundle and
+    `~/.claude/skills/`). `ponytail` also does not exist anywhere on this machine, confirmed via a
+    full-disk search — never actually installed despite being named here.
+  - What's actually installed and was used instead, since 2026-08-18: 26 repo-local skills in
+    `.claude/skills/` (git-tracked, see `docs/design-reference-bank.md` for the full list and
+    rationale) — `design-dna`, `design-taste-frontend`(+v1), `high-end-visual-design`,
+    `industrial-brutalist-ui`, `web-design-guidelines`, `cast`/`paint` (motion), etc.
+    `frontend-ui-engineering` (from `agent-skills`) is real and present; use it alongside those.
+  - `batch-grill-me` is real (global `~/.claude/skills/batch-grill-me`), confirmed present.
+  - The `superpowers` plugin is also installed and enabled on this machine, and its
+    `using-superpowers` skill actively injects its own "invoke a skill before every response"
+    workflow at session start — this **directly contradicts** the "deliberately not mixing in
+    other spec/design frameworks" line above. Not disabled as part of this audit (a plugin
+    disable is a user action, not something to do silently mid-session) — flagged for the user to
+    decide whether to disable it before further sessions, especially close to a live demo.
+  - Also present but irrelevant/broken, no action needed: `Notion@claude-plugins-official` (failed
+    to load — not part of this project's stack, harmless), `ralph-loop` (disabled, unused).
 - **Backup AI tooling:** Claude Code is primary (both team members have it). Codex CLI and Google
   Antigravity are the token-exhaustion fallback - both read `AGENTS.md` (confirmed: donated to the
   Linux Foundation's Agentic AI Foundation, Dec 2025, multi-vendor standard). This repo ships both
@@ -67,6 +87,99 @@ Microsoft Fabric Hackathon 2026 entry (Hyderabad Data & AI Community + India Fab
 | Fri 8/21 | Final polish, bug fixes, light presentation/talk-track outline, buffer |
 
 **Schedule-critical day: Monday (SM build)** - everything downstream depends on it, no slack.
+
+## Status (as of 2026-08-22, event day — Action Center live-bug session, continued from 8/21 evening)
+Direct continuation of the rank-mode-toggle session below (same day's work spilled past
+midnight) — this block covers everything after that one, still against live-deployed-app
+feedback, not planned tasks.
+- **[DONE]** Action Center form: removed the "Current Stock on Hand" input (no data backs it
+  anywhere in this dataset — asking for it was pure noise); `currentStockOnHand` still submits as
+  a fixed `0` since it's a required column on the locked `ReorderAction` entity. Supplier and
+  Assigned To are now fixed dropdowns instead of free text — Assigned To's 4 options are the real
+  workspace membership, live-verified via the Fabric REST API's `roleAssignments` endpoint (`az
+  rest`), not guessed; Supplier's 5 options are deliberately illustrative (this WWI sample has no
+  `Dimension.Supplier` table).
+- **[ROOT-CAUSE, FIXED]** Reorder Actions showing "Unknown date"/blank Qty and Audit Trail
+  showing blank `— : →` rows — both traced to one real bug, not the date-format issue it looked
+  like: the Rayfin SDK's `findMany()` builds a GraphQL query with **zero field selection** unless
+  `.select()` is called explicitly, silently defaulting to `id` only. All 3 `findMany()` call
+  sites switched to explicit `.select(FIELDS).where(...).execute()`. Also fixed a second bug in
+  the same category: `ReorderActionHistory`'s status-update handler was replacing the whole
+  cached row with `update()`'s response, but that mutation's own field selection is built only
+  from the input keys (`{status}`) — silently wiping every other field on every status change.
+  Now merges instead of replacing.
+- **[ROOT-CAUSE, FIXED]** That same field-selection fix exposed a second, previously-unreachable
+  bug: once `createdAt`/`changedAt` actually started returning data, the Rayfin SDK's own
+  `deserializeDabResponse` auto-converts ISO-shaped date strings to real `Date` objects — but
+  `parseApiDate` assumed its input was always a string and crashed the whole Action Center page
+  (`"e.includes is not a function"`, caught by the `ErrorFallback` boundary). Fixed to accept
+  `string | Date`; this function had zero test coverage before now despite being the second live
+  crash traced to it this session (`src/lib/utils.spec.ts` added).
+- **[ROOT-CAUSE, FIXED]** The live `429 Fabric API rate limit` error on item click, and per-row
+  sparklines in the ranked list per direct request ("remove them"): every row's sparkline fired
+  its own DAX query on scroll-into-view (`IntersectionObserver`), unthrottled — 219 rows flooded
+  the capacity and starved the item-detail query that ran right after selecting an item. Removed
+  sparklines from the ranked list entirely (`src/components/shared/sparkline.tsx` + its test
+  deleted, nothing else used the component once this went). The bigger trend chart in Item Detail
+  is unaffected — one query per selected item, not one per visible row.
+- **[ROOT-CAUSE, FIXED]** Reorder Action status dropdown reverting to "Pending Review" after
+  several changes ("did many steps... after the last step it changed back") — `ReorderActionHistory`
+  was bumping the exact same `refreshKey` fed back into its own `refreshKey` prop after every
+  status write, triggering a full self-refetch immediately after it had already merged the
+  update's result locally; a stale read racing its own write's replication could clobber a newer
+  status. Split into `listRefreshKey` (only fires on a genuinely new row, from the create form) and
+  `auditRefreshKey` (fires on both create and status-change, since the audit panel has no local
+  state to merge into). History no longer refetches itself after a status change it already knows
+  the result of.
+- **[ROOT-CAUSE, FIXED — took 3 rounds, documented so it isn't repeated]** Pareto chart y-axis
+  "not starting at 0", reported live 3 times against code that was already provably correct
+  (`scale: {zero: true}`, confirmed by reading the source twice). Round 3 finally found the real
+  cause by reading `@microsoft/fabric-visuals`' own compiled source instead of theorizing further:
+  it unconditionally injects `scale.nice=5` onto every quantitative axis on every render (its own
+  doc comment: "for cleaner tick values"), fighting this chart's explicit tick/domain config. Fixed
+  two ways: (1) `niceTicks()` in `pareto-chart-spec.ts` now computes explicit `axis.values` +
+  `scale.domain` itself, always starting at 0 by construction, covered by
+  `pareto-chart-spec.spec.ts` including a case pinned to real live data ($191M top item); (2)
+  `capabilities={{ disableNiceAxisBounds: true }}` passed to `VegaVisual` so fabric-visuals stops
+  overriding it. **Lesson for next time:** when a live report contradicts already-verified-correct
+  source code a second time, the bug is almost never in that source file — it's in a
+  library/wrapper layer between the spec and the pixels; read *that* layer's actual source before
+  attempting a third patch to the same file.
+- **[DONE]** Redesigned the rank-mode toggle (sliding segmented pill) and the theme toggle
+  (icon-based sun/moon slide, same mechanic) per direct feedback ("not a good switch"). Added an
+  auto-hide overlay scrollbar (`.scroll-overlay` utility in `global.css`) to the Overview table and
+  Action Center ranked list, replacing a scrollbar that visually overlapped the Cum.% column.
+  Ranked-list card now measures the right column's real rendered height (`ResizeObserver`) and
+  stretches to match it instead of independently capping at the viewport.
+- **[FIXED]** Both the Fabric portal's own "Refresh" button and a plain browser refresh were
+  bouncing the user back to the Home page — neither can be intercepted from inside this embedded
+  SPA (both fully reload it), so the fix is on the receiving end: current page now persists to
+  `sessionStorage` and restores on mount, covering both refresh paths with one change since both
+  cause the identical full reload.
+- **[PROCESS]** Live tooling audit run 2026-08-22 (`claude plugin list` + filesystem checks) found
+  this file's own "Tooling stack" line (above, now corrected) had gone stale since 8/16 and never
+  been reconciled with the real 8/18 design-skill pivot — `dataviz`/`impeccable`/`emil-design-eng`/
+  `ponytail` don't exist on this machine under those names; the `superpowers` plugin is installed
+  and actively contradicts this project's "one coherent tooling system" decision. See the amended
+  tooling-stack bullet above for the full correction — not re-duplicated here.
+- **[OPEN]** `gsd-ui-auditor` re-run in progress (previous 8/19 audit at `docs/UI-REVIEW.md` is
+  stale — substantial rebuild since then) — check that file for the fresh score once it lands.
+- **[OPEN]** Two live product-behavior questions raised, not yet decided: whether submitting a
+  second `ReorderAction` for the same item should be hard-blocked (currently: soft-disabled until
+  you reselect the item, not a true one-per-item limit) or left as-is; whether a status change in
+  the Reorder Actions dropdown should require a confirmation step before it applies (currently:
+  instant on select). Product decisions, not bugs — need the user's call, not a unilateral fix.
+- **[OPEN]** Presentation deck for tomorrow's demo — not yet built. `docs/talk-track.md` (from
+  8/19) is the source content; recommended approach is an HTML slide deck built directly (doable
+  right now, no external tool needed) rather than NotebookLM (better suited to an audio
+  overview/podcast than a click-through demo deck) — awaiting the user's go-ahead.
+- Verify: 102/102 tests (up from 92 at start of this session's block — added `utils.spec.ts` and
+  `pareto-chart-spec.spec.ts`, both regression tests for real production bugs that had zero prior
+  coverage), `tsc --noEmit`/`npm run lint` clean vs the documented baseline, `npm run build` clean,
+  every change committed in small units and pushed to `rebuild/pareto-thesis`
+  (`030fc0f`..`6e8ad62`), each deployed immediately after (`npx rayfin up`) — last deploy
+  `deploy-20260821180802`, live bundle hash confirmed matching the local build via a direct
+  `index.html` fetch (not assumed).
 
 ## Status (as of 2026-08-21, rank-mode toggle session — evening)
 Full detail in `docs/feedback-backlog-2026-08-21.md` — this session ran almost entirely off
