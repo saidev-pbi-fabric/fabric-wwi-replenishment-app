@@ -1,14 +1,19 @@
 # Fabric WWI Replenishment App — UI Review
 
-**Audited:** 2026-08-19
-**Baseline:** No UI-SPEC.md exists (not a GSD-managed project). Audited against the abstract 6-pillar
-standards plus this project's own design contract: `docs/wireframe-design-brief.md` (industrial
-control-room tone, severity-rail signature motif, IBM Plex typography) and the locked design tokens
-in `src/global.css`.
-**Screenshots:** Not captured — per task scope, this is a code-only audit of the actual source
-(component TSX/CSS, chart spec JSON, `global.css` tokens), even though a dev server was detected
-live at `http://localhost:5173` during this session. All findings below are read directly from
-source, not inferred.
+**Audited:** 2026-08-22 (re-audit of the 2026-08-21 mockup-fidelity rebuild, branch `rebuild/pareto-thesis`)
+**Baseline:** No UI-SPEC.md exists. Audited against `docs/mockup-reference.html` (the locked
+ground-truth HTML/CSS this rebuild was built against verbatim) plus the abstract 6-pillar
+standards and the locked design tokens in `src/global.css`.
+**Screenshots:** Not captured — no dev server detected on `:5173`/`:3000` this session (code-only
+audit), consistent with the project's own "don't self-check with Playwright by default" note.
+All findings are read directly from source.
+
+**Context:** This supersedes the 2026-08-19 review (19/24) — the app has been substantially
+rebuilt since (sparklines removed from the ranked list, ranked list now shares Overview's Pareto
+dataset instead of a second query, ABC value-tier replaced Lead Time Priority Tier as the
+color/filter axis, new sliding-pill rank-mode + theme toggles, dropdown fields on the reorder
+form, y-axis chart fixes). All 3 priority findings from the last review were independently
+re-checked and confirmed fixed — see "Carried-forward fixes, verified" below.
 
 ---
 
@@ -16,230 +21,196 @@ source, not inferred.
 
 | Pillar | Score | Key Finding |
 |--------|-------|-------------|
-| 1. Copywriting | 3/4 | Every real-app string is specific and on-voice; the one gap is the untouched, generic `ErrorFallback.tsx` crash screen ("Something went wrong" / "Try Again"). |
-| 2. Visuals | 4/4 | Clear focal points on all 3 pages, every icon-only button has an `aria-label`, severity-rail motif applied consistently as the signature detail. |
-| 3. Color | 2/4 | Light-mode neutral ramp and severity hex values are low-contrast/desaturated vs. dark mode — the exact "looks plain" complaint already on record, unresolved. |
-| 4. Typography | 3/4 | Locked IBM Plex 3-family / 100-based type scale used consistently everywhere except 2 untouched template files that fall back to default Tailwind sizes. |
-| 5. Spacing | 3/4 | Custom 4px-grid `spacing-100`..`800` scale used almost everywhere; same 2 template files break the pattern with raw Tailwind `p-4`/`mb-2`/etc. |
-| 6. Experience Design | 4/4 | Every async component has real loading/error/empty states via a shared `useQueryPanel` hook, plus a refresh-in-place pattern that avoids blank-skeleton flicker on filter/selection change. |
+| 1. Copywriting | 4/4 | Every string is specific and on-voice, including the crash screen — the one gap flagged last time (`ErrorFallback.tsx`) is fixed. |
+| 2. Visuals | 3/4 | Three new pill-style controls (Rank Mode toggle, ABC tier chips, Chart Window A/B toggle) don't carry the app's own `focus-visible:ring` treatment that every other interactive control uses. |
+| 3. Color | 3/4 | Light-mode palette fix from last review confirmed live in `global.css`; new nit: the item-detail sales-trend chart is hardcoded `text-critical` (red) for every item regardless of actual trend direction. |
+| 4. Typography | 3/4 | Font-weight discipline regressed from 1 weight (all `font-semibold`) to 4 (`font-normal/medium/semibold/bold`) across the rebuilt components — organized, not sprawl, but worth a note. |
+| 5. Spacing | 4/4 | The two previously-flagged un-migrated files (`ErrorFallback.tsx`, `auth-gate.component.tsx`) now use the token scale throughout — fully fixed. |
+| 6. Experience Design | 3/4 | Excellent state coverage app-wide; the one live write-back field (reorder Quantity) has no `min`/`step` guard, so the demo's write-back moment can accept a negative or fractional quantity. |
 
-**Overall: 19/24**
+**Overall: 20/24** (up from 19/24)
 
 ---
 
 ## Top 3 Priority Fixes
 
-1. **Light-mode palette reads flat and the severity rail loses its punch** — Judges will very
-   likely see light mode first (system default, no toggle interaction needed), and this is the
-   mode the team has already flagged as "looks plain, colors not great." Root cause, read directly
-   from `src/global.css`: the light-theme neutral ramp only spans `#ffffff` → `#f0f0f0` → `#e0e0e0`
-   (background/muted/border), a ~12% value range with almost no separation between card, muted
-   surface, and border — the app looks like one flat plane instead of layered cards. Compounding
-   this, the light-mode severity triad (`--color-critical: #c50f1f`, `--color-at-risk: #9a6700`,
-   `--color-on-track: #0e700e`) is dark and desaturated compared to the vivid dark-mode equivalents
-   (`#f1707b`, `#e0a828`, `#54c454`) — on a 4px-wide rail border, that reads as muddy rather than
-   confident, undercutting the app's one signature visual detail. Fix: widen the light-mode neutral
-   steps (e.g. `background #ffffff`, `card #ffffff`, `secondary #f7f7f8`, `muted #eef0f2`,
-   `border #d6d9dd`) for real depth, and brighten the light-mode severity hexes toward more
-   saturation while keeping AA text contrast. File: `src/global.css:20-56`.
+1. **Reorder Quantity field has no floor or step guard — the one write-back moment in the demo can silently accept garbage input.**
+   `src/components/action-center/reorder-action-form.tsx:156-161` — the Quantity `<input type="number">`
+   has no `min`, `step`, or client-side clamp before `getRayfinClient().data.ReorderAction.create()`
+   is called (line 122). A judge or presenter fat-fingering the field (`-50`, `3.75`) writes it
+   straight into the audit-tracked record with no guard rail, during exactly the feature the
+   talk-track is built around. Fix: add `min={0}` and `step={1}` to the input, and either
+   `Math.max(0, Math.round(...))` the value on submit or disable submit while invalid — a
+   five-minute fix with outsized demo risk if skipped.
 
-2. **The one screen left on generic copy and default styling is the app's crash screen** —
-   `src/ErrorFallback.tsx`, wired as the app-wide `<ErrorBoundary>` fallback in `src/main.tsx:52`,
-   is the single component in the codebase still using un-migrated Tailwind defaults (`text-sm`,
-   `text-lg`, `p-4`, `mb-2`, `mb-4`) instead of the locked `font-heading`/`font-base` families and
-   `text-*`/`spacing-*` token scale used everywhere else, and its copy ("Something went wrong" /
-   "Try Again") is exactly the generic pattern the copywriting pillar flags. If anything crashes
-   during a live demo, the one screen the judges see breaks both the visual system and the app's
-   otherwise specific, confident voice. Fix: apply `font-heading`/`font-base`, the `text-200..600`
-   scale, and `spacing-*` tokens; reword to something on-voice (e.g. "Something broke while loading
-   the dashboard" + a "Reload" action). Apply the same fix to the parallel un-migrated block in
-   `src/components/auth-gate.component.tsx:44-57` (the "Can't open this app outside Fabric" state),
-   which has the identical default-Tailwind gap. Files: `src/ErrorFallback.tsx:16-30`,
-   `src/components/auth-gate.component.tsx:44-57`.
+2. **New pill-style toggles/filters don't carry the app's own focus-ring treatment.**
+   Every other interactive control in the app (`NavTab` — `src/App.tsx:128-134`, `ThemeToggle` —
+   `src/App.tsx:200`, the ranked-list search input and rows — `ranked-list-panel.tsx:118,187`) uses
+   the consistent `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring` pattern.
+   Three controls added in this rebuild don't: the Rank Mode toggle buttons
+   (`src/App.tsx:168-181`), the ABC tier filter chips (`ranked-list-panel.tsx:121-136`), and the
+   Chart Window A/B toggle (`pareto-risk-view.tsx:256-269`). They still get a browser-default focus
+   outline (not fully inaccessible), but it's visually inconsistent with the rest of the app and
+   worth matching before a judge tabs through the UI. Fix: reuse the same `focus-visible:ring-2
+   focus-visible:ring-ring focus-visible:ring-offset-2` classes already defined on `NavTab`.
 
-3. **Long WWI stock item names truncate with no way to see the full name** — Real WWI item names
-   are long and descriptive (e.g. "Shipping carton (Brown) 413x285x187mm"); the Action Center
-   ranked list (`ranked-list-panel.tsx:185`) and the landing page's "ranked by risk" glimpse
-   (`landing-page.tsx:121`) both apply `truncate` with zero fallback — no `title` attribute anywhere
-   in `src/` (`grep -rn "title=" src` returns no matches) and no tooltip. A judge scanning the list
-   can't tell what a cut-off item actually is without opening the detail panel. Fix: add
-   `title={row.name}` (or a proper tooltip component, already available via the design system) to
-   both truncated spans — a one-line, low-risk fix. Files: `src/components/action-center/ranked-list-panel.tsx:185`,
-   `src/components/landing/landing-page.tsx:121`.
+3. **Item-detail sales-trend chart is always rendered in alarm-red, regardless of the item's actual trend.**
+   `src/components/action-center/item-detail-panel.tsx:178` hardcodes `className="text-critical"`
+   on `<ItemTrendChart>` for every selected item. The same panel's own rationale sentence (line
+   116) correctly distinguishes "accelerating" / "steady" / "declining" — but the chart next to it
+   is red no matter which. A judge who reads the rationale text and then looks at a "declining" or
+   Tier-C item's chart glowing red sees a mismatch that undercuts the app's own severity-color
+   system. Fix: tie the chart's color class to `trendWord` (e.g. `on-track` for declining/steady,
+   `critical` only for accelerating) or switch it to a neutral `text-foreground`/`text-primary`
+   since it isn't itself a severity signal.
+
+---
+
+## Carried-forward fixes, verified
+
+- **Light-mode neutral ramp** (previously the #1 finding) — `global.css:20-46` now has the exact
+  widened steps recommended last time (`background #ffffff`, `secondary #f7f7f8`,
+  `muted #eef0f2`, `accent #eef1f4`, `border #d6d9dd`). Confirmed fixed.
+- **`ErrorFallback.tsx` generic copy/raw Tailwind** (previously #2) — now reads "Something broke
+  while loading the dashboard" / "Reload" and uses the token spacing/type scale throughout
+  (`p-400`, `mb-100`, `mb-400`, `font-heading`, `text-400`). Confirmed fixed. One tiny residual:
+  `auth-gate.component.tsx:22`'s "Connecting to Fabric…" loading state still uses raw `text-sm`
+  instead of `text-200` — cosmetic, shown for a fraction of a second during embed load, not worth
+  a top-3 slot.
+- **Truncated item names with no fallback** (previously #3) — `title={row.stockItem}` is now
+  present on every truncated name span (`ranked-list-panel.tsx:198`, `pareto-risk-view.tsx:327`).
+  Confirmed fixed.
 
 ---
 
 ## Detailed Findings
 
-### Pillar 1: Copywriting (3/4)
+### Pillar 1: Copywriting (4/4)
 
-**Strengths:**
-- Every empty state is specific and contextual, not generic: "No detail found for this item."
-  (`item-detail-panel.tsx:63`), "No at-risk items right now." / `No at-risk items match "{tier}"
-  lead time.` (`ranked-list-panel.tsx:161-162`, `top-at-risk-list.tsx:162-163`), "No reorder
-  actions recorded yet for this item." (`reorder-action-history.tsx:82`), "No KPI data available
-  yet." (`kpi-strip.tsx:130`).
-- CTAs are specific, not generic: "Open the Dashboard" (`landing-page.tsx:94`), "Submit Reorder
-  Action" / "Submitting…" (`reorder-action-form.tsx:203`), "View all" on the drill-through tile
-  (`kpi-strip.tsx:200`). No bare "Submit"/"OK"/"Click Here" found anywhere (`grep -rn
-  "Submit\|Click Here\|\bOK\b\|Cancel\|\bSave\b" src` returns zero generic matches — the only
-  "Submit"-adjacent hits are the specific "Submit Reorder Action" label and internal
-  `submitState`/`onSubmitted` identifiers, not UI copy).
-- Error states surface the real underlying message rather than a blanket string: "Couldn't load
-  KPI strip: {message}", "Couldn't load at-risk items: {message}", "Couldn't submit: {error}" —
-  consistent pattern across all 7 query-backed components.
-- The landing page's disclosed-proxy callout ("risk here is a **disclosed proxy**...not a literal
-  stock count") is honest, specific domain copy — a genuinely strong choice for a hackathon judge
-  audience.
+- No generic patterns found anywhere (`grep -rn "Submit\b|Click Here|>OK<|>Cancel<|>Save<" src`
+  returns only the specific "Submit Reorder Action" label and an internal `handleSubmit`
+  identifier — no bare generic strings).
+- Empty/error states remain specific and contextual per component: "No items match \"{query}\".",
+  "No items in Tier {X}.", "No reorder actions recorded yet for this item.", "No changes recorded
+  yet for this item.", "Couldn't load the audit log: {message}".
+- The item-detail rationale sentence (`item-detail-panel.tsx:121-124`) is genuinely strong,
+  specific domain copy composed client-side from fields already on screen — reads as authored,
+  not templated.
+- The disclosure copy ("No stock-on-hand figure exists anywhere in this dataset…",
+  `item-detail-panel.tsx:197-202`) is honest and specific — a real strength for a hackathon judge
+  audience who will ask exactly this question.
+- `ErrorFallback.tsx` — the one gap from the last audit — is fixed (see "Carried-forward fixes"
+  above).
 
-**Gap:**
-- `src/ErrorFallback.tsx:18,26` — "Something went wrong" / "Try Again" are exactly the generic
-  patterns this pillar's audit method flags (`grep -rn "went wrong\|try again" src` matches only
-  this file). It's the app-wide `<ErrorBoundary>` fallback (`main.tsx:52`), so it's user-facing,
-  not dead code.
+### Pillar 2: Visuals (3/4)
 
-### Pillar 2: Visuals (4/4)
+- Clear per-page focal point retained: landing hero, Overview's KPI strip → Pareto chart → table,
+  Action Center's list/detail split.
+- Icon-only controls all have labels: `ThemeToggle` (`App.tsx:198`), status `sr-only` label
+  (`reorder-action-history.tsx:147`), search input `aria-label` (`ranked-list-panel.tsx:117`),
+  cutoff slider `aria-label` (`pareto-risk-view.tsx:235`). No bare unlabeled icon-only control
+  found.
+- Severity-rail motif still applied consistently as the one signature detail — KPI tile left
+  border, ranked-list row dot, Pareto table row dot — now driven by the new ABC value tier
+  (`VALUE_TIER_RAIL_CLASS` in `src/lib/severity.ts`) instead of the retired Lead Time tier, and
+  matches the locked mockup's `rail critical`/`rail at-risk` KPI classes exactly
+  (`docs/mockup-reference.html:258-260` vs `kpi-strip.tsx:174-196`) — verified no drift.
+- **Gap:** the Rank Mode toggle (`App.tsx:168-181`), ABC tier filter chips
+  (`ranked-list-panel.tsx:121-136`), and Chart Window A/B toggle (`pareto-risk-view.tsx:256-269`)
+  — all three new/rebuilt this cycle — don't carry the `focus-visible:ring` treatment used
+  everywhere else in the app. See Top 3 Fix #2.
+- Minor: the reorder form's Supplier dropdown is honestly disclosed as illustrative/unbacked by
+  real data in a code comment (`rayfin-client.ts:77-81`) — correct call given the loaded WWI
+  sample has no `Dimension.Supplier` table, not a visual gap, just noted for completeness.
 
-- Clear focal point per page: landing hero + CTA, Overview's KPI strip → chart → ranked list
-  reading order, Action Center's master-detail split. No competing visual weight.
-- Every icon-only button carries `aria-label`: theme toggle (`App.tsx:106`), drill-through modal
-  close (`top-at-risk-drill-through.tsx:111`), status-update `sr-only` label
-  (`reorder-action-history.tsx:116`), filter dropdowns, refresh spinners (`aria-label="Updating"`).
-  10 `aria-label` occurrences found across 7 icon-bearing button/interactive elements — no bare
-  icon-only control found without one.
-- Visual hierarchy achieved through the type scale (hero → heading → body → label) plus the
-  severity-rail motif as a consistent left-edge accent on tiles/rows/panels — one motif, reused
-  everywhere per the design brief's own instruction, not reinvented per component.
-- Checked the task's flagged open item directly: only 1 of 4 KPI tiles animates its icon on hover
-  (`kpi-strip.tsx:179-188`). This is not an inconsistency — all 4 tiles share the same base
-  `whileHover={{ y: -2 }}` card-lift affordance (`kpi-strip.tsx:162`), and the code comment
-  explicitly reasons that animating the other 3 icons would imply clickability they don't have
-  (false affordance). This is correct interaction design, not a visual gap.
-- Page 2 (Action Center) was flagged as a risk for lagging Page 1's interaction pass; in code it is
-  not lagging — it has the same icon-header treatment (`AlertTriangle`, `PackagePlus`, `History`),
-  the same refresh-dimming pattern, and the same aria-labeled controls as Page 1. No visible gap
-  found between the two pages at the code level.
+### Pillar 3: Color (3/4)
 
-### Pillar 3: Color (2/4)
-
-- Accent/brand usage is tightly controlled: only 3 `text-primary`/`bg-primary`/`border-primary`
-  occurrences in the whole `src/` tree (`App.tsx` nav tab, landing CTA, reorder submit button) —
-  well under the 10-element overuse threshold, and matches the design brief's instruction to keep
-  `--color-primary` as the neutral brand color, not a domain signal.
-  Severity-token usage (`text-critical`/`text-at-risk`/`text-on-track` and their `border-l-*`
-  siblings via `RAIL_CLASS`/`LEAD_TIME_RAIL_CLASS`/`LEAD_TIME_DOT_CLASS` in `src/lib/severity.ts`
-  and `kpi-strip.tsx`) is centralized through shared lookup tables rather than scattered ad hoc
-  class strings — good discipline, one source of truth per severity mapping.
-- Hardcoded hex only appears once, in `top-at-risk-list.tsx:29-31`, and is explicitly justified in
-  a code comment: Vega renders to SVG and can't resolve `var(--color-*)`, so the severity scale is
-  duplicated as literal hex there, kept in sync with `global.css` by comment convention. Legitimate
-  exception, not an ungoverned hardcode.
-- **Known, unresolved issue** (previously reported by the user, not yet fixed — see project
-  context): `global.css:20-56`'s light-theme tokens compress background/card/popover (`#ffffff`),
-  secondary (`#fafafa`), muted (`#f0f0f0`), accent (`#f5f5f5`), and border (`#e0e0e0`) into a very
-  narrow value range, giving light mode low structural contrast between surfaces. The severity
-  triad is also markedly darker/duller in light mode (`#c50f1f`/`#9a6700`/`#0e700e`) than in dark
-  mode (`#f1707b`/`#e0a828`/`#54c454`), which reads as murky on the thin 4px rail that is this
-  app's signature visual device. This is the direct, evidenced cause of the "looks plain, colors
-  not great" complaint on record.
-- The pre-existing CVD (color-vision-deficiency) finding from `tasks/todo.md` T3.3 — the
-  red/amber/green severity triad fails a ΔE-2.0 protanopia check — remains accepted-as-is per that
-  decision, and is genuinely mitigated: every severity-rail usage found in this audit is always
-  paired with a text label ("Short"/"Medium"/"Long", tier names, rank numbers), never color alone.
-  Not re-litigated here, just confirmed still true in the current code.
+- Light-mode fix confirmed live (see "Carried-forward fixes").
+- Accent discipline maintained: `grep -rn "text-primary|bg-primary|border-primary" src --include=*.tsx`
+  returns a small, deliberate set (nav tab, landing CTA/step numerals, reorder submit button, rank
+  input accent, cutoff slider highlight) — no overuse.
+- No hardcoded hex found in any `.tsx` file (`grep -rn "#[0-9a-fA-F]{3,8}" src --include=*.tsx`
+  returns zero matches). The one hex duplication that exists is in `pareto-chart-spec.ts`
+  (`CUTOFF_COLOR_RANGE`, `CUTOFF_RULE_COLOR`) — a `.ts` file, not `.tsx`, and explicitly documented
+  as a required exception because Vega-Lite's SVG renderer can't resolve `var(--color-*)`. Values
+  are kept in sync with `global.css` by comment convention — same legitimate exception pattern as
+  the last audit found, still holding.
+- **Gap:** `item-detail-panel.tsx:178` passes `className="text-critical"` to `<ItemTrendChart>`
+  unconditionally — every item's sales-trend line renders in the same alarm-red regardless of
+  whether that item's trend is accelerating, steady, or declining. See Top 3 Fix #3.
+- The CVD (color-vision-deficiency) finding accepted-as-is in the last review — the red/amber/green
+  severity triad fails a ΔE-2.0 protanopia check — remains true and remains mitigated the same way:
+  every severity-rail/tier usage is paired with a text label (tier letter, rank number, tier chip
+  label), never color alone. Not re-litigated, just re-confirmed still true.
 
 ### Pillar 4: Typography (3/4)
 
-- `global.css:86-97` defines a locked, documented 100-based type scale (`text-100`..`text-hero-1000`)
-  and 3 font families (`--font-heading` = IBM Plex Sans Condensed, `--font-base` = IBM Plex Sans,
-  `--font-numeric`/`--font-monospace` = IBM Plex Mono) per the design brief. In practice, `.tsx`
-  usage is disciplined: `text-200`/`300`/`400`/`500`/`600` for body/label/heading tiers plus
-  `text-800` once for the landing hero — a deliberate semantic scale, not sprawl.
-- Font weight is extremely disciplined: `font-semibold` is the *only* weight utility used anywhere
-  in `.tsx` (19 occurrences, all `font-semibold`, applied to headings/labels/tile values); body text
-  relies on the unstyled default weight. Two weights total, at the low end of even the abstract
-  "≤2 weights" guideline.
-- `font-numeric` (IBM Plex Mono) is correctly reserved for KPI values, stock counts, and detail-panel
-  numeric fields (`kpi-strip.tsx:193`, `item-detail-panel.tsx:151`) — matches the brief's intent
-  ("tabular figures for KPI values and stock counts") exactly, not applied to body prose.
-- **Gap:** `src/ErrorFallback.tsx` and part of `src/components/auth-gate.component.tsx` (the
-  unauthenticated/"Can't open this app outside Fabric" branch, lines 44-57) use raw Tailwind
-  defaults (`text-sm`, `text-lg`) with no `font-heading`/`font-base` class at all — these two
-  screens silently fall back to the system sans-serif stack instead of IBM Plex, breaking
-  typographic consistency on the two screens a user sees when something goes wrong.
+- Type scale usage remains disciplined: `text-100`..`text-600` plus `text-800` once for the
+  landing hero, matching `global.css:88-97`'s locked 100-based scale — no drift into raw Tailwind
+  size classes except the one noted below.
+- **Gap:** font-weight usage widened since the last audit. The last review found `font-semibold`
+  as the *only* weight utility in `.tsx` (19 occurrences). This audit finds 4 distinct weights in
+  use: `font-bold` (App.tsx logo mark, landing hero, Pareto headline numbers), `font-semibold`
+  (headings/labels, still the majority), `font-medium` (nav tabs, rank-toggle labels), and
+  `font-normal` (Pareto table header cells, explicitly overriding a default). Each use is
+  purposeful and hierarchy-driven, not random, but it's now above the abstract "≤2 weights"
+  guideline and a real change from the previous audit's tighter baseline — worth a pass to
+  consolidate to 2-3 weights if there's time, not urgent for tomorrow.
+- `font-numeric` (IBM Plex Mono) remains correctly reserved for KPI/stat values and table numeric
+  columns — no drift there.
+- One raw Tailwind leftover: `auth-gate.component.tsx:22` uses `text-sm` instead of `text-200` —
+  see "Carried-forward fixes," cosmetic only.
 
-### Pillar 5: Spacing (3/4)
+### Pillar 5: Spacing (4/4)
 
-- `global.css:71-85` defines a strict 4px-grid `--spacing-100`..`800` scale (plus `-nudge` variants
-  at `base − 2px`). A full grep of `p-/px-/py-/m-/mx-/my-/gap-` usage across every `.tsx` file
-  under `src/components/` and `src/App.tsx` shows near-total adherence — the scale token (e.g.
-  `p-400`, `gap-300`, `px-200 py-100-nudge`) is the spacing unit in every production component
-  audited (kpi-strip, sales-trend-chart, top-at-risk-list, top-at-risk-drill-through,
-  ranked-list-panel, item-detail-panel, reorder-action-form, reorder-action-history, landing-page,
-  action-center, App.tsx).
-- Arbitrary bracket values (`min-h-[480px]`, `max-w-[1400px]`, `max-h-[640px]`, `max-h-[80vh]`,
-  `max-w-[900px]`, `h-[240px]`, `h-[120px]`, `h-[400px]`) are used exclusively for structural
-  sizing constraints (card min-heights, modal max-widths, skeleton placeholder heights) — a
-  legitimate, deliberate use case distinct from spacing/padding, not scale drift.
-- **Gap:** the same two un-migrated files break the pattern — `ErrorFallback.tsx:16-24` uses raw
-  Tailwind `p-4`, `p-3`, `px-4 py-2`, `mb-2`, `mb-4` (Tailwind's default numeric scale, not the
-  project's named `spacing-*` tokens), and `auth-gate.component.tsx:46-53`'s unauthenticated view
-  does the same (`p-4`, `mb-2`, `mb-4`). The values happen to land close to the token grid
-  numerically, but bypass the named system, so a future token change (e.g. re-tuning `spacing-400`)
-  won't propagate to these two screens.
+- Full adherence to the `--spacing-100`..`800` token scale across every rebuilt component audited
+  (`App.tsx`, `pareto-risk-view.tsx`, `kpi-strip.tsx`, `ranked-list-panel.tsx`,
+  `item-detail-panel.tsx`, `reorder-action-form.tsx`, `reorder-action-history.tsx`,
+  `reorder-action-audit-log.tsx`, `landing-page.tsx`).
+- Arbitrary bracket values (`min-h-[480px]`, `h-[calc(100vh-200px)]`, `max-w-[220px]`,
+  `min-w-[64px]`, `w-[28px]`/`w-[72px]`/`w-[92px]` for fixed-width table columns, `h-[14px] w-[4px]`
+  for the severity rail dot) remain exclusively structural sizing, not spacing drift — same
+  legitimate pattern the last review found, still holding, and slightly more of them now due to
+  the new fixed-width table columns in `ranked-list-panel.tsx`/`reorder-action-audit-log.tsx` —
+  all justified by real layout constraints (column alignment), not arbitrary padding choices.
+- The two previously-flagged un-migrated files (`ErrorFallback.tsx`, `auth-gate.component.tsx`)
+  now use `p-400`, `mb-100`, `mb-400` (token scale) throughout instead of raw Tailwind `p-4`/`mb-2`.
+  Fully fixed — no more spacing-scale exceptions found anywhere in `src/`.
 
-### Pillar 6: Experience Design (4/4)
+### Pillar 6: Experience Design (3/4)
 
-- Every async, query-backed component (`KpiStrip`, `SalesTrendChart`, `TopAtRiskList`,
-  `TopAtRiskDrillThrough`, `RankedListPanel`, `ItemDetailPanel`, `ReorderActionForm`,
-  `LandingPage`'s glimpse section) resolves through the shared `useQueryPanel` hook
-  (`src/hooks/use-query-panel.ts`), which normalizes every query result to exactly one of
-  `loading | refreshing | error | empty | ready` — a single source of truth for state coverage
-  rather than each component reinventing its own branching (an architecture fix already applied
-  during a prior `/agent-skills:review` pass per `tasks/todo.md` T5.2).
-- Loading state: skeleton/pulse placeholders sized to match the eventual content
-  (`animate-pulse` blocks at matched `min-h-*`), not a generic spinner-only state.
-- Error state: every error renders `role="alert"` with the real underlying message interpolated
-  ("Couldn't load KPI strip: {message}", etc.) — accessible and informative, not a blank failure.
-- Empty state: contextual per component and per active filter (e.g. `ranked-list-panel.tsx:160-162`
-  distinguishes "No at-risk items right now." from `No at-risk items match "{tier}" lead time.`
-  depending on whether a filter is active) — this exact filter-aware empty state was a real bug
-  fix documented in `tasks/todo.md` T6.1's follow-up (previously a blank box with no way to change
-  the filter).
-- Refresh-in-place: filter/selection changes keep the previous result visible at `opacity-50`
-  instead of swapping to a blank skeleton (`ranked-list-panel.tsx:152-156`,
-  `item-detail-panel.tsx:100-104`, `top-at-risk-list.tsx:158`) — a real UX fix, not incidental,
-  explicitly traced in code comments to a user complaint about the transition "going blank."
-  A `Loader2` spinner with `aria-label="Updating"` communicates the in-flight state without
-  hiding content.
-  Disabled state on the reorder submit button while submitting and after success
-  (`reorder-action-form.tsx:198`, `disabled={submitState === "submitting" || submitState ===
-  "success"}`) prevents accidental double-submit — the one write action in the app is guarded.
-- No destructive-action confirmation gap: the only status-change action (`ReorderAction.status`
-  dropdown) is non-destructive and reversible (status values, including "Dismissed," are a
-  soft-delete per the project's data model — no hard delete exists anywhere), so a confirmation
-  dialog isn't warranted here.
-- Caveat (informational, not scored against this pillar): full live-Fabric-embedded round-trip
-  verification of the write-back create/update paths (T4.1, T5.2, T5.3 in `tasks/todo.md`) remains
-  deferred to a real portal session — this is an environment/testing limitation already tracked by
-  the team, not a gap in the UI's own state-handling design, which is what this pillar audits.
+- Every query-backed component still resolves through the shared `useQueryPanel` hook or an
+  equivalent local `loading | ready | error | empty` state machine (`ReorderActionHistory`,
+  `ReorderActionAuditLogPanel` intentionally use their own local version since they're
+  imperative-mutation components, not pure query panels — consistent, not a regression).
+- Refresh-in-place is preserved and, notably, a real race condition was found and fixed this
+  rebuild cycle: `action-center.tsx:35-43`'s comment documents that `ReorderActionHistory`'s
+  optimistic merge-not-replace update (`reorder-action-history.tsx:69`) is deliberately *not*
+  followed by a forced refetch, because an earlier version's refetch could race its own write and
+  clobber fresh state with stale data — a genuine correctness fix, not just polish.
+  Disabled-state guard on the reorder submit button remains (`reorder-action-form.tsx:218`).
+- Loading/error/empty states remain comprehensive and specific across all 8 async-backed
+  components audited, each with its own contextual message (see Pillar 1 examples).
+- Audit trail (`ReorderActionAuditLogPanel`) is a genuinely strong addition since the last audit —
+  a full, append-only, human-readable change log per item, not just a raw table.
+- **Gap:** the Quantity `<input type="number">` in `reorder-action-form.tsx:156-161` has no `min`,
+  `step`, or submit-time validation — the only numeric write-back field in the app can accept a
+  negative or fractional value with no guard. See Top 3 Fix #1.
 
-Registry audit: `components.json` exists (shadcn initialized, `iconLibrary: lucide`), but no
-UI-SPEC.md exists to declare third-party registries, so per the registry-audit gate this check does
-not apply — skipped, no Registry Safety section added.
+Registry audit: `components.json` exists (shadcn initialized), but no `UI-SPEC.md` exists to
+declare third-party registries, so per the registry-audit gate this check does not apply —
+skipped, no Registry Safety section added (same as the last audit).
 
 ---
 
 ## Files Audited
 
-- `src/App.tsx`, `src/main.tsx`, `src/ErrorFallback.tsx`, `src/components/auth-gate.component.tsx`
-- `src/global.css`, `components.json`
-- `src/components/overview/kpi-strip.tsx`, `sales-trend-chart.tsx`, `top-at-risk-list.tsx`,
-  `top-at-risk-drill-through.tsx`
-- `src/components/action-center/action-center.tsx`, `ranked-list-panel.tsx`,
-  `item-detail-panel.tsx`, `reorder-action-form.tsx`, `reorder-action-history.tsx`
+- `src/App.tsx`, `src/ErrorFallback.tsx`, `src/components/auth-gate.component.tsx`, `src/global.css`
 - `src/components/landing/landing-page.tsx`
-- `src/hooks/use-query-panel.ts`
-- `src/lib/severity.ts`
-- `docs/wireframe-design-brief.md`, `docs/design-and-dax-references.md`, `tasks/todo.md`,
-  `CLAUDE.md` (project status log)
+- `src/components/overview/kpi-strip.tsx`, `pareto-risk-view.tsx`, `pareto-chart-spec.ts`
+- `src/components/action-center/action-center.tsx`, `ranked-list-panel.tsx`,
+  `item-detail-panel.tsx`, `item-trend-chart.tsx`, `reorder-action-form.tsx`,
+  `reorder-action-history.tsx`, `reorder-action-audit-log.tsx`
+- `src/lib/severity.ts`, `src/lib/rayfin-client.ts` (constants only)
+- `docs/mockup-reference.html` (ground-truth comparison), `docs/UI-REVIEW.md` (prior audit,
+  compared for carried-forward fix verification), `CLAUDE.md` (project status log)
