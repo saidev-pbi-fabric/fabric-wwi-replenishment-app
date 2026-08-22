@@ -8,8 +8,15 @@
    `useCssTheme()` and project them into a JS theme object (Vega's SVG output
    cannot resolve `var()` references). */
 @theme static {
-  --color-brand:            #0f6cbd;  /* bar/area fills, button-like brand surfaces */
-  --color-brand-foreground: #0f6cbd;  /* line/point marks, branded text & emphasis */
+  /* Hackathon-differentiation accent, 2026-08-22: swapped off Fluent blue to a bold, non-blue
+     violet on purpose — most competing Fabric/Power BI apps default to blue, so this is a
+     deliberate stand-out choice, not a random pick. Solid color, not a gradient — the app's own
+     `industrial-brutalist-ui` skill bans gradients outright, and `design-taste-frontend` flags
+     purple *gradients* specifically as the single most-recognizable AI-slop tell. A saturated
+     solid accent gets the "stand out" goal without that risk. Contrast-checked against every
+     surface it touches (see the .dark block below and the light --color-primary line for ratios). */
+  --color-brand:            #9b30d9;  /* bar/area fills, button-like brand surfaces */
+  --color-brand-foreground: #9b30d9;  /* line/point marks, branded text & emphasis */
   --color-hover:            #f5f5f5;  /* row/cell hover surface in DataGrid + visuals */
 }
 
@@ -26,7 +33,7 @@
   --color-popover: #ffffff;                                          /* popover/dropdown surfaces */
   --color-popover-foreground: #242424;
 
-  --color-primary: #0f6cbd;                                          /* primary actions & buttons */
+  --color-primary: #9b30d9;                                          /* primary actions & buttons — violet accent, 5.50:1 vs white text/bg */
   --color-primary-foreground: #ffffff;
 
   --color-secondary: #f7f7f8;                                        /* secondary actions */
@@ -43,7 +50,7 @@
 
   --color-border: #d6d9dd;                                           /* default border */
   --color-input: #d6d9dd;                                            /* input field borders */
-  --color-ring: #0f6cbd;                                             /* focus rings */
+  --color-ring: #9b30d9;                                             /* focus rings */
 
   /* Severity scale — domain signal, additive to the theme above.
      Signature detail: left-edge severity rail on at-risk rows/tiles/panels.
@@ -145,45 +152,62 @@
 
 @layer base {
   .dark {
-    /* Color tokens — dark theme */
-    --color-background: #292929;
-    --color-foreground: #ffffff;
+    /* Color tokens — dark theme. Palette pixel-sampled 2026-08-22 from a reference dashboard
+       screenshot (deep-navy "telemetry" dark mode), not hand-picked — see the commit message for
+       the extraction method. Every severity/status hue was contrast-checked against its own
+       foreground (WCAG AA, 4.5:1) before landing here; dark-on-light foreground text was used for
+       critical/at-risk/on-track/destructive because white text fails AA against all four of the
+       sampled accent hues (white-on-critical is 3.50, white-on-at-risk is 2.05, white-on-on-track
+       is 2.27 — all below the 4.5 threshold), following the same light-bg/dark-text convention
+       the previous dark palette already used. Background/card/border/severity tokens below are
+       still from that pass, untouched since.
 
-    --color-card: #292929;
-    --color-card-foreground: #ffffff;
+       Second pass, same day: --color-primary/--color-ring/--color-brand swapped again, off the
+       reference's cyan onto a bold violet — a deliberate hackathon stand-out choice (competing
+       Fabric/Power BI apps default to blue), solid not gradient (this app's own
+       `industrial-brutalist-ui` skill bans gradients; `design-taste-frontend` flags purple
+       *gradients* specifically as the top AI-slop tell — a saturated solid sidesteps both). Two
+       shades used, same split the cyan pass already established: a deeper violet for
+       --color-primary (paired with white button text, needs 4.5:1) and a brighter one for
+       --color-ring/--color-brand (read as an accent against dark surfaces, no text pairing). */
+    --color-background: #0b0e14;
+    --color-foreground: #eff1f6;
 
-    --color-popover: #292929;
-    --color-popover-foreground: #ffffff;
+    --color-card: #131721;
+    --color-card-foreground: #eff1f6;
 
-    --color-primary: #115ea3;
+    --color-popover: #131721;
+    --color-popover-foreground: #eff1f6;
+
+    --color-primary: #8b3fc4;                                        /* deeper violet — white button text clears AA (5.82:1) */
     --color-primary-foreground: #ffffff;
 
-    --color-secondary: #1f1f1f;
-    --color-secondary-foreground: #ffffff;
+    --color-secondary: #1a1f2b;
+    --color-secondary-foreground: #eff1f6;
 
-    --color-muted: #141414;
-    --color-muted-foreground: #adadad;
+    --color-muted: #1a1f2b;
+    --color-muted-foreground: #8d93a2;
 
-    --color-accent: #3d3d3d;
-    --color-accent-foreground: #ffffff;
+    --color-accent: #1f2430;
+    --color-accent-foreground: #eff1f6;
 
-    --color-destructive: #c50f1f;
-    --color-destructive-foreground: #ffffff;
+    --color-destructive: #df6252;
+    --color-destructive-foreground: #2a100c;
 
-    --color-border: #525252;
-    --color-input: #525252;
-    --color-ring: #479ef5;
+    --color-border: #262932;
+    --color-input: #262932;
+    --color-ring: #c25ce8;                                           /* brighter violet — 5.11:1 vs card bg, 5.51:1 vs page bg */
 
-    --color-critical: #f1707b;
-    --color-critical-foreground: #1a0000;
-    --color-at-risk: #e0a828;
-    --color-at-risk-foreground: #1a1200;
-    --color-on-track: #54c454;
-    --color-on-track-foreground: #001a00;
+    --color-critical: #df6252;
+    --color-critical-foreground: #2a100c;
+    --color-at-risk: #eaa945;
+    --color-at-risk-foreground: #2f2510;
+    --color-on-track: #5cbf84;
+    --color-on-track-foreground: #0f2618;
 
-    --color-brand:            #115ea3;
-    --color-brand-foreground: #479ef5;
-    --color-hover:            #3d3d3d;
+    --color-brand:            #c25ce8;
+    --color-brand-foreground: #c25ce8;
+    --color-hover:            #1a1f2b;
   }
 }
 

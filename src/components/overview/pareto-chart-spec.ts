@@ -5,12 +5,12 @@ import type { RankMode } from "@/hooks/use-pareto-dataset";
 // in-cutoff bars are --color-primary (the featured metric), not a severity color — red/amber/
 // green are reserved for the ABC value-tier rail, not the chart fill.
 export const CUTOFF_COLOR_RANGE = {
-    light: ["#0f6cbd", "#616161"], // In cutoff (primary) / Past cutoff (muted-foreground)
-    dark: ["#115ea3", "#adadad"],
+    light: ["#9b30d9", "#616161"], // In cutoff (primary) / Past cutoff (muted-foreground)
+    dark: ["#8b3fc4", "#8d93a2"], // Kept in sync with global.css's .dark --color-primary / --color-muted-foreground
 } as const;
 
 // Mockup's `.cutoff-rule` is --color-at-risk (amber) — the one non-primary accent in the chart.
-const CUTOFF_RULE_COLOR = { light: "#9a6700", dark: "#e0a828" } as const;
+const CUTOFF_RULE_COLOR = { light: "#9a6700", dark: "#eaa945" } as const;
 
 /**
  * Explicit tick values for the y-axis, always starting at 0. `scale: { zero: true }` alone forces
