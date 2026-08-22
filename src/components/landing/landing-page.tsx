@@ -90,7 +90,7 @@ function ConcentrationPreview() {
                         <motion.div
                             key={i}
                             variants={prefersReducedMotion ? undefined : barGrow}
-                            className={i <= PREVIEW_CUTOFF_INDEX ? "bg-primary" : "bg-muted-foreground/50"}
+                            className={i <= PREVIEW_CUTOFF_INDEX ? "bg-brand" : "bg-muted-foreground/50"}
                             style={{ height: `${(v / max) * 100}%`, transformOrigin: "bottom", flex: 1 }}
                         />
                     ))}

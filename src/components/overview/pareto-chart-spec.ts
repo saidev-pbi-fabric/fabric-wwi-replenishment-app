@@ -2,15 +2,19 @@ import type { RankMode } from "@/hooks/use-pareto-dataset";
 
 // Vega renders to SVG and can't resolve `var(--color-*)`, so these are duplicated as literal
 // hex, matching global.css exactly. Matches the locked mockup (docs/mockup-reference.html):
-// in-cutoff bars are --color-primary (the featured metric), not a severity color — red/amber/
-// green are reserved for the ABC value-tier rail, not the chart fill.
+// in-cutoff bars are --color-brand (each theme's own signature accent — Cohere's coral, Sentry's
+// electric lime), not a severity color — red/amber/green are reserved for the ABC value-tier
+// rail, not the chart fill. Was wired to --color-primary until the Cohere+Sentry pairing, when
+// dark-mode primary became an off-white button color (Sentry's own "invert on dark" CTA rule) —
+// --color-brand is what was actually meant for "bar/area fills" per its own token comment in
+// global.css, so the chart now reads that instead of trailing whatever primary happens to be.
 export const CUTOFF_COLOR_RANGE = {
-    light: ["#9b30d9", "#616161"], // In cutoff (primary) / Past cutoff (muted-foreground)
-    dark: ["#8b3fc4", "#8d93a2"], // Kept in sync with global.css's .dark --color-primary / --color-muted-foreground
+    light: ["#d94f30", "#75758a"], // In cutoff (brand) / Past cutoff (muted-foreground) — Cohere's coral
+    dark: ["#c2ef4e", "#9187ab"], // Kept in sync with global.css's .dark --color-brand / --color-muted-foreground — Sentry's electric lime
 } as const;
 
 // Mockup's `.cutoff-rule` is --color-at-risk (amber) — the one non-primary accent in the chart.
-const CUTOFF_RULE_COLOR = { light: "#9a6700", dark: "#eaa945" } as const;
+const CUTOFF_RULE_COLOR = { light: "#a8600e", dark: "#f0b429" } as const;
 
 /**
  * Explicit tick values for the y-axis, always starting at 0. `scale: { zero: true }` alone forces
