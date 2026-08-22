@@ -114,6 +114,12 @@ export function ItemDetailPanel({ stockItemKey, tier, rank, rankMode, totalItemC
     // Rank/mode label is explicit ("by $ value" / "by qty") — with two live rank modes in the app
     // now, a bare "#3" is ambiguous without saying which lens it's from.
     const trendWord = demandTrend > 0.03 ? "accelerating" : demandTrend < -0.03 ? "declining" : "steady";
+    // Same severity-token scale as the KPI strip (src/components/overview/kpi-strip.tsx) — rising
+    // demand against a fixed lead time is the risk signal (critical), falling demand eases it
+    // (on-track), flat is neutral. Was hardcoded to text-critical regardless of direction before
+    // this fix, contradicting the adjacent rationale text on declining/steady items.
+    const trendColorClass =
+        trendWord === "accelerating" ? "text-critical" : trendWord === "declining" ? "text-on-track" : "text-muted-foreground";
     const trendPct = `${demandTrend >= 0 ? "+" : ""}${(demandTrend * 100).toFixed(0)}%`;
     const tierLabel = tier ?? "—";
     const rankLabel = rank !== null ? `#${rank}` : "—";
@@ -175,7 +181,7 @@ export function ItemDetailPanel({ stockItemKey, tier, rank, rankMode, totalItemC
                             data={salesTrendData}
                             startLabel={salesTrendDates[0] ?? ""}
                             endLabel={salesTrendDates[salesTrendDates.length - 1] ?? ""}
-                            className="text-critical"
+                            className={trendColorClass}
                             ariaLabel="Daily units sold, last 60 days"
                         />
                         {Math.min(...salesTrendData) === Math.max(...salesTrendData) ? (

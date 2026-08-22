@@ -115,6 +115,11 @@ function ReorderActionFormFields({
 
     async function handleSubmit(event: React.FormEvent) {
         event.preventDefault();
+        if (!Number.isInteger(suggestedReorderQty) || suggestedReorderQty < 0) {
+            setSubmitState("error");
+            setSubmitError("Quantity must be a whole number of 0 or more.");
+            return;
+        }
         setSubmitState("submitting");
         setSubmitError(null);
         try {
@@ -155,6 +160,9 @@ function ReorderActionFormFields({
                 <FormField label="Quantity">
                     <input
                         type="number"
+                        min={0}
+                        step={1}
+                        required
                         value={suggestedReorderQty}
                         onChange={(e) => setSuggestedReorderQty(Number(e.target.value))}
                         className="w-full rounded-md border border-border bg-background px-200 py-100-nudge text-300 text-foreground"
