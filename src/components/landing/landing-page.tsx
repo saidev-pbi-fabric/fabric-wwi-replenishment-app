@@ -204,11 +204,11 @@ interface TrustPoint {
 const TRUST_POINTS: TrustPoint[] = [
     {
         title: "A disclosed proxy, not an inventory system",
-        body: "Suggested Reorder Qty is recent daily sales rate × an item's own lead time × a safety buffer — never a fixed 30- or 60-day window, and never a prediction. No stock-on-hand figure exists anywhere in this dataset, so “days of stock left” is never shown.",
+        body: "Suggested Reorder Qty is recent daily sales rate × an item's own lead time × a safety buffer. It's never a fixed 30- or 60-day window, and never a prediction. No stock-on-hand figure exists anywhere in this dataset, so “days of stock left” is never shown.",
     },
     {
         title: "Live numbers, not staged ones",
-        body: "Every live number here — the KPIs above, everything inside the dashboard — comes from a real measure against the semantic model. The concentration preview above is the one deliberately-illustrative exception, and it says so.",
+        body: "Every live number here, including the KPIs above and everything inside the dashboard, comes from a real measure against the semantic model. The concentration preview above is the one deliberately-illustrative exception, and it says so.",
     },
     {
         title: "No forecasting pretense",
@@ -251,7 +251,7 @@ function ClosingBand() {
                 Fabric Data App · Wide World Importers
             </p>
             <h3 className="mx-auto mt-200 max-w-[52ch] font-heading text-500 font-semibold">
-                One app for seeing the risk and acting on it &mdash; dashboards and write-back, together.
+                One app for seeing the risk and acting on it: dashboards and write-back, together.
             </h3>
             <p className="mt-200 font-base text-200 opacity-70">
                 Built on Microsoft Fabric &middot; Semantic model (Import mode) &middot; Rayfin write-back + audit
@@ -285,8 +285,8 @@ export function LandingPage({ onOpenDashboard }: LandingPageProps) {
 
                     <p className="max-w-[560px] font-base text-400 leading-relaxed text-muted-foreground">
                         WWI Replenishment ranks stock items by sales velocity against supplier lead time,
-                        then shows exactly how concentrated that risk is &mdash; and lets a planner act on
-                        it without leaving the app.
+                        then shows exactly how concentrated that risk is. A planner can act on it without
+                        leaving the app.
                     </p>
                     <motion.button
                         type="button"

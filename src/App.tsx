@@ -53,7 +53,7 @@ function App() {
     const [selectedItemName, setSelectedItemName] = useState<string | null>(null);
     // Single shared toggle, lifted here so Overview and Action Center never disagree on which
     // metric is driving the app — flagged directly: "2 diff ranks in 2 pages will trip users."
-    const [rankMode, setRankMode] = useState<RankMode>("value");
+    const [rankMode, setRankMode] = useState<RankMode>("qty");
 
     const goToActionCenter = (stockItemName: string) => {
         setSelectedItemName(stockItemName);
