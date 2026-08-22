@@ -88,6 +88,55 @@ Microsoft Fabric Hackathon 2026 entry (Hyderabad Data & AI Community + India Fab
 
 **Schedule-critical day: Monday (SM build)** - everything downstream depends on it, no slack.
 
+## Status (as of 2026-08-22, event day — fresh-clone continuation session, closing out Phase 7)
+Fresh clone of this repo into a new environment (`git clone` + `checkout rebuild/pareto-thesis`),
+picking up directly from the Phase 7 open-items session below per its own "nothing further planned
+until they're back or ask" note. This environment has no Fabric CLI auth configured — `npx
+fabric-app-data generate` hangs waiting on it, so `src/fabric.generated.ts` couldn't be produced —
+meaning no live deploy, no live DAX verification, and `npm run test:fabric` are all unavailable
+here, same class of limitation already documented elsewhere in this file (T6.1/T6.2). No code
+shipped this session as a result; everything below is docs/content only.
+- **[VERIFIED]** Baseline confirmed intact on the fresh clone, no drift: `npm run test` 86/86
+  passing test files pass (2 files fail only on the missing-`fabric.generated.ts` import, not a
+  regression), `tsc --noEmit` clean against the same two already-documented gaps
+  (`use-query-panel.spec.ts`'s pre-existing `dataType` mismatch, the same missing-generated-file
+  error), `npm run lint` clean against the same pre-existing `main.tsx` fast-refresh warning.
+- **[DONE]** `tasks/todo.md`'s Phase 7 checkboxes flipped to reflect reality — T7.1/T7.2/T7.3/T7.6
+  were already done and deployed per the status block below but the checkboxes were never updated.
+- **[DONE]** T7.4 closed, no code change needed: re-read `reorder-action-form.tsx` and grepped
+  Action Center for `confirm(`/dialog usage to verify, rather than assume, that the shipped
+  behavior already matches both recommendations — the submit-disable state is local to the form
+  component and resets whenever a different item is selected (soft guard only, no hard one-per-
+  item block), and no confirmation dialog exists anywhere on the status-change path. Both are
+  already stated as deliberate decisions in `talk-track.md`'s Q&A section, so this was a decision
+  close-out, not a build.
+- **[DONE, with a substitution flagged]** T7.5: the `batch-grill-me` skill this task calls for is
+  **not present in this environment** — no `~/.claude/skills` directory exists here at all, which
+  contradicts the 8/22 tooling-audit entry lower in this file that claims it was confirmed
+  installed on "this machine." That audit was evidently run in a different environment/session
+  than this fresh clone; flagging rather than silently trusting the stale claim. Substituted a
+  manual adversarial pass over `docs/talk-track.md`'s Q&A section:
+  - Found and fixed one concrete, already-decided gap: T7.6's punch list explicitly called for
+    folding a Power BI/Power Apps comparison into this Q&A section ("Power BI can do a Pareto view
+    but needs DAX-hand-built measures... has no native write-back..."), but it was only ever typed
+    into a commit message (`03822a5`), never actually written into the doc. Added it now, in the
+    doc's existing voice, as `docs/talk-track.md`'s new "Isn't this just a Power BI report?" bullet.
+  - Two more gaps surfaced but **not applied** — these are new script content this close to a live
+    demo, not previously-approved items, so they need the user's sign-off per this project's
+    standing "one backlog item at a time, user approves" rule: (1) the "Can the same item get more
+    than one reorder action logged?" answer only covers intentional multi-entry over time, not
+    accidental double-clicks — the existing soft guard is real but unmentioned; (2) no Q&A entry
+    covers concurrent edits (two people changing the same `ReorderAction` at once), a plausible
+    question for a tool pitched as a "real ops tool."
+- **[OPEN, needs the user]** Whether to add the two T7.5 follow-up Q&A gaps above before the demo.
+- **[OPEN, needs the user]** Whether the `batch-grill-me`/skills discrepancy above needs
+  reconciling (was it removed, or never actually installed the way the 8/22 audit assumed) —
+  informational for now, not blocking.
+- Verify: no code changes, so no new test/lint/build run beyond the baseline-confirmation pass
+  above; nothing to commit/deploy from this session (docs-only changes to `tasks/todo.md` and
+  `docs/talk-track.md`, plus this block) — user should decide whether/when to commit those, or
+  hand it back to Claude to do so.
+
 ## Status (as of 2026-08-22, event day — Phase 7 open-items session, user leaving for the hackathon)
 Direct continuation of the Action Center live-bug session below — same day, picking up
 `tasks/todo.md`'s Phase 7 punch list plus live feedback against the deployed app. User is heading

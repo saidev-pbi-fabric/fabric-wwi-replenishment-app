@@ -95,6 +95,12 @@ Center.
 - **"Why does one item dominate the dollar chart so much?"** — Real data, not a rendering issue:
   the #1 item by $ value is genuinely ~4-11x the size of the next several bars — that concentration
   *is* the Pareto insight the whole page is built around, not a bug to smooth over.
+- **"Isn't this just a Power BI report?"** — Power BI *can* do a Pareto view, but it needs the same
+  DAX-hand-built rank/cumulative measures we wrote here — parity, not an edge. Where it can't
+  follow is write-back: Power BI has none natively, so the equivalent would mean bolting on Power
+  Apps plus Power Automate plus a separate table — three tools stitched together. This is one
+  coherent Fabric Data App with a real write-back and audit-trail loop built in, and we built it
+  faster by pairing with an agent on the DAX, React, and TypeScript together.
 - **"Can the same item get more than one reorder action logged?"** — Yes, intentionally. A real
   ops tool needs to support multiple purchase-order-style actions per item over time (partial
   orders, corrections) — there's no hard-delete in this app (a `Dismissed` status is the

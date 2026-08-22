@@ -441,29 +441,47 @@ dependency; a second team member can start T5.1 in parallel with T3.2/T3.3 if Pa
 
 Everything else from the 2026-08-22 session (see `CLAUDE.md`'s "2026-08-22, event day — Action
 Center live-bug session" status block for the full list of what was fixed/root-caused that day) is
-done, tested, deployed, and confirmed live. Only these are still open:
+done, tested, deployed, and confirmed live.
 
-- [ ] **T7.1** — Fix `docs/ui-audit-findings-2026-08-22-explained.md` finding #1: Quantity input
+**Phase 7 is now fully closed** (as of the continuation session below) — T7.1-T7.3/T7.6 were
+already done and deployed but hadn't had their checkboxes flipped; T7.4/T7.5 closed this session.
+No code changes deployed this session — see CLAUDE.md's continuation-session status block for why
+(no Fabric CLI auth in this environment) and what's still worth a human look before the demo.
+
+- [x] **T7.1** — Fix `docs/ui-audit-findings-2026-08-22-explained.md` finding #1: Quantity input
       has no `min`/`step` guard (`src/components/action-center/reorder-action-form.tsx:156-161`).
       Highest priority — real risk of a negative/fractional value going through live in front of
-      judges. ~2-line fix (`min={0}`, `step={1}`).
-- [ ] **T7.2** — Fix finding #2: new pill-style controls (Rank Mode toggle, ABC tier chips, Chart
+      judges. ~2-line fix (`min={0}`, `step={1}`). Done 8/22 (`1defdb9`).
+- [x] **T7.2** — Fix finding #2: new pill-style controls (Rank Mode toggle, ABC tier chips, Chart
       Window A/B toggle) don't carry the app's `focus-visible:ring` treatment used everywhere else
       — `src/App.tsx:168-181`, `src/components/action-center/ranked-list-panel.tsx:121-136`,
       `src/components/overview/pareto-risk-view.tsx:256-269`. Copy-paste the existing focus class
-      string onto those buttons.
-- [ ] **T7.3** — Fix finding #3: item-detail sales-trend chart is hardcoded `text-critical`
+      string onto those buttons. Done 8/22 (`bf8c717`).
+- [x] **T7.3** — Fix finding #3: item-detail sales-trend chart is hardcoded `text-critical`
       (alarm red) regardless of actual trend direction, contradicting the adjacent rationale text
       — `src/components/action-center/item-detail-panel.tsx:178`. Needs the already-computed trend
-      direction threaded into the chart's color via the existing severity-token scale.
-- [ ] **T7.4** — Decide + implement the two open product-behavior questions (recommendations
+      direction threaded into the chart's color via the existing severity-token scale. Done 8/22
+      (`1defdb9`).
+- [x] **T7.4** — Decide + implement the two open product-behavior questions (recommendations
       already given, not yet built): (1) duplicate `ReorderAction` submissions per item — keep the
       current soft double-click guard, don't hard-block; (2) status-change confirmation — skip it,
       rely on the existing audit trail instead of a confirm dialog. Go with these recommendations
-      unless told otherwise.
-- [ ] **T7.5** — Run `/batch-grill-me` against `docs/talk-track.md`'s Q&A section specifically
-      (not the code, not the other docs) before the live demo.
-- [ ] **T7.6** — Landing page visual polish pass (user request 2026-08-22, deferred at 97% session
+      unless told otherwise. Closed 8/22 (continuation session): verified in code, no change
+      needed — `reorder-action-form.tsx`'s submit-disable state is component-local and already
+      resets on reselect (no hard one-per-item block), and no `confirm()`/dialog exists anywhere
+      in Action Center. Both recommendations were already the shipped behavior, and both are
+      already stated as deliberate decisions in `talk-track.md`'s Q&A section.
+- [x] **T7.5** — Run `/batch-grill-me` against `docs/talk-track.md`'s Q&A section specifically
+      (not the code, not the other docs) before the live demo. **Substituted**: the
+      `batch-grill-me` skill is not present in this (fresh-clone) environment — no
+      `~/.claude/skills` directory exists at all here, contradicting the 8/22 tooling-audit's
+      claim it was confirmed installed (see CLAUDE.md's continuation-session status block for the
+      full flag). Ran a manual adversarial pass instead and found one concrete, previously-decided
+      gap: T7.6's punch list called for folding a Power BI/Power Apps comparison into this Q&A
+      section, but it was only ever logged in a commit message, never actually written into the
+      doc. Added it now. Two more possible gaps surfaced but *not* applied pending user approval
+      (new script content this close to the demo, not a previously-approved item) — see CLAUDE.md.
+- [x] **T7.6** — Landing page visual polish pass (user request 2026-08-22, deferred at 97% session
       limit): use repo-local skills directly, not a subagent — `design-dna` (quick identity audit
       of `src/components/landing/landing-page.tsx`), `industrial-brutalist-ui` (matches this app's
       existing control-room/severity-rail/IBM-Plex tone, don't fight it), `cast`/`paint` for one
@@ -473,4 +491,6 @@ done, tested, deployed, and confirmed live. Only these are still open:
       BI *can* do a Pareto view but needs DAX-hand-built rank/cumulative measures (parity, not an
       edge) and has no native write-back — that needs Power Apps + Power Automate + a separate
       table bolted on, 3 tools stitched vs. this app's one coherent Fabric Data App with a real
-      write-back + audit-trail loop, built faster via agent-paired DAX/React/TS.
+      write-back + audit-trail loop, built faster via agent-paired DAX/React/TS. Landing-page
+      polish done 8/22 (`aeb1f4e`); the talk-track fold-in was still outstanding until the
+      continuation session below closed it as part of T7.5.
