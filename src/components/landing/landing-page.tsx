@@ -98,7 +98,7 @@ function ConcentrationPreview() {
             </div>
 
             <p className="font-base text-100 leading-snug text-muted-foreground">
-                Illustrative shape, not live data — the real view ranks all 219 stock items and the
+                Illustrative shape, not live data. The real view ranks all 219 stock items and the
                 cutoff moves with a live slider.
             </p>
         </div>

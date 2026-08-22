@@ -123,10 +123,13 @@ export function ParetoRiskView({ dataset, rankMode, cutoffPct, onCutoffChange, o
                 ? `Rank ${itemCount} + ${tailSampleSize} sampled of ${remainder.length} remaining`
                 : `Rank ${chartRows.length}`;
     } else {
-        // Fixed window — always the same ~40 bars regardless of the cutoff, so the layout never
+        // Fixed window — always the same ~20 bars regardless of the cutoff, so the layout never
         // jitters as the slider moves. Illustrative shape, not a literal 1:1 census past the
-        // window edge; the table's "Tier B/C, collapsed [N]" rows carry the real counts.
-        const FIXED_WINDOW = 40;
+        // window edge; the table's "Tier B/C, collapsed [N]" rows carry the real counts. Was 40
+        // — with a single outlier item dominating the $ scale (top item ~$182M), bars past ~15-20
+        // were only a couple pixels tall, reading as a blank chart (live feedback, 2026-08-22).
+        // 20 keeps the chart dense-looking without hiding that most items are far smaller.
+        const FIXED_WINDOW = 20;
         chartRows = rows.slice(0, Math.min(rows.length, FIXED_WINDOW));
         chartAxisRight =
             itemCount < FIXED_WINDOW ? `Rank ${FIXED_WINDOW} (fixed window, illustrative)` : `Rank ${FIXED_WINDOW}`;
@@ -211,7 +214,7 @@ export function ParetoRiskView({ dataset, rankMode, cutoffPct, onCutoffChange, o
             </div>
 
             <p className="-mt-200 font-base text-200 text-muted-foreground">
-                Ranked by {rankMode === "value" ? "$ reorder value" : "suggested reorder quantity (units)"} — use the
+                Ranked by {rankMode === "value" ? "$ reorder value" : "suggested reorder quantity (units)"}. Use the
                 "Rank by" switch above to compare the other lens. Shows rank, {rankMode === "value" ? "$" : "qty"},
                 and cumulative % for every item. Click a bar to find it in the table.
             </p>
@@ -259,7 +262,7 @@ export function ParetoRiskView({ dataset, rankMode, cutoffPct, onCutoffChange, o
                         onClick={() => setChartMode(mode)}
                         aria-pressed={chartMode === mode}
                         className={cn(
-                            "rounded-full border px-200 py-100-nudge font-base text-100 transition-colors",
+                            "rounded-full border px-200 py-100-nudge font-base text-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                             chartMode === mode
                                 ? "border-primary text-primary"
                                 : "border-border text-muted-foreground hover:text-foreground",
@@ -359,7 +362,7 @@ export function ParetoRiskView({ dataset, rankMode, cutoffPct, onCutoffChange, o
             </div>
 
             <p className="font-base text-100 text-muted-foreground">
-                Value here is a proxy (Suggested Reorder Qty × Unit Price), not a real inventory valuation — see the
+                Value here is a proxy (Suggested Reorder Qty × Unit Price), not a real inventory valuation. See the
                 Action Center item detail for the full disclosure.{" "}
                 {Math.max(0, metricInCutoff) > 0
                     ? `In-cutoff ${rankMode === "value" ? "reorder value" : "reorder qty"}: ${formatMetric(metricInCutoff, rankMode)}.`

@@ -125,7 +125,7 @@ export function RankedListPanel({
                             onClick={() => setTierFilter(tier)}
                             aria-pressed={tierFilter === tier}
                             className={cn(
-                                "rounded-full border px-200 py-100-nudge font-base text-100 transition-colors",
+                                "rounded-full border px-200 py-100-nudge font-base text-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                                 tierFilter === tier
                                     ? "border-primary text-primary"
                                     : "border-border text-muted-foreground hover:text-foreground",

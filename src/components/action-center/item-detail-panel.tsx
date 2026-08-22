@@ -186,7 +186,7 @@ export function ItemDetailPanel({ stockItemKey, tier, rank, rankMode, totalItemC
                         />
                         {Math.min(...salesTrendData) === Math.max(...salesTrendData) ? (
                             <p className="mt-100 font-base text-100 text-muted-foreground">
-                                Flat by design, not a rendering issue — this item sold the exact same quantity every
+                                Flat by design, not a rendering issue. This item sold the exact same quantity every
                                 day over this window, verified against the underlying data.
                             </p>
                         ) : null}
@@ -196,15 +196,15 @@ export function ItemDetailPanel({ stockItemKey, tier, rank, rankMode, totalItemC
                 )}
             </div>
             <p className="mt-100 font-base text-100 text-muted-foreground">
-                Historical daily sales only — no forward projection. This dataset's DAX has no forecast
+                Historical daily sales only, no forward projection. This dataset's DAX has no forecast
                 measure, so we don't draw one.
             </p>
 
             <p className="mt-300 rounded-md border border-border bg-accent px-300 py-200 font-base text-100 text-muted-foreground">
-                No stock-on-hand figure exists anywhere in this dataset — "days of stock left" can't be
+                No stock-on-hand figure exists anywhere in this dataset, so "days of stock left" can't be
                 shown honestly. <strong className="text-foreground">Suggested Reorder Qty</strong> below covers
                 this item's own {leadTimeDays}-day lead time (recent daily sales rate &times; lead time &times;
-                safety buffer) — not a fixed 30- or 60-day window, and not a prediction.
+                safety buffer). It's not a fixed 30- or 60-day window, and not a prediction.
             </p>
 
             <dl className="mt-300 grid grid-cols-3 gap-300">

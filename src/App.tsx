@@ -172,7 +172,7 @@ function RankModeToggle({ rankMode, onChange }: { rankMode: RankMode; onChange: 
                         onClick={() => onChange(mode)}
                         aria-pressed={rankMode === mode}
                         className={cn(
-                            "relative z-10 min-w-[64px] rounded-sm px-300 py-100-nudge font-base text-200 font-medium transition-colors",
+                            "relative z-10 min-w-[64px] rounded-sm px-300 py-100-nudge font-base text-200 font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                             rankMode === mode ? "text-foreground" : "text-muted-foreground hover:text-foreground",
                         )}
                     >
