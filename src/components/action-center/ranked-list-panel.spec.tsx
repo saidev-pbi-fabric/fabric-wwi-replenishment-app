@@ -86,6 +86,46 @@ describe("RankedListPanel", () => {
         );
     });
 
+    it("auto-selects the #1-ranked row when no initialSelectedItemName is given", async () => {
+        const onSelectItem = vi.fn();
+        render(<RankedListPanel dataset={readyDataset()} rankMode="value" selectedStockItemKey={null} onSelectItem={onSelectItem} />);
+
+        await screen.findByText("Shipping carton (Brown)");
+
+        expect(onSelectItem).toHaveBeenCalledWith(
+            expect.objectContaining({ stockItemKey: 17, stockItem: "Shipping carton (Brown)" }),
+            "A",
+        );
+    });
+
+    it("prefers a matching initialSelectedItemName over the #1-ranked row", async () => {
+        const onSelectItem = vi.fn();
+        render(
+            <RankedListPanel
+                dataset={readyDataset()}
+                rankMode="value"
+                selectedStockItemKey={null}
+                onSelectItem={onSelectItem}
+                initialSelectedItemName="Pallet wrap 500mm x 300m"
+            />,
+        );
+
+        await screen.findByText("Shipping carton (Brown)");
+
+        expect(onSelectItem).toHaveBeenCalledTimes(1);
+        expect(onSelectItem).toHaveBeenCalledWith(
+            expect.objectContaining({ stockItemKey: 126, stockItem: "Pallet wrap 500mm x 300m" }),
+            expect.any(String),
+        );
+    });
+
+    it("does not auto-select when the dataset is empty", () => {
+        const onSelectItem = vi.fn();
+        render(<RankedListPanel dataset={readyDataset([])} rankMode="value" selectedStockItemKey={null} onSelectItem={onSelectItem} />);
+
+        expect(onSelectItem).not.toHaveBeenCalled();
+    });
+
     it("filters client-side by value tier when a tier chip is clicked", async () => {
         render(<RankedListPanel dataset={readyDataset()} rankMode="value" selectedStockItemKey={null} onSelectItem={vi.fn()} />);
 

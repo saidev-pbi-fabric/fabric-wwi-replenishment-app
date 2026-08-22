@@ -39,8 +39,14 @@ export function RankedListPanel({
     const autoSelectedRef = useRef(false);
 
     useEffect(() => {
-        if (autoSelectedRef.current || !initialSelectedItemName || rows.length === 0) return;
-        const match = rows.find((row) => row.stockItem === initialSelectedItemName);
+        if (autoSelectedRef.current || rows.length === 0) return;
+        // Click-through from Overview names a specific item; landing on this page directly (nav
+        // bar, refresh) has none, so fall back to the #1-ranked row rather than leaving the detail
+        // column empty on first load. Either way this only fires once (autoSelectedRef) -- toggling
+        // Rank Mode afterward re-sorts `rows` but never re-triggers or overrides the user's pick.
+        const match = initialSelectedItemName
+            ? rows.find((row) => row.stockItem === initialSelectedItemName)
+            : rows[0];
         if (match) {
             autoSelectedRef.current = true;
             onSelectItem(match, valueTierFor(cumPctOf(match, rankMode)));
