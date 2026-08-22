@@ -69,6 +69,14 @@ export function buildParetoChartSpec(boundarySlot: number | null, isDark: boolea
     const tickValues = niceTicks(metricMax);
     const domainMax = tickValues[tickValues.length - 1];
     const layer: Record<string, unknown>[] = [
+        // Explicit zero baseline, independent of the y-axis's own tick/label rendering — a second,
+        // unmissable confirmation that bars start at 0, not just the axis tick that kept getting
+        // squeezed out. See the y-encoding's axis comment below for why this exists.
+        {
+            data: { values: [{ zero: 0 }] },
+            mark: { type: "rule", strokeWidth: 1, color: "#8a8a8a" },
+            encoding: { y: { field: "zero", type: "quantitative" } },
+        },
         {
             mark: { type: "bar" },
             params: [{ name: "itemSelect", select: { type: "point", fields: ["StockItemKey"] } }],
@@ -82,7 +90,12 @@ export function buildParetoChartSpec(boundarySlot: number | null, isDark: boolea
                     field: "Metric",
                     type: "quantitative",
                     title: metricTitle,
-                    axis: { format: axisFormat, values: tickValues },
+                    // labelOverlap/domain/grid set explicitly, not left to Vega defaults — a tight
+                    // 280px chart with a legend above it was squeezing out the "0" tick's label
+                    // (and sometimes the label alone, even with the domain/tick values already
+                    // correct), which is what kept reading as "doesn't start at 0" even though the
+                    // scale genuinely did. See buildParetoChartSpec's doc comment.
+                    axis: { format: axisFormat, values: tickValues, labelOverlap: false, domain: true, domainWidth: 1.5, grid: true },
                     scale: { zero: true, domain: [0, domainMax] },
                 },
                 color: {

@@ -41,11 +41,29 @@ describe("niceTicks", () => {
 describe("buildParetoChartSpec", () => {
     it("wires the computed tick values and a matching zero-based domain into the y encoding", () => {
         const spec = buildParetoChartSpec(null, false, "value", 191_000_000) as {
-            layer: { encoding?: { y?: { axis: { values: number[] }; scale: { zero: boolean; domain: number[] } } } }[];
+            layer: {
+                mark?: { type: string };
+                encoding?: { y?: { axis: { values: number[] }; scale: { zero: boolean; domain: number[] } } };
+            }[];
         };
-        const yEncoding = spec.layer[0].encoding?.y;
+        const barLayer = spec.layer.find((l) => l.mark?.type === "bar");
+        const yEncoding = barLayer?.encoding?.y;
         expect(yEncoding?.axis.values[0]).toBe(0);
         expect(yEncoding?.scale.zero).toBe(true);
         expect(yEncoding?.scale.domain).toEqual([0, 200_000_000]);
+    });
+
+    // Regression: the "0" tick label kept getting squeezed out of a tight 280px chart even with a
+    // provably correct zero-based domain/tick-values, still reading live as "not starting at 0".
+    // A dedicated zero-baseline rule layer, independent of any axis label rendering, is the
+    // unmissable fallback.
+    it("includes an explicit zero-baseline rule layer, independent of the axis label", () => {
+        const spec = buildParetoChartSpec(null, false, "value", 191_000_000) as {
+            layer: { mark?: { type: string }; encoding?: { y?: { field: string } } }[];
+        };
+        const zeroRule = spec.layer.find(
+            (l) => l.mark?.type === "rule" && l.encoding?.y?.field === "zero",
+        );
+        expect(zeroRule).toBeDefined();
     });
 });

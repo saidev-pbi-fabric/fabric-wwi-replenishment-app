@@ -284,7 +284,7 @@ export function ParetoRiskView({ dataset, rankMode, cutoffPct, onCutoffChange, o
                         theme={theme}
                         configVegaLite={{ range: { category: [...CUTOFF_COLOR_RANGE[isDark ? "dark" : "light"]] } }}
                         onInteraction={handleInteraction}
-                        style={{ width: "100%", height: 280 }}
+                        style={{ width: "100%", height: 320 }}
                         // fabric-visuals always injects its own scale.nice=5 onto quantitative axes
                         // ("for cleaner tick values") unless told not to -- confirmed in its own
                         // source (chunk-YOIUDW6A.js applyAxisBounds) and public capability doc
