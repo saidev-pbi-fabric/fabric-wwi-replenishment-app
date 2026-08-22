@@ -73,8 +73,13 @@ function App() {
                             <span className="flex h-[26px] w-[26px] items-center justify-center rounded-md bg-primary font-heading text-200 font-bold text-primary-foreground">
                                 W
                             </span>
-                            <span className="font-base text-300 font-semibold text-foreground">
-                                WWI Replenishment
+                            <span className="flex flex-col items-start leading-tight">
+                                <span className="font-base text-300 font-semibold text-foreground">
+                                    WWI Replenishment
+                                </span>
+                                <span className="font-monospace text-100 text-muted-foreground">
+                                    WWI = Wide World Importers
+                                </span>
                             </span>
                         </button>
                         <nav className="flex items-center gap-100" aria-label="Pages">

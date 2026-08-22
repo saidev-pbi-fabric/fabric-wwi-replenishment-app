@@ -8,6 +8,11 @@
 import { ArrowRight } from "lucide-react";
 import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { fadeInUp, staggerContainer } from "@/lib/motion";
+import { useQueryPanel } from "@/hooks/use-query-panel";
+import { kpiStrip } from "@/queries/overview/kpi-strip";
+import { scalarByColumnName } from "@/lib/to-data-table";
+import { KPI_STRIP_FIXTURE } from "@/lib/dev-preview-fixtures";
+import { cn } from "@/lib/utils";
 
 interface LandingPageProps {
     onOpenDashboard: () => void;
@@ -119,6 +124,143 @@ function CornerTicks() {
     );
 }
 
+function TeaserTile({ label, value, severity }: { label: string; value: string; severity?: "at-risk" }) {
+    return (
+        <div
+            className={cn(
+                "rounded-lg border border-border bg-card p-400",
+                severity === "at-risk" && "border-l-4 border-l-at-risk",
+            )}
+        >
+            <div className="font-monospace text-100 uppercase tracking-wide text-muted-foreground">{label}</div>
+            <div
+                className={cn(
+                    "mt-200 font-numeric text-hero-800 font-semibold",
+                    severity === "at-risk" ? "text-at-risk" : "text-foreground",
+                )}
+            >
+                {value}
+            </div>
+        </div>
+    );
+}
+
+// Reuses the exact same lightweight query already fired by Overview's KpiStrip (3 scalar
+// measures, one round-trip) -- deliberately NOT the full pareto dataset that page also loads,
+// which is why this only surfaces 3 of Overview's 5 tiles. The other 2 ($/qty-in-cutoff) are a
+// client-side reduction over that larger dataset there; pulling it here just for a landing-page
+// preview would reintroduce the real DAX round-trip this page has always avoided before the user
+// asks for the dashboard (see ConcentrationPreview's comment above).
+function KpiTeaser() {
+    const panel = useQueryPanel(kpiStrip());
+    const usingDevFixture = import.meta.env.DEV && !import.meta.env.VITEST && panel.status === "error";
+
+    if (panel.status === "error" && !usingDevFixture) return null; // quiet degrade -- the dashboard itself still surfaces this error properly
+    if (!usingDevFixture && (panel.status === "loading" || panel.status === "empty")) {
+        return (
+            <div className="grid grid-cols-1 gap-300 sm:grid-cols-3">
+                {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="rounded-lg border border-border bg-card p-400">
+                        <div className="h-200 w-2/3 animate-pulse rounded-md bg-muted" />
+                        <div className="mt-300 h-600 w-1/3 animate-pulse rounded-md bg-muted" />
+                    </div>
+                ))}
+            </div>
+        );
+    }
+
+    const table = usingDevFixture ? KPI_STRIP_FIXTURE : panel.status === "ready" ? panel.table : undefined;
+    if (!table) return null;
+
+    return (
+        <div className="flex flex-col gap-300">
+            {usingDevFixture ? (
+                <p className="font-base text-200 text-muted-foreground">Sample data · dev preview (no Fabric embed)</p>
+            ) : null}
+            <div className="grid grid-cols-1 gap-300 sm:grid-cols-3">
+                <TeaserTile label="Items tracked" value={String(scalarByColumnName(table, "[Items Tracked]") ?? "—")} />
+                <TeaserTile
+                    label="Avg lead time (days)"
+                    value={String(scalarByColumnName(table, "[Avg Lead Time Days]") ?? "—")}
+                />
+                <TeaserTile
+                    label="Accelerating demand"
+                    value={String(scalarByColumnName(table, "[Accelerating Demand Items]") ?? "—")}
+                    severity="at-risk"
+                />
+            </div>
+        </div>
+    );
+}
+
+interface TrustPoint {
+    title: string;
+    body: string;
+}
+
+// Every claim below is already stated elsewhere in the app (item detail's disclosure copy,
+// docs/talk-track.md's Q&A) -- reused nearly verbatim here, not reworded, so the landing page
+// never asserts something the dashboard itself doesn't also stand behind.
+const TRUST_POINTS: TrustPoint[] = [
+    {
+        title: "A disclosed proxy, not an inventory system",
+        body: "Suggested Reorder Qty is recent daily sales rate × an item's own lead time × a safety buffer — never a fixed 30- or 60-day window, and never a prediction. No stock-on-hand figure exists anywhere in this dataset, so “days of stock left” is never shown.",
+    },
+    {
+        title: "Live numbers, not staged ones",
+        body: "Every live number here — the KPIs above, everything inside the dashboard — comes from a real measure against the semantic model. The concentration preview above is the one deliberately-illustrative exception, and it says so.",
+    },
+    {
+        title: "No forecasting pretense",
+        body: "Trend lines show historical daily sales only. This dataset's DAX has no forecast measure, so we don't draw a projection.",
+    },
+];
+
+function TrustStrip() {
+    return (
+        <div className="flex flex-col gap-300">
+            <div className="flex flex-col gap-100">
+                <span className="font-monospace text-100 font-medium uppercase tracking-[0.1em] text-muted-foreground">
+                    Why you can trust the numbers
+                </span>
+                <h2 className="font-heading text-500 font-semibold text-foreground">
+                    Every claim here is disclosed, not dressed up.
+                </h2>
+            </div>
+            <div className="grid grid-cols-1 gap-300 md:grid-cols-3">
+                {TRUST_POINTS.map((point, i) => (
+                    <div key={point.title} className="flex gap-200">
+                        <span className="flex h-[28px] w-[28px] shrink-0 items-center justify-center rounded-full bg-brand font-monospace text-200 font-bold text-primary-foreground">
+                            {i + 1}
+                        </span>
+                        <div className="flex flex-col gap-100">
+                            <h3 className="font-heading text-300 font-semibold text-foreground">{point.title}</h3>
+                            <p className="font-base text-200 leading-relaxed text-muted-foreground">{point.body}</p>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function ClosingBand() {
+    return (
+        <div className="rounded-lg bg-band px-600 py-500 text-center text-band-foreground">
+            <p className="font-monospace text-100 uppercase tracking-[0.15em] opacity-70">
+                Fabric Data App · Wide World Importers
+            </p>
+            <h3 className="mx-auto mt-200 max-w-[52ch] font-heading text-500 font-semibold">
+                One app for seeing the risk and acting on it &mdash; dashboards and write-back, together.
+            </h3>
+            <p className="mt-200 font-base text-200 opacity-70">
+                Built on Microsoft Fabric &middot; Semantic model (Import mode) &middot; Rayfin write-back + audit
+                trail
+            </p>
+        </div>
+    );
+}
+
 export function LandingPage({ onOpenDashboard }: LandingPageProps) {
     return (
         <motion.div
@@ -169,10 +311,10 @@ export function LandingPage({ onOpenDashboard }: LandingPageProps) {
                     <motion.div
                         key={step.title}
                         variants={fadeInUp}
-                        className="flex flex-col gap-100 rounded-lg border border-t-2 border-border border-t-primary bg-card p-400 shadow-sm"
+                        className="flex flex-col gap-100 rounded-lg border border-border bg-card p-400 shadow-sm"
                     >
-                        <span className="font-monospace text-100 font-semibold uppercase tracking-[0.1em] text-primary">
-                            [ {step.n} ]
+                        <span className="mb-100 flex h-[36px] w-[36px] items-center justify-center rounded-full bg-brand font-monospace text-200 font-bold text-primary-foreground">
+                            {step.n}
                         </span>
                         <h3 className="font-heading text-400 font-semibold text-foreground">{step.title}</h3>
                         <p className="font-base text-200 leading-relaxed text-muted-foreground">
@@ -180,6 +322,18 @@ export function LandingPage({ onOpenDashboard }: LandingPageProps) {
                         </p>
                     </motion.div>
                 ))}
+            </motion.section>
+
+            <motion.section variants={fadeInUp}>
+                <KpiTeaser />
+            </motion.section>
+
+            <motion.section variants={fadeInUp}>
+                <TrustStrip />
+            </motion.section>
+
+            <motion.section variants={fadeInUp}>
+                <ClosingBand />
             </motion.section>
         </motion.div>
     );

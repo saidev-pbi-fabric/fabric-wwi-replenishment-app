@@ -63,6 +63,13 @@
   --color-on-track: #0f7a5c;                                         /* derived from Cohere's "deep-green", 5.30:1 vs white */
   --color-on-track-foreground: #ffffff;
 
+  /* Landing page's closing band — Cohere's own "deep-green" token, used for exactly this
+     full-width feature-band role in their real spec (their `dark-feature-band` component). Not
+     reused elsewhere; deliberately distinct from --color-primary so the page's closing section
+     doesn't just repeat the CTA button's color right above it. */
+  --color-band: #003c33;
+  --color-band-foreground: #eef7f3;
+
   /* Radius scale — Cohere's `rounded` tokens (xs/sm/md/lg/xl/pill), replacing the previous
      near-zero "industrial, not soft" brutalist scale. */
   --radius-none: 0;
@@ -207,6 +214,12 @@
     --color-brand:            #c2ef4e;                                /* Sentry's own electric lime, used as-is */
     --color-brand-foreground: #c2ef4e;
     --color-hover:            #241c38;
+
+    /* Landing page's closing band — no Sentry equivalent to source (dark canvas is already the
+       whole page), so this is a derived "sub-floor" shade, darker than the page background, for
+       the same visual-distinction role Cohere's real deep-green token plays in light mode. */
+    --color-band: #0a0715;
+    --color-band-foreground: #f2eefc;
 
     /* Sentry's real UI face is Rubik (uppercase buttons/eyebrows, 0.2px tracking) — overriding
        the light theme's Cohere fonts here rather than sharing one face across both themes. */
