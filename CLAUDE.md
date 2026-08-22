@@ -88,6 +88,63 @@ Microsoft Fabric Hackathon 2026 entry (Hyderabad Data & AI Community + India Fab
 
 **Schedule-critical day: Monday (SM build)** - everything downstream depends on it, no slack.
 
+## Status (as of 2026-08-22, event day — Phase 7 open-items session, user leaving for the hackathon)
+Direct continuation of the Action Center live-bug session below — same day, picking up
+`tasks/todo.md`'s Phase 7 punch list plus live feedback against the deployed app. User is heading
+to the event itself as this session closes; nothing further planned until they're back or ask.
+- **[DONE]** T7.1 — Reorder Action quantity input now enforces `min={0}`/`step={1}`/`required`
+  plus a submit-time integer/non-negative guard (`reorder-action-form.tsx`), closing the live-risk
+  gap of a negative/fractional quantity reaching the `ReorderAction` create call in front of
+  judges.
+- **[DONE]** T7.3 — item detail's sales-trend chart color was hardcoded `text-critical` regardless
+  of actual trend direction, contradicting the adjacent rationale text on declining/steady items.
+  Now follows the same computed direction (critical/on-track/neutral) as the KPI strip's severity
+  scale.
+- **[DONE]** T7.2 — Rank Mode toggle, ABC tier chips, and Chart Window A/B toggle now carry the
+  same `focus-visible:ring` treatment as every other interactive control in the app (were missing
+  it).
+- **[DONE]** T7.6 — landing page visual polish: monospace status eyebrow, an illustrative
+  concentration-preview chart (colored to match the real Pareto chart's primary/muted/at-risk
+  scheme, explicitly labeled as illustrative not live) replacing plain paragraph filler, a subtle
+  analog-grain texture + blueprint corner ticks (`industrial-brutalist-ui` skill), bracket-numbered
+  step cards with a primary top rule, and a staggered bar-grow motion moment on load gated behind
+  `prefers-reduced-motion`. Locked headline/paragraph/step copy and the CTA's accessible name
+  untouched — `landing-page.spec.tsx` passes unchanged.
+- **[DONE]** `/humanizer` pass across the webapp's rendered UI copy (not code comments — dev-facing,
+  out of scope). Found the app copy was already largely free of AI-slop vocabulary; the one real
+  finding was em-dash-heavy disclosure sentences in 5 spots (Overview's caption + proxy note, 3 of
+  item-detail's disclosure paragraphs, the new landing preview caption) — split into plain
+  sentences.
+- **[ROOT-CAUSE, FIXED]** Pareto chart reported live as looking "super duper blank": Fixed-window
+  mode (the default) rendered 40 bars, but the single $182M outlier item so dominates the linear $
+  scale that bars past ~rank 15 were only a couple pixels tall. User picked shrinking the fixed
+  window to 20 bars (over switching to Dynamic mode, which would have made the dominance problem
+  worse, or clipping the y-axis, judged too risky for chart honesty right before the demo).
+- **[ROOT-CAUSE, FIXED — 4th live report of the same symptom]** "Y-axis not starting at 0" came
+  back again after the 8/22 earlier-session fix. This time the domain/tick-values were re-verified
+  provably correct (explicit `scale.domain: [0, max]`, explicit `axis.values` including 0, the
+  `disableNiceAxisBounds` capability confirmed still wired against the actual installed
+  `@microsoft/fabric-visuals` build, not just our own spec file — per this project's own
+  "read the wrapper layer, don't re-guess the same file a 3rd time" lesson). Real cause: the "0"
+  tick's *label* was getting squeezed out by Vega's label-overlap avoidance in a crowded 280px
+  chart with a legend above it — the scale was right, it just didn't read that way. Fixed with
+  `axis.labelOverlap: false` plus a dedicated solid zero-baseline rule layer independent of any
+  axis label logic, as a fallback that can't be squeezed out. Chart height bumped
+  280 → 320 → 400px (second bump per direct user request, "make it 400... for both qty and $") to
+  relieve the crowding that caused this in the first place. Regression test added pinning the new
+  rule layer's presence.
+- **[EXPLAINED, still open]** T7.4 — recapped the two 8/21 product-behavior decisions for the user
+  (duplicate `ReorderAction` submissions stay soft-blocked, not hard-blocked; status-change stays
+  instant, no confirm dialog) — not yet implemented, no code changed.
+- **[OPEN, next session]** T7.5 — run `/batch-grill-me` against `docs/talk-track.md`'s Q&A section
+  before the live demo. Not started this session.
+- Verify: 103/103 tests (up from 102 — added `pareto-chart-spec.spec.ts` coverage for the new
+  zero-rule layer), `tsc --noEmit`/`npm run lint` clean vs. the documented baseline, `npm run
+  build` clean, every change committed in small units and pushed to `rebuild/pareto-thesis`
+  (`1defdb9`..`91575f3`), each deployed immediately after (`npx rayfin up`) — last deploy
+  confirmed matching HEAD via a build+deploy re-run at session close, not assumed from an earlier
+  deploy in the session.
+
 ## Status (as of 2026-08-22, event day — Action Center live-bug session, continued from 8/21 evening)
 Direct continuation of the rank-mode-toggle session below (same day's work spilled past
 midnight) — this block covers everything after that one, still against live-deployed-app
