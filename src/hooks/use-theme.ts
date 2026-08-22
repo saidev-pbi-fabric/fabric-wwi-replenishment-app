@@ -22,8 +22,11 @@ export function useAppTheme() {
         // Check for .dark class
         if (document.documentElement.classList.contains("dark")) return true;
 
-        // Fall back to OS preference
-        return window.matchMedia("(prefers-color-scheme: dark)").matches;
+        // Default to light regardless of OS preference — deliberate product choice, not an
+        // oversight. The Cohere/Sentry theme pairing was picked with light as the primary/
+        // preferred side; only an explicit host signal (data-appearance) or a manual toggle
+        // should ever put a first-time viewer into dark.
+        return false;
     });
 
     useEffect(() => {

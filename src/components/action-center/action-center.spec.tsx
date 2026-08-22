@@ -122,12 +122,16 @@ describe("ActionCenter", () => {
         vi.clearAllMocks();
     });
 
-    it("shows the detail placeholder when nothing is selected yet", async () => {
+    it("auto-selects the #1-ranked item by default so the detail column isn't empty on load", async () => {
         mockAllQueries();
         render(<ActionCenter rankMode="value" initialSelectedItemName={null} />);
 
-        await screen.findByText("Shipping carton (Brown)");
-        expect(screen.getByText(/select an item/i)).toBeInTheDocument();
+        // Wait for a signal that only renders once `selected` is set (the reorder form), rather
+        // than asserting the placeholder's absence immediately -- the row list finishes loading
+        // before the separate auto-select effect + its state update flush, so an unawaited
+        // absence check races that effect and is flaky under full-suite scheduling.
+        await screen.findByText("Log Reorder Action");
+        expect(screen.queryByText(/select an item/i)).not.toBeInTheDocument();
     });
 
     it("selects the item clicked in the list and shows its detail", async () => {
